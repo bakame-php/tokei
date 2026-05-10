@@ -1,0 +1,11 @@
+.idea
+.php_cs.cache
+.php-cs-fixer.cache
+.phpunit.cache/
+build
+composer.lock
+docs/_site
+docs/.jekyll-cache
+docs/.jekyll-metadata
+vendor
+/nbproject/private/

@@ -1,0 +1,78 @@
+{
+    "name": "bakame/tokei",
+    "type": "library",
+    "description" : "Local time and duration primitives without timezone complexity",
+    "keywords": [
+        "localtime",
+        "time",
+        "time-of-day",
+        "duration",
+        "microseconds",
+        "immutable",
+        "temporal",
+        "deterministic",
+        "arithmetic",
+        "iso8601",
+        "clock",
+        "precision",
+        "normalization",
+        "truncation",
+        "comparison"
+    ],
+    "license": "MIT",
+    "homepage" : "https://github.com/bakame-php/tokei",
+    "authors": [
+        {
+            "name" : "Ignace Nyamagana Butera",
+            "email" : "nyamsprod@gmail.com",
+            "homepage" : "https://github.com/nyamsprod/",
+            "role" : "Developer"
+        }
+    ],
+    "support": {
+        "docs": "https://github.com/bakame-php/tokei",
+        "issues": "https://github.com/bakame-php/tokei/issues",
+        "rss": "https://github.com/bakame-php/tokei/releases.atom",
+        "source": "https://github.com/bakame-php/tokei"
+    },
+    "funding": [
+        {
+            "type": "github",
+            "url": "https://github.com/sponsors/nyamsprod"
+        }
+    ],
+    "require": {
+        "php": "^8.3.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^12.5 || ^13.1.8",
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "phpstan/phpstan-deprecation-rules": "^2.0",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "symfony/var-dumper": "^7.4 || ^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Bakame\\Tokei\\": "src"
+        }
+    },
+    "scripts": {
+        "phpcs": "php-cs-fixer fix -vvv --diff --dry-run --allow-risky=yes --ansi",
+        "phpcs:fix": "php-cs-fixer fix -vvv --allow-risky=yes --ansi",
+        "phpstan": "phpstan analyse -c phpstan.neon --ansi --memory-limit=256M",
+        "phpunit": "XDEBUG_MODE=coverage phpunit --coverage-text",
+        "test": [
+            "@phpunit",
+            "@phpstan",
+            "@phpcs"
+        ]
+    },
+    "scripts-descriptions": {
+        "phpcs": "Runs coding style test suite",
+        "phpstan": "Runs complete codebase static analysis",
+        "phpunit": "Runs unit and functional testing",
+        "test": "Runs full test suite"
+    }
+}
