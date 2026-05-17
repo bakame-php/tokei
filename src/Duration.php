@@ -9,6 +9,7 @@ use DateInterval;
 use function abs;
 use function intdiv;
 use function is_float;
+use function is_int;
 use function preg_match;
 use function round;
 use function rtrim;
@@ -298,22 +299,48 @@ final readonly class Duration
         return 0 === $this->compareTo($other);
     }
 
-    public function isGreaterThan(self $other): bool
+    public function isLongerThan(self $other): bool
     {
         return 0 < $this->compareTo($other);
     }
 
-    public function isGreaterThanOrEqual(self $other): bool
+    public function isLongerThanOrEqual(self $other): bool
     {
         return 0 <= $this->compareTo($other);
     }
-    public function isLessThan(self $other): bool
+    public function isShorterThan(self $other): bool
     {
         return 0 > $this->compareTo($other);
     }
 
-    public function isLessThanOrEqual(self $other): bool
+    public function isShorterThanOrEqual(self $other): bool
     {
         return 0 >= $this->compareTo($other);
+    }
+
+    /**
+     * @throws InvalidDuration if value overflow
+     */
+    public function multipliedBy(int $factor): self
+    {
+        $result = $this->value * $factor;
+
+        is_int($result) || throw InvalidDuration::dueToOverflow(); /* @phpstan-ignore-line */
+
+        return new self($result);
+    }
+
+    /**
+     * Divides the duration by a factor using truncating integer division.
+     *
+     * The result is rounded toward zero.
+     *
+     * @throws InvalidDuration if the factor is zero
+     */
+    public function dividedBy(int $factor): self
+    {
+        0 !== $factor || throw new InvalidDuration('Unable to divide by zero.');
+
+        return new self(intdiv($this->value, $factor));
     }
 }

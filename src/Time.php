@@ -185,7 +185,7 @@ final readonly class Time
     public function format(
         string $separator = ':',
         PaddingMode $padding = PaddingMode::Padded,
-        SubSecondDisplay $format = SubSecondDisplay::Auto,
+        SubSecondDisplay $subSecondDisplay = SubSecondDisplay::Auto,
     ): string {
         $pad = static fn (int $v) => PaddingMode::Padded === $padding
             ? str_pad((string) $v, 2, '0', STR_PAD_LEFT)
@@ -194,7 +194,7 @@ final readonly class Time
         self::assertValidSeparator($separator);
 
         $base = $pad($this->hour).$separator.$pad($this->minute).$separator.$pad($this->second);
-        $includeSubSeconds = match ($format) {
+        $includeSubSeconds = match ($subSecondDisplay) {
             SubSecondDisplay::Always => true,
             SubSecondDisplay::Never => false,
             SubSecondDisplay::Auto => 0 !== $this->microsecond,
@@ -212,7 +212,7 @@ final readonly class Time
 
     public function isBefore(self $other): bool
     {
-        return -1 === $this->compareTo($other);
+        return 0 > $this->compareTo($other);
     }
 
     public function isBeforeOrEqual(self $other): bool
@@ -222,7 +222,7 @@ final readonly class Time
 
     public function isAfter(self $other): bool
     {
-        return 1 === $this->compareTo($other);
+        return 0 < $this->compareTo($other);
     }
 
     public function isAfterOrEqual(self $other): bool
@@ -257,9 +257,9 @@ final readonly class Time
         $microsecond ??= $this->microsecond;
 
         return $hour === $this->hour
-            && $minute === $this->minute
-            && $second === $this->second
-            && $microsecond === $this->microsecond
+        && $minute === $this->minute
+        && $second === $this->second
+        && $microsecond === $this->microsecond
             ? $this : self::at($hour, $minute, $second, $microsecond);
     }
 

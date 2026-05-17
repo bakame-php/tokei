@@ -342,8 +342,8 @@ final class DurationTest extends TestCase
 
     public function test_is_greater_than(): void
     {
-        self::assertTrue(Duration::of(hours: 2)->isGreaterThan(Duration::of(hours: 1)));
-        self::assertFalse(Duration::of(hours: 1)->isGreaterThan(Duration::of(hours: 2)));
+        self::assertTrue(Duration::of(hours: 2)->isLongerThan(Duration::of(hours: 1)));
+        self::assertFalse(Duration::of(hours: 1)->isLongerThan(Duration::of(hours: 2)));
     }
 
     /* -------------------------------------------------
@@ -352,9 +352,9 @@ final class DurationTest extends TestCase
 
     public function test_is_greater_than_or_equal(): void
     {
-        self::assertTrue(Duration::of(hours: 2)->isGreaterThanOrEqual(Duration::of(hours: 1)));
-        self::assertTrue(Duration::of(hours: 1)->isGreaterThanOrEqual(Duration::of(minutes: 60)));
-        self::assertFalse(Duration::of(minutes: 30)->isGreaterThanOrEqual(Duration::of(hours: 1)));
+        self::assertTrue(Duration::of(hours: 2)->isLongerThanOrEqual(Duration::of(hours: 1)));
+        self::assertTrue(Duration::of(hours: 1)->isLongerThanOrEqual(Duration::of(minutes: 60)));
+        self::assertFalse(Duration::of(minutes: 30)->isLongerThanOrEqual(Duration::of(hours: 1)));
     }
 
     /* -------------------------------------------------
@@ -363,8 +363,8 @@ final class DurationTest extends TestCase
 
     public function test_is_lesser_than(): void
     {
-        self::assertTrue(Duration::of(minutes: 30)->isLessThan(Duration::of(hours: 1)));
-        self::assertFalse(Duration::of(hours: 2)->isLessThan(Duration::of(hours: 1)));
+        self::assertTrue(Duration::of(minutes: 30)->isShorterThan(Duration::of(hours: 1)));
+        self::assertFalse(Duration::of(hours: 2)->isShorterThan(Duration::of(hours: 1)));
     }
 
     /* -------------------------------------------------
@@ -373,9 +373,9 @@ final class DurationTest extends TestCase
 
     public function test_is_lesser_than_or_equal(): void
     {
-        self::assertTrue(Duration::of(minutes: 30)->isLessThanOrEqual(Duration::of(hours: 1)));
-        self::assertTrue(Duration::of(hours: 1)->isLessThanOrEqual(Duration::of(minutes: 60)));
-        self::assertFalse(Duration::of(hours: 2)->isLessThanOrEqual(Duration::of(hours: 1)));
+        self::assertTrue(Duration::of(minutes: 30)->isShorterThanOrEqual(Duration::of(hours: 1)));
+        self::assertTrue(Duration::of(hours: 1)->isShorterThanOrEqual(Duration::of(minutes: 60)));
+        self::assertFalse(Duration::of(hours: 2)->isShorterThanOrEqual(Duration::of(hours: 1)));
     }
 
     /* -------------------------------------------------
@@ -589,9 +589,29 @@ final class DurationTest extends TestCase
         $min = Duration::min();
         $zero = Duration::zero();
 
-        self::assertTrue($max->isGreaterThan($min));
-        self::assertTrue($max->isGreaterThan($zero));
-        self::assertTrue($zero->isGreaterThanOrEqual($min));
-        self::assertTrue($min->isLessThan($zero));
+        self::assertTrue($max->isLongerThan($min));
+        self::assertTrue($max->isLongerThan($zero));
+        self::assertTrue($zero->isLongerThanOrEqual($min));
+        self::assertTrue($min->isShorterThan($zero));
+    }
+
+    public function testItRejectsInvalidMultiply(): void
+    {
+        $this->expectException(InvalidDuration::class);
+
+        Duration::max()->multipliedBy(3);
+    }
+
+    public function testItRejectsDivideByZero(): void
+    {
+        $this->expectException(InvalidDuration::class);
+
+        Duration::max()->dividedBy(0);
+    }
+
+    public function testItMultiplyTheDuration(): void
+    {
+        self::assertSame('PT4H', Duration::of(hours: 2)->multipliedBy(2)->toIso8601());
+        self::assertSame('PT4M', Duration::of(minutes: 2)->multipliedBy(2)->toIso8601());
     }
 }

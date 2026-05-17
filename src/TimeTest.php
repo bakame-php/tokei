@@ -80,16 +80,16 @@ final class TimeTest extends TestCase
     public function testFromMicrosecondsWrapsCorrectly(): void
     {
         $time = Time::atMicroOfDay(25 * 3_600_500_000);
-        self::assertSame('01:00:12.500000', $time->format(format: SubSecondDisplay::Always));
+        self::assertSame('01:00:12.500000', $time->format(subSecondDisplay: SubSecondDisplay::Always));
 
         $time = Time::atMilliOfDay(25 * 3_600_500);
-        self::assertSame('01:00:12.500000', $time->format(format: SubSecondDisplay::Always));
+        self::assertSame('01:00:12.500000', $time->format(subSecondDisplay: SubSecondDisplay::Always));
 
         $time = Time::atSecondOfDay(25 * 3_600);
-        self::assertSame('01:00:00.000000', $time->format(format: SubSecondDisplay::Always));
+        self::assertSame('01:00:00.000000', $time->format(subSecondDisplay: SubSecondDisplay::Always));
 
         $time = Time::atMinuteOfDay(25 * 60);
-        self::assertSame('01:00:00.000000', $time->format(format: SubSecondDisplay::Always));
+        self::assertSame('01:00:00.000000', $time->format(subSecondDisplay: SubSecondDisplay::Always));
     }
 
     /* -------------------------------------------------

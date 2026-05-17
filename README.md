@@ -231,7 +231,7 @@ $altDate::class; // returns DateTimeImmutable
 
 ### Duration
 
-The `Bakame\Tokei\Duration` Value Object provides lightweight utilities for working with durations
+The `Bakame\Tokei\Duration` Value Object provides utilities for working with durations
 
 #### Instantiation
 
@@ -363,9 +363,9 @@ Duration::compareTo(Duration $other): int;
 
 Returns:
 
-- `-1` if lesser
+- `-1` if shorter
 - `0` if equal
-- `1` if greater
+- `1` if longer
 
 Convenient methods based on `Duration::compareTo` are also available:
 
@@ -373,11 +373,192 @@ Convenient methods based on `Duration::compareTo` are also available:
 $duration = Duration::of(microseconds: 3_661_500_000);
 $other = Duration::fromIso8601('PT1H1S');
 
-$duration->isLessThan($other);           // returns false
-$duration->isLessThanOrEqual($other);    // returns false
+$duration->isShorterThan($other);        // returns false
+$duration->isShorterThanOrEqual($other); // returns false
 $duration->equals($other);               // returns false
-$duration->isGreaterThan($other);        // returns true
-$duration->isGreaterThanOrEqual($other); // returns true
+$duration->isLongerThan($other);         // returns true
+$duration->isLongerThanOrEqual($other);  // returns true
+```
+
+### Interval
+
+`Bakame\Tokei\Interval` represents a start-inclusive, end-exclusive interval between two times on a 24-hour circular clock.
+
+Intervals are immutable and support:
+
+= circular ranges crossing midnight,
+- interval algebra,
+- time iteration,
+- normalization,
+- duration arithmetic.
+
+The library uses half-open interval semantic
+
+```bash
+[start, end)
+```
+
+#### Instantiation
+
+```php
+Interval::between(Time $start, Time $end): self;
+Interval::since(Time $start, Duration $duration): self;
+Interval::until(Time $end, Duration $duration): self;
+Interval::around(Time $midRange, Duration $duration): self;
+Interval::collapsed(Time $at): self;
+Interval::circular(Time $at): self;
+```
+
+Helper instances for business hours
+
+```php
+Interval::morning(): self   // returns [06:00,12:00)
+Interval::afternoon(): self // returns [12:00,18:00)
+Interval::evening(): self   // returns [18:00,22:00)
+Interval::night(): self     // returns [22:00,6:00)
+Interval::day(): self       // returns [06:00,22:00)
+Interval::fullDay(): self   // returns [00:00,00:00) with a duration of 24h
+```
+
+#### Accessors
+
+```php
+$interval = Interval::between(Time::midnight(), Time::noon());
+$interval->start;         // returns Time::midnight()
+$interval->end,           // returns Time::noon()
+$interval->duration;      // returns Duration::of(hours: 12);
+$interval->isCircular();  // returns false
+$interval->isCollapsed(); // returns false
+```
+
+#### Iterations
+
+```php
+Interval::splitForward(Duration $step): iterable<Interval>
+Interval::splitBackward(Duration $step): iterable<Interval>
+Interval::rangeForward(Duration $step): iterable<Time>
+Interval::rangeBackward(Duration $step): iterable<Time>
+```
+
+#### Modifying by duration
+
+```php
+Interval::shift(Duration $duration): self
+Interval::shiftStart(Duration $duration): self
+Interval::shiftEnd(Duration $duration): self
+Interval::lastingFromStart(Duration $duration): self
+Interval::lastingFromEnd(Duration $duration): self
+Interval::expand(Duration $duration): self
+```
+
+#### Modifying by time
+
+```php
+Interval::startingOn(Time $time): self
+Interval::endingOn(Time $time): self
+Interval::complement(): self
+Interval::splitAt(Time $time): IntervalSet
+```
+
+#### Comparison
+
+```php
+Interval::equals(Interval $other): bool
+```
+
+#### Duration based comparison
+
+```php
+Interval::compareDurationTo(Interval $other): int
+Interval::sameDurationAs(Interval $other): bool
+Interval::longerThan(Interval $other): bool
+Interval::longerThanOrEqual(Interval $other): bool
+Interval::shorterThan(Interval $other): bool
+Interval::shorterThanOrEqual(Interval $other): bool
+```
+
+#### Time based comparison
+
+```php
+Interval::includes(Time $time): bool
+Interval::contains(Interval $other): bool
+Interval::overlaps(Interval $other): bool
+Interval::abuts(Interval $other): bool
+Interval::intersect(Interval $other): ?self
+Interval::gap(Interval $other): ?self
+Interval::union(Interval ...$other): IntervalSet
+Interval::difference(Interval $other): IntervalSet
+```
+
+### IntervalSet
+
+`Bakame\Tokei\IntervalSet` is an immutable collection of `Bakame\Tokei\Interval` instances implementing PHP's `Countable` and `IteratorAggregate` interfaces
+
+#### Instantiation
+
+```php
+use Bakame\Tokei\IntervalSet;
+
+IntervalSet::__constrcut(Interval|IntervalSet ....$interval)
+```
+
+#### Accessors
+
+```php
+IntervalSet::all(): list<Interval>
+IntervalSet::isEmpty(): bool
+IntervalSet::get(int $nth): ?Interval
+IntervalSet::first(): ?Interval
+IntervalSet::last(): ?Interval
+```
+
+#### Formatting
+
+```php
+IntervalSet::allFormatted(
+    string $separator = ':',
+    PaddingMode $padding = PaddingMode::Padded,
+    SubSecondDisplay $subSecond = SubSecondDisplay::Auto,
+): list<string>
+```
+
+#### Modifiers
+
+```php
+IntervalSet::push(IntervalSet|Interval ...$items): IntervalSet 
+```
+
+#### Interval methods
+
+```php
+IntervalSet::union(): IntervalSet 
+IntervalSet::differnces(IntervalSet|Interval ...$other): IntervalSet
+
+IntervalSet::includes(Time $time): bool
+IntervalSet::includesAll(Time $time): bool
+IntervalSet::including(Time $time): IntervalSet
+
+IntervalSet::overlaps(Interval $interval): bool
+IntervalSet::overlapsAll(nterval $interval): bool
+IntervalSet::overlapping(nterval $interval): IntervalSet
+
+IntervalSet::contains(Interval $interval): bool
+IntervalSet::containsAll(nterval $interval): bool
+IntervalSet::containing(nterval $interval): IntervalSet
+
+IntervalSet::abuts(Interval $interval): bool
+IntervalSet::abutsAll(nterval $interval): bool
+IntervalSet::abutting(nterval $interval): IntervalSet
+```
+
+#### Collection methods
+
+```php
+IntervalSet::exists(callable $callback): bool
+IntervalSet::forAll(callable $callback): bool
+IntervalSet::filter(callable $callback): IntervalSet
+IntervalSet::map(callable $callback): iterable
+IntervalSet::reduce(callable $callback, mixed $initial = null): IntervalSet
 ```
 
 ## Testing
