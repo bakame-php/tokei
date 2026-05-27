@@ -664,6 +664,7 @@ IntervalSet::sorted(Bound $using = Bound::Start, $sortDirection): IntervalSet;
 ```php
 IntervalSet::any(callable $callback): bool
 IntervalSet::every(callable $callback): bool
+IntervalSet::each(callable $callback): bool
 IntervalSet::map(callable $callback): iterable
 IntervalSet::reduce(callable $callback, mixed $initial = null): mixed
 IntervalSet::filter(callable $callback): IntervalSet

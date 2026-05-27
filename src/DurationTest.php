@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
-use DateInterval;
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;

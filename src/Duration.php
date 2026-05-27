@@ -79,7 +79,13 @@ final readonly class Duration implements JsonSerializable
         int $milliseconds = 0,
         int $microseconds = 0,
     ): self {
-        return new self(self::toMicroseconds(($weeks * 7) + $days, $hours, $minutes, $seconds, ($milliseconds * 1_000) + $microseconds));
+        return new self(self::toMicroseconds(
+            days: ($weeks * 7) + $days,
+            hours: $hours,
+            minutes: $minutes,
+            seconds: $seconds,
+            microseconds: ($milliseconds * 1_000) + $microseconds
+        ));
     }
 
     private static function toMicroseconds(
@@ -165,11 +171,11 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @throws InvalidTime
+     * @throws InvalidDuration
      */
     public static function minOf(self ...$times): self
     {
-        [] !== $times || throw new InvalidTime('minOf() expects at least one time');
+        [] !== $times || throw new InvalidDuration('minOf() expects at least one duration');
 
         $min = array_shift($times);
         foreach ($times as $time) {
@@ -182,11 +188,11 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @throws InvalidTime
+     * @throws InvalidDuration
      */
     public static function maxOf(self ...$times): self
     {
-        [] !== $times || throw new InvalidTime('maxOf() expects at least one time');
+        [] !== $times || throw new InvalidDuration('maxOf() expects at least one duration');
 
         $max = array_shift($times);
         foreach ($times as $time) {
@@ -209,9 +215,7 @@ final readonly class Duration implements JsonSerializable
     public function toClockFormat(SubSecondDisplay $subSecondDisplay = SubSecondDisplay::Auto): string
     {
         $pad = static fn (int $value, int $length): string => str_pad((string) $value, $length, '0', STR_PAD_LEFT);
-
         $formatted = $this->hours.':'.$pad($this->minutes, 2).':'.$pad($this->seconds, 2);
-
         $includeSubSeconds = match ($subSecondDisplay) {
             SubSecondDisplay::Always => true,
             SubSecondDisplay::Never => false,
@@ -236,17 +240,8 @@ final readonly class Duration implements JsonSerializable
      */
     public function toIso8601(): string
     {
-        $seconds = (string) $this->seconds;
-        if (0 !== $this->microseconds) {
-            $seconds .= '.'.rtrim(
-                str_pad((string) $this->microseconds, 6, '0', STR_PAD_LEFT),
-                '0'
-            );
-        }
-
-        $hours = $this->hours % 24;
-
         $time = '';
+        $hours = $this->hours % 24;
         if (0 !== $hours) {
             $time .= $hours.'H';
         }
@@ -255,6 +250,13 @@ final readonly class Duration implements JsonSerializable
             $time .= $this->minutes.'M';
         }
 
+        $seconds = (string) $this->seconds;
+        if (0 !== $this->microseconds) {
+            $seconds .= '.'.rtrim(
+                str_pad((string) $this->microseconds, 6, '0', STR_PAD_LEFT),
+                '0'
+            );
+        }
         if ('0' !== $seconds) {
             $time .= $seconds.'S';
         }

@@ -362,6 +362,20 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     }
 
     /**
+     * @param callable(Interval, int=): mixed $callback
+     */
+    public function each(callable $callback): bool
+    {
+        foreach ($this->intervals as $key => $interval) {
+            if (false === $callback($interval, $key)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * @throws InvalidDuration|InvalidInterval
      */
     public function gaps(): IntervalSet

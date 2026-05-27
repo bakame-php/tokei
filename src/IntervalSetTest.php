@@ -745,6 +745,64 @@ final class IntervalSetTest extends TestCase
 
         self::assertEquals($diff1, $diff2);
     }
+
+    public function testItIteratesOverAllIntervals(): void
+    {
+        $intervals = new IntervalSet(
+            Interval::between(Time::at(1), Time::at(2)),
+            Interval::between(Time::at(3), Time::at(4)),
+            Interval::between(Time::at(5), Time::at(6)),
+        );
+
+        $visited = [];
+
+        $result = $intervals->each(
+            function (Interval $interval, ?int $index = null) use (&$visited): void {
+                $visited[] = $index;
+            }
+        );
+
+        self::assertTrue($result);
+        self::assertSame([0, 1, 2], $visited);
+    }
+
+    public function testItStopsIterationWhenCallbackReturnsFalse(): void
+    {
+        $intervals = new IntervalSet(
+            Interval::between(Time::at(1), Time::at(2)),
+            Interval::between(Time::at(3), Time::at(4)),
+            Interval::between(Time::at(5), Time::at(6)),
+        );
+
+        $visited = [];
+
+        $result = $intervals->each(
+            function (Interval $interval, ?int $index = null) use (&$visited): bool {
+                $visited[] = $index;
+
+                return 1 !== $index;
+            }
+        );
+
+        self::assertFalse($result);
+        self::assertSame([0, 1], $visited);
+    }
+
+    public function testItReturnsTrueOnEmptyCollection(): void
+    {
+        $intervals = new IntervalSet();
+
+        $visited = false;
+
+        $result = $intervals->each(
+            function () use (&$visited): void {
+                $visited = true;
+            }
+        );
+
+        self::assertTrue($result);
+        self::assertFalse($visited);
+    }
 }
 
 enum Business
