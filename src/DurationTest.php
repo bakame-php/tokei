@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
+use DateInterval;
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -12,7 +13,9 @@ use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 
 use function json_encode;
+use function ltrim;
 use function serialize;
+use function substr;
 use function unserialize;
 
 use const PHP_INT_MAX;
@@ -805,5 +808,104 @@ final class DurationTest extends TestCase
                 Duration::of(seconds: 5),
             ],
         ];
+    }
+
+    #[DataProvider('validIntervalsProvider')]
+    public function testFromDateIntervalConvertsCorrectly(DateInterval $interval, int $expectedMicroseconds): void
+    {
+        self::assertSame($expectedMicroseconds, Duration::fromDateInterval($interval)->total(Unit::Microsecond));
+    }
+
+    /**
+     * @return array<non-empty-string, array{interval: DateInterval, expectedMicroseconds: int}>
+     */
+    public static function validIntervalsProvider(): array
+    {
+        return [
+            'simple positive' => [
+                'interval' => new DateInterval('P1DT2H3M4S'),
+                'expectedMicroseconds' => ((1 * 86400) + (2 * 3600) + (3 * 60) + 4) * 1_000_000,
+            ],
+
+            'negative interval' => [
+                'interval' => self::diff('-PT1H30M'),
+                'expectedMicroseconds' => -((1 * 3600) + (30 * 60)) * 1_000_000,
+            ],
+
+            'with microseconds' => [
+                'interval' => self::fromSpec('PT0S', 500_000),
+                'expectedMicroseconds' => 500_000,
+            ],
+
+            'days from diff (days populated)' => [
+                'interval' => self::diff('P2D'),
+                'expectedMicroseconds' => -2 * 86400 * 1_000_000,
+            ],
+        ];
+    }
+
+    private static function diff(string $spec): DateInterval
+    {
+        $now = new DateTimeImmutable();
+
+        $res = $now->add(new DateInterval(ltrim($spec, '-')))->diff($now);
+
+        return $res;
+    }
+
+    private static function fromSpec(string $spec, int $microseconds): DateInterval
+    {
+        $sign = 0;
+        if (str_starts_with($spec, '-')) {
+            $spec = substr($spec, 1);
+            $sign = 1;
+        }
+
+        $interval = new DateInterval($spec);
+        if (1 === $sign) {
+            $interval->invert = 1;
+        }
+
+        if (0 !== $microseconds) {
+            $interval->f = $microseconds / 1_000_000;
+        }
+
+        return $interval;
+    }
+
+    #[DataProvider('invalidIntervalsProvider')]
+    public function testFromDateIntervalThrowsForInvalidIntervals(DateInterval $interval): void
+    {
+        $this->expectException(InvalidDuration::class);
+
+        Duration::fromDateInterval($interval);
+    }
+
+    /**
+     * @return array<non-empty-string, array{0: DateInterval}>
+     */
+    public static function invalidIntervalsProvider(): array
+    {
+        return [
+            'has years' => [
+                new DateInterval('P1Y'),
+            ],
+
+            'has months' => [
+                new DateInterval('P2M'),
+            ],
+
+            'years and days mixed' => [
+                new DateInterval('P1Y2DT3H'),
+            ],
+        ];
+    }
+
+    public function test_diffrent_date_intervals(): void
+    {
+        $a = self::diff('P3DT4H');
+        $b = new DateInterval('P3DT4H');
+
+        self::assertNotEquals(Duration::fromDateInterval($a), Duration::fromDateInterval($b));
     }
 }

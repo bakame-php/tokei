@@ -13,9 +13,11 @@ use function abs;
 use function array_column;
 use function array_shift;
 use function array_sum;
+use function implode;
 use function intdiv;
 use function is_int;
 use function preg_match;
+use function round;
 use function rtrim;
 use function str_pad;
 
@@ -101,6 +103,25 @@ final readonly class Duration implements JsonSerializable
             + Unit::Minute->toMicroseconds($minutes)
             + Unit::Second->toMicroseconds($seconds)
             + $microseconds;
+    }
+
+    /**
+     * @throws InvalidDuration
+     */
+    public static function fromDateInterval(DateInterval $interval): self
+    {
+        (0 === $interval->y && 0 === $interval->m) || throw new InvalidDuration('fromDateInterval() does not handle non deterministic DateInterval properties like months and years.');
+        (0.0 <= $interval->f && 1.0 >= $interval->f) || throw new InvalidDuration('Invalid fractional seconds in DateInterval.');
+
+        $microseconds = self::toMicroseconds(
+            days: false === $interval->days ? $interval->d : $interval->days,
+            hours: $interval->h,
+            minutes: $interval->i,
+            seconds: $interval->s,
+            microseconds: (int) round($interval->f * 1_000_000)
+        );
+
+        return new self(1 === $interval->invert ? -$microseconds : $microseconds);
     }
 
     /**
@@ -253,9 +274,9 @@ final readonly class Duration implements JsonSerializable
         $seconds = (string) $this->seconds;
         if (0 !== $this->microseconds) {
             $seconds .= '.'.rtrim(
-                str_pad((string) $this->microseconds, 6, '0', STR_PAD_LEFT),
-                '0'
-            );
+                    str_pad((string) $this->microseconds, 6, '0', STR_PAD_LEFT),
+                    '0'
+                );
         }
         if ('0' !== $seconds) {
             $time .= $seconds.'S';

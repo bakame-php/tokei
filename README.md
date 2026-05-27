@@ -257,6 +257,8 @@ use Bakame\Tokei\Duration;
 
 $durationA = Duration::of(hours: 2, seconds:59);
 $durationB = Duration::fromIso8601('P2WT3H'); //2 weeks and 3 hours
+$durationC = Duration::fromDateInterval(new DateInterval('PT23M3S')); 
+
 ```
 
 > [!IMPORTANT]
@@ -471,6 +473,7 @@ $interval->end,       // returns Time::noon()
 $interval->duration;  // returns Duration::of(hours: 12);
 $interval->type;      // returns IntervalType
 ```
+
 #### Interval Type
 
 ```php
@@ -569,7 +572,7 @@ Interval::overlaps(Interval $other): bool
 Interval::abuts(Interval $other): bool
 Interval::intersect(Interval $other): ?self
 Interval::gap(Interval $other): ?self
-Interval::union(Interval ...$other): IntervalSet
+Interval::union(Interval $other): IntervalSet
 Interval::difference(Interval $other): IntervalSet
 ```
 
@@ -655,8 +658,8 @@ IntervalSet::union(): IntervalSet
 IntervalSet::complement(): IntervalSet
 IntervalSet::intersect(IntervalSet|Interval ...$others): IntervalSet
 IntervalSet::difference(IntervalSet|Interval ...$others): IntervalSet
-IntervalSet::gaps(): bool
-IntervalSet::sorted(Bound $using = Bound::Start, $sortDirection): IntervalSet;
+IntervalSet::gaps(): IntervalSet
+IntervalSet::sorted(Bound $sortBound = Bound::Start, SortDirection|string $sortDirection = 'asc'): IntervalSet;
 ```
 
 #### Collection methods
