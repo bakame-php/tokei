@@ -390,6 +390,9 @@ final class TimeTest extends TestCase
         self::assertSame('08:54:23', $updated->toString());
         self::assertNotSame($updated->toLocaleString('tr-CY'), $updated->toLocaleString('en_US'));
         self::assertNotSame($updated->toLocaleString('en_US', new DateTimeZone('Africa/Nairobi')), $updated->toLocaleString('en_US'));
+
+        $this->expectException(TimeException::class);
+        $updated->toLocaleString('foo-bar');
     }
 
     public function test_with_returns_same_instance_when_no_change(): void

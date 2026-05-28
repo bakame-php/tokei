@@ -205,8 +205,8 @@ values between both differences methods:
 $a = Time::at(hour: 23); // 23:00
 $b = Time::at(hour: 1);  // 01:00
 
-$a->diff($b)->toIso8601();     // returns "-PT22H"
-$a->distance($b)->toIso8601(); // returns "PT2H"
+$a->diff($b)->format(DurationFormat::Iso8601);     // returns "-PT22H"
+$a->distance($b)->format(DurationFormat::Iso8601); // returns "PT2H"
 ```
 
 #### Interacting with PHP's native Date API
@@ -290,13 +290,14 @@ $durationB->isEmpty()     // returns true when the duration is zero, false other
 #### Formatting
 
 ```php
-Duration::toClockFormat(SubSecondDisplay $subSecondDisplay = SubSecondDisplay::Auto): string
-Duration::toIso8601(): string
-Duration::toCompact(): string
+Duration::format(DurationFormat $format, SubSecondDisplay $subSecondDisplay = SubSecondDisplay::Auto): string
 Duration::toDateInterval(): DateInterval
 Duration::total(Unit $unit = Unit::Microseconds): float
 ```
-`Duration::toClockFormat` formats the instance value into a human-readable string. The following format is used:
+
+Formatting the duration string representation is returned by the `Duration::format` with the help of the `DurationFormat` Enum
+
+When using the `DurationFormat::Clock` the following human-readable format is used:
 
 ```php
 [-]H:mm:ss[.microseconds]
@@ -304,13 +305,12 @@ Duration::total(Unit $unit = Unit::Microseconds): float
 - microseconds are optional (its display is controlled by the `SubSecondDisplay` Enum and mimics `Time::toString` behaviour)
 - negative values are prefixed with `-`
 
-`Duration::toIso8601` formats the instance value into a ISO8601 compatible string. The returned string
-may not be compatible with PHP's `DateInterval` constructor but is valid
-withing the `ISO8601` specification.
+When using the `DurationFormat::Iso8601` formats the instance value is converted into a ISO8601 compatible string.
+The returned string may not be compatible with PHP's `DateInterval` constructor but is valid withing the `ISO8601` extended specification.
 
 ```php
 $duration = Duration::of(hours: 25, seconds: 5); 
-$duration->toIso8601(); // returns 'P1D1H5S'
+$duration->format(DurationFormat::Iso8601); // returns 'P1D1H5S'
 ```
 
 > [!IMPORTANT]
@@ -318,8 +318,14 @@ $duration->toIso8601(); // returns 'P1D1H5S'
 > - to have a predictive representation `W` is not used; `7D` multiple are used instead.
 
 ```php
-$duration = Duration::fromIso8610('-P2W'); 
-$duration->toIso8601(); // returns '-P14D'
+$duration = Duration::fromIso8601('-P2W'); 
+$duration->format(DurationFormat::Iso8601); // returns '-P14D'
+```
+Last but not least a compact format more suited for debugging is returns using the `DurationFormat::Compact` case.
+
+```php
+$duration = Duration::of(hours: 25, seconds: 5); 
+$duration->format(DurationFormat::Compact); // returns '1d 1h 5s'
 ```
 
 The `Duration` class also allows conversion in time units and in `DateInterval` instances.
@@ -331,13 +337,6 @@ $duration = Duration::of(microseconds: 3_661_234_000);
 $duration->toDateInterval();          // returns DateInterval
 $durationB->total(Unit::Microsecond); // returns the full duration in microseconds
 $durationB->total(Unit::Hours);       // returns the full duration in hours
-```
-
-Last but not least a compact format more suited for debugging is returns usinf the `Duration::toCompact` method.
-
-```php
-$duration = Duration::of(hours: 25, seconds: 5); 
-$duration->toCompact(); // returns '1d 1h 5s'
 ```
 
 #### Modifying duration
@@ -372,18 +371,18 @@ $b = $a->truncateTo(Unit::Minute);
 $c = $b->negate();
 $d = $c->increment(minutes: -10);
 
-echo $a->toClockFormat();                        // returns "1:01:01.500000"
-echo $a->toClockFormat(SubSecondDisplay::Never); // returns "1:01:01"
-echo $b->toClockFormat();                  // returns "1:01:00"
-echo $c->toClockFormat();                  // returns "-1:01:00"
-echo $c->abs()->toClockFormat();           // returns "1:01:00"
-echo $a->sum($b, $c, $d)->toClockFormat(); // returns "-0:09:58.500000"
+echo $a->format(DurationFormat::Clock);                          // returns "1:01:01.500000"
+echo $a->format(DurationFormat::Clock, SubSecondDisplay::Never); // returns "1:01:01"
+echo $b->format(DurationFormat::Clock);                          // returns "1:01:00"
+echo $c->format(DurationFormat::Clock);                          // returns "-1:01:00"
+echo $c->abs()->format(DurationFormat::Clock);                   // returns "1:01:00"
+echo $a->sum($b, $c, $d)->format(DurationFormat::Clock);         // returns "-0:09:58.500000"
 
 $microseconds = 3_761_500_000;
 $a = Duration::of(microseconds: $microseconds);
-$a->toClockFormat();                                 // returns "1:02:41.500000"
-$a->truncateTo(Unit::Minute)->toClockFormat(); // returns "1:02:00"
-$a->roundTo(Unit::Minute)->toClockFormat();    // returns "1:03:00"
+$a->format(DurationFormat::Clock);             // returns "1:02:41.500000"
+$a->truncateTo(Unit::Minute)->format(DurationFormat::Clock); // returns "1:02:00"
+$a->roundTo(Unit::Minute)->format(DurationFormat::Clock);    // returns "1:03:00"
 ```
 
 #### Comparing duration

@@ -108,17 +108,25 @@ final readonly class Interval implements JsonSerializable
      */
     public static function fromIso8601(string $notation): self
     {
-        $notationException = InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601');
         $parts = explode('/', trim($notation), 2);
-        2 === count($parts) || throw $notationException;
+        2 === count($parts) || throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601');
         [$first, $last] = array_map(trim(...), $parts);
 
         $isDurationNotation = static fn (string $notation): bool => str_starts_with($notation, 'P') || str_starts_with($notation, '-P');
 
         return match (true) {
-            $isDurationNotation($first) => self::until(Time::parse($last) ?? throw $notationException, Duration::parseIso8601($first) ?? throw $notationException),
-            $isDurationNotation($last) => self::since(Time::parse($first) ?? throw $notationException, Duration::parseIso8601($last) ?? throw $notationException),
-            default => self::between(Time::parse($first) ?? throw $notationException, Time::parse($last) ?? throw $notationException),
+            $isDurationNotation($first) => self::until(
+                Time::parse($last) ?? throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601'),
+                Duration::parseIso8601($first) ?? throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601')
+            ),
+            $isDurationNotation($last) => self::since(
+                Time::parse($first) ?? throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601'),
+                Duration::parseIso8601($last) ?? throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601')
+            ),
+            default => self::between(
+                Time::parse($first) ?? throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601'),
+                Time::parse($last) ?? throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601')
+            ),
         };
     }
 
@@ -229,13 +237,7 @@ final readonly class Interval implements JsonSerializable
         IntervalFormat $format = IntervalFormat::Iso8601StartDuration,
         SubSecondDisplay $subSecondDisplay = SubSecondDisplay::Auto
     ): string {
-        return match ($format) {
-            IntervalFormat::Iso8601StartDuration => $this->start->toString($subSecondDisplay).'/'.$this->duration->toIso8601(),
-            IntervalFormat::Iso8601DurationEnd => $this->duration->toIso8601().'/'.$this->end->toString($subSecondDisplay),
-            IntervalFormat::Iso8601StartEnd => $this->start->toString($subSecondDisplay).'/'.$this->end->toString($subSecondDisplay),
-            IntervalFormat::Iso80000 => '['.$this->start->toString($subSecondDisplay).','.$this->end->toString($subSecondDisplay).')',
-            IntervalFormat::Bourbaki => '['.$this->start->toString($subSecondDisplay).','.$this->end->toString($subSecondDisplay).'[',
-        };
+        return $format->format($this, $subSecondDisplay);
     }
 
     /**
@@ -507,7 +509,7 @@ final readonly class Interval implements JsonSerializable
      */
     public function union(self $other): IntervalSet
     {
-        return (new IntervalSet($this, $other))->union();
+        return (new IntervalSet($this))->union($other);
     }
 
     /**

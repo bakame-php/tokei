@@ -12,6 +12,7 @@ use JsonSerializable;
 use Throwable;
 
 use function abs;
+use function array_reduce;
 use function array_shift;
 use function class_exists;
 use function is_int;
@@ -149,13 +150,8 @@ final readonly class Time implements JsonSerializable
         [] !== $times || throw new InvalidTime('minOf() expects at least one time');
 
         $min = array_shift($times);
-        foreach ($times as $time) {
-            if ($time->isBefore($min)) {
-                $min = $time;
-            }
-        }
 
-        return $min;
+        return array_reduce($times, fn (self $min, self $item): self => $item->isBefore($min) ? $item : $min, $min);
     }
 
     /**
@@ -164,15 +160,9 @@ final readonly class Time implements JsonSerializable
     public static function maxOf(self ...$times): self
     {
         [] !== $times || throw new InvalidTime('maxOf() expects at least one time');
-
         $max = array_shift($times);
-        foreach ($times as $time) {
-            if ($time->isAfter($max)) {
-                $max = $time;
-            }
-        }
 
-        return $max;
+        return array_reduce($times, fn (self $max, self $item): self => $item->isAfter($max) ? $item : $max, $max);
     }
 
     public function toUnitOfDay(Unit $unit): int|float
@@ -201,18 +191,29 @@ final readonly class Time implements JsonSerializable
     /**
      * @throws TimeException
      */
-    public function toLocaleString(string $locale, ?DateTimeZone $timezone = null): string
-    {
+    public function toLocaleString(
+        string $locale,
+        ?DateTimeZone $timezone = null,
+        TimeFormatLength $length = TimeFormatLength::Medium
+    ): string {
         static $isSupported = null;
         $isSupported = $isSupported ?? class_exists(IntlDateFormatter::class);
         $isSupported || throw new TimeException('Support for time locale formatting requires the `intl` extension for best performance or run "composer require symfony/polyfill-intl-icu" to install a polyfill.');
+
+        $timeType = match ($length) {
+            TimeFormatLength::Full => IntlDateFormatter::FULL,
+            TimeFormatLength::Long => IntlDateFormatter::LONG,
+            TimeFormatLength::Medium => IntlDateFormatter::MEDIUM,
+            TimeFormatLength::Short => IntlDateFormatter::SHORT,
+        };
 
         try {
             $formatted = (new IntlDateFormatter(
                 locale: $locale,
                 dateType: IntlDateFormatter::NONE,
-                timeType: IntlDateFormatter::MEDIUM
-            ))->format($this->applyTo(new DateTimeImmutable(timezone: $timezone)));
+                timeType: $timeType,
+                timezone: $timezone,
+            ))->format($this->applyTo(new DateTimeImmutable(timezone: new DateTimeZone('UTC'))));
         } catch (Throwable $exception) {
             throw new TimeException('Unable to convert to locale "'.$locale.'" the current time; Please verify your locale.', previous: $exception);
         }

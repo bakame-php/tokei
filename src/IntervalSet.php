@@ -414,11 +414,19 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
         $differences = [];
         $otherIntervals = $other->union()->intervals;
         foreach ($this->union()->intervals as $interval) {
+            if (IntervalType::Collapsed === $interval->type) {
+                continue;
+            }
+
             $current = IntervalType::Circular !== $interval->type
                 ? [[$interval->linearStart, $interval->linearEnd]]
                 : [[0, Unit::Day->toMicroseconds(1)]];
 
             foreach ($otherIntervals as $otherInterval) {
+                if (IntervalType::Collapsed === $otherInterval->type) {
+                    continue;
+                }
+
                 $bStart = $otherInterval->linearStart;
                 $bEnd = $otherInterval->linearEnd;
                 $next = [];

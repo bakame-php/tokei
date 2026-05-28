@@ -6,6 +6,7 @@ namespace Bakame\Tokei;
 
 use function intdiv;
 use function is_float;
+use function round;
 
 enum Unit
 {
@@ -17,7 +18,8 @@ enum Unit
     case Millisecond;
     case Microsecond;
 
-    private const int MICRO_PER_SECOND = 1_000_000;
+    private const int MICRO_PER_MILLI = 1_000;
+    private const int MICRO_PER_SECOND = 1_000 * self::MICRO_PER_MILLI;
     private const int MICRO_PER_MINUTE = 60 * self::MICRO_PER_SECOND;
     private const int MICRO_PER_HOUR = 60 * self::MICRO_PER_MINUTE;
     private const int MICRO_PER_DAY = 24 * self::MICRO_PER_HOUR;
@@ -31,7 +33,7 @@ enum Unit
             Unit::Hour => self::MICRO_PER_HOUR,
             Unit::Minute => self::MICRO_PER_MINUTE,
             Unit::Second => self::MICRO_PER_SECOND,
-            Unit::Millisecond => 1_000,
+            Unit::Millisecond => self::MICRO_PER_MILLI,
             Unit::Microsecond => 1,
         };
     }
@@ -53,11 +55,8 @@ enum Unit
     public function toMicroseconds(int|float $value): int
     {
         $res = $this->microseconds() * $value;
-        if (is_float($res)) {
-            return (int) $res;
-        }
 
-        return $res;
+        return is_float($res) ? (int) round($res) : $res;
     }
 
     public function whole(int $value): int

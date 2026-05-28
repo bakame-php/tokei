@@ -19,6 +19,8 @@ use function unserialize;
 
 use const JSON_UNESCAPED_SLASHES;
 
+#[CoversClass(IntervalFormat::class)]
+#[CoversClass(DurationFormat::class)]
 #[CoversClass(IntervalSet::class)]
 #[CoversClass(Interval::class)]
 final class IntervalSetTest extends TestCase
@@ -815,6 +817,13 @@ final class IntervalSetTest extends TestCase
 
         self::assertTrue($result);
         self::assertFalse($visited);
+    }
+
+    public function test_gaps_with_empty_collection(): void
+    {
+        $intervals = new IntervalSet();
+
+        self::assertSame($intervals, $intervals->gaps());
     }
 }
 

@@ -22,6 +22,7 @@ use const JSON_UNESCAPED_SLASHES;
 #[CoversClass(IntervalSet::class)]
 #[CoversClass(Interval::class)]
 #[CoversClass(InvalidInterval::class)]
+#[CoversClass(IntervalFormat::class)]
 #[CoversClass(Duration::class)]
 #[CoversClass(Time::class)]
 final class IntervalTest extends TestCase
@@ -906,5 +907,18 @@ final class IntervalTest extends TestCase
         $steps = $interval->steps($duration, Bound::End);
 
         self::assertEquals($interval->splitAt(...$steps)->sorted(), $interval->splitBy($duration, Bound::End)->sorted());
+    }
+
+    public function test_differences(): void
+    {
+        self::assertEquals(
+            Interval::fullDay(),
+            Interval::fullDay()->difference(Interval::collapsed(Time::at(hour: 10)))->first()
+        );
+
+        self::assertEquals(
+            new IntervalSet(),
+            Interval::collapsed(Time::at(hour: 10))->difference(Interval::fullDay())
+        );
     }
 }

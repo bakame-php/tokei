@@ -11,19 +11,15 @@ use JsonSerializable;
 
 use function abs;
 use function array_column;
+use function array_reduce;
 use function array_shift;
 use function array_sum;
-use function implode;
 use function intdiv;
 use function is_int;
 use function preg_match;
-use function round;
-use function rtrim;
-use function str_pad;
 
 use const PHP_INT_MAX;
 use const PHP_INT_MIN;
-use const STR_PAD_LEFT;
 
 final readonly class Duration implements JsonSerializable
 {
@@ -86,7 +82,7 @@ final readonly class Duration implements JsonSerializable
             hours: $hours,
             minutes: $minutes,
             seconds: $seconds,
-            microseconds: ($milliseconds * 1_000) + $microseconds
+            microseconds: Unit::Millisecond->toMicroseconds($milliseconds) + $microseconds
         ));
     }
 
@@ -118,7 +114,7 @@ final readonly class Duration implements JsonSerializable
             hours: $interval->h,
             minutes: $interval->i,
             seconds: $interval->s,
-            microseconds: (int) round($interval->f * 1_000_000)
+            microseconds: Unit::Second->toMicroseconds($interval->f),
         );
 
         return new self(1 === $interval->invert ? -$microseconds : $microseconds);
@@ -164,7 +160,7 @@ final readonly class Duration implements JsonSerializable
             microseconds: 0
         );
 
-        return self::of(microseconds: '-' === ($parts['sign'] ?? '-') ? -$microseconds : $microseconds);
+        return self::of(microseconds: '-' === ($parts['sign'] ?? '') ? -$microseconds : $microseconds);
     }
 
     /**
@@ -194,132 +190,33 @@ final readonly class Duration implements JsonSerializable
     /**
      * @throws InvalidDuration
      */
-    public static function minOf(self ...$times): self
+    public static function minOf(self ...$durations): self
     {
-        [] !== $times || throw new InvalidDuration('minOf() expects at least one duration');
+        [] !== $durations || throw new InvalidDuration('minOf() expects at least one duration');
+        $min = array_shift($durations);
 
-        $min = array_shift($times);
-        foreach ($times as $time) {
-            if ($time->isShorterThan($min)) {
-                $min = $time;
-            }
-        }
-
-        return $min;
+        return array_reduce($durations, fn (self $min, self $item): self => $item->isShorterThan($min) ? $item : $min, $min);
     }
 
     /**
      * @throws InvalidDuration
      */
-    public static function maxOf(self ...$times): self
+    public static function maxOf(self ...$durations): self
     {
-        [] !== $times || throw new InvalidDuration('maxOf() expects at least one duration');
+        [] !== $durations || throw new InvalidDuration('maxOf() expects at least one duration');
+        $max = array_shift($durations);
 
-        $max = array_shift($times);
-        foreach ($times as $time) {
-            if ($time->isLongerThan($max)) {
-                $max = $time;
-            }
-        }
-
-        return $max;
-    }
-
-    /**
-     * Returns the string representation of the Duration.
-     *
-     * The following format is used [-]HH:MM:SS[.mmmmmm]
-     * the fraction and the signed are only display if
-     * they duration is negative and/or the sub seconds
-     * fraction is different from 0
-     */
-    public function toClockFormat(SubSecondDisplay $subSecondDisplay = SubSecondDisplay::Auto): string
-    {
-        $pad = static fn (int $value, int $length): string => str_pad((string) $value, $length, '0', STR_PAD_LEFT);
-        $formatted = $this->hours.':'.$pad($this->minutes, 2).':'.$pad($this->seconds, 2);
-        $includeSubSeconds = match ($subSecondDisplay) {
-            SubSecondDisplay::Always => true,
-            SubSecondDisplay::Never => false,
-            SubSecondDisplay::Auto => 0 !== $this->microseconds,
-        };
-
-        if ($includeSubSeconds) {
-            $formatted .= '.'.$pad($this->microseconds, 6);
-        }
-
-        return -1 === $this->sign ? '-'.$formatted : $formatted;
-    }
-
-    /**
-     * Returns the ISO8601 string representation of the duration.
-     *
-     * - fractional values are only allowed on seconds
-     * - only D, H, M and S are allowed; M represents the minutes
-     * - negative marker is allowed in front of the expression
-     *
-     * @return non-empty-string
-     */
-    public function toIso8601(): string
-    {
-        $time = '';
-        $hours = $this->hours % 24;
-        if (0 !== $hours) {
-            $time .= $hours.'H';
-        }
-
-        if (0 !== $this->minutes) {
-            $time .= $this->minutes.'M';
-        }
-
-        $seconds = (string) $this->seconds;
-        if (0 !== $this->microseconds) {
-            $seconds .= '.'.rtrim(
-                str_pad((string) $this->microseconds, 6, '0', STR_PAD_LEFT),
-                '0'
-            );
-        }
-        if ('0' !== $seconds) {
-            $time .= $seconds.'S';
-        }
-
-        return  (0 === $this->daysCount && '' === $time)
-            ? 'PT0S'
-            : (-1 === $this->sign ? '-' : '').'P'.(0 !== $this->daysCount ? $this->daysCount.'D' : '').('' !== $time ? 'T'.$time : '');
+        return array_reduce($durations, fn (self $max, self $item): self => $item->isLongerThan($max) ? $item : $max, $max);
     }
 
     /**
      * @return non-empty-string
      */
-    public function toCompact(): string
-    {
-        $time = [];
-        if (0 !== $this->weeksCount) {
-            $time[] = $this->weeksCount.'w';
-        }
-
-        $days = $this->daysCount % 7;
-        if (0 !== $days) {
-            $time[] = $days.'d';
-        }
-
-        $hours = $this->hours % 24;
-        if (0 !== $hours) {
-            $time[] = $hours.'h';
-        }
-
-        if (0 !== $this->minutes) {
-            $time[] = $this->minutes.'m';
-        }
-
-        if (0 !== $this->seconds) {
-            $time[] = $this->seconds.'s';
-        }
-
-        if (0 !== $this->microseconds) {
-            $time[] = $this->microseconds.'µs';
-        }
-
-        return  [] === $time ? '0µs' : (-1 === $this->sign ? '-' : '').implode(' ', $time);
+    public function format(
+        DurationFormat $format = DurationFormat::Iso8601,
+        SubSecondDisplay $subSecondDisplay = SubSecondDisplay::Auto
+    ): string {
+        return $format->format($this, $subSecondDisplay);
     }
 
     public function toDateInterval(?DateTimeInterface $relativeTo = null): DateInterval
@@ -354,7 +251,7 @@ final readonly class Duration implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->toIso8601();
+        return $this->format();
     }
 
     /**
