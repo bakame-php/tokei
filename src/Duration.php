@@ -110,8 +110,8 @@ final readonly class Duration implements JsonSerializable
      */
     public static function fromDateInterval(DateInterval $interval): self
     {
-        (0 === $interval->y && 0 === $interval->m) || throw new InvalidDuration('fromDateInterval() does not handle non deterministic DateInterval properties like months and years.');
-        (0.0 <= $interval->f && 1.0 >= $interval->f) || throw new InvalidDuration('Invalid fractional seconds in DateInterval.');
+        false !== $interval->days || (0 === $interval->y && 0 === $interval->m) || throw new InvalidDuration('fromDateInterval() does not handle non deterministic DateInterval properties like months and years.');
+        (0.0 <= $interval->f && 1.0 > $interval->f) || throw new InvalidDuration('Invalid fractional seconds in DateInterval.');
 
         $microseconds = self::toMicroseconds(
             days: false === $interval->days ? $interval->d : $interval->days,
@@ -274,9 +274,9 @@ final readonly class Duration implements JsonSerializable
         $seconds = (string) $this->seconds;
         if (0 !== $this->microseconds) {
             $seconds .= '.'.rtrim(
-                    str_pad((string) $this->microseconds, 6, '0', STR_PAD_LEFT),
-                    '0'
-                );
+                str_pad((string) $this->microseconds, 6, '0', STR_PAD_LEFT),
+                '0'
+            );
         }
         if ('0' !== $seconds) {
             $time .= $seconds.'S';
@@ -287,6 +287,9 @@ final readonly class Duration implements JsonSerializable
             : (-1 === $this->sign ? '-' : '').'P'.(0 !== $this->daysCount ? $this->daysCount.'D' : '').('' !== $time ? 'T'.$time : '');
     }
 
+    /**
+     * @return non-empty-string
+     */
     public function toCompact(): string
     {
         $time = [];

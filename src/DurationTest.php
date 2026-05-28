@@ -908,4 +908,17 @@ final class DurationTest extends TestCase
 
         self::assertNotEquals(Duration::fromDateInterval($a), Duration::fromDateInterval($b));
     }
+
+    public function test_diff_different_date_intervals_when_deterministic(): void
+    {
+        $nonDeterministic = new DateInterval('P1M1D');
+        $a = new DateTimeImmutable('2025-05-03 12:34:56');
+        $b = $a->add($nonDeterministic);
+
+        $duration = Duration::fromDateInterval($a->diff($b));
+        self::assertTrue($duration->isLongerThan(Duration::of(days: 30)));
+
+        $this->expectException(InvalidDuration::class);
+        Duration::fromDateInterval($nonDeterministic);
+    }
 }

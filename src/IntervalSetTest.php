@@ -170,6 +170,19 @@ final class IntervalSetTest extends TestCase
         self::assertEquals($normalizedBis, $normalized);
     }
 
+    public function test_union_with_arguments(): void
+    {
+        $emptySet = new IntervalSet();
+        $interval = Interval::between(Time::at(12), Time::at(14));
+        $expectedSet = new IntervalSet($interval);
+
+        self::assertEquals($emptySet, $emptySet->union());
+        self::assertEquals($emptySet, $emptySet->union($emptySet));
+        self::assertEquals($expectedSet, $emptySet->union($interval));
+        self::assertEquals($expectedSet, $expectedSet->union($emptySet));
+        self::assertEquals($expectedSet, $expectedSet->union($interval));
+    }
+
     public function test_normalize_merges_overlapping_intervals(): void
     {
         $a = Interval::between(Time::at(10), Time::at(12));

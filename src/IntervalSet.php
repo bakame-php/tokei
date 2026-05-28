@@ -380,6 +380,10 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      */
     public function gaps(): IntervalSet
     {
+        if ($this->isEmpty()) {
+            return $this;
+        }
+
         $result = [];
         $previous = null;
         foreach ($this->union()->sorted() as $interval) {
@@ -490,14 +494,15 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     /**
      * @throws InvalidInterval|InvalidDuration
      */
-    public function union(): self
+    public function union(Interval|self ...$others): self
     {
-        if (1 >= count($this->intervals)) {
-            return $this;
+        $set = $this->push(...$others)->sorted();
+        if (1 >= count($set)) {
+            return $set;
         }
 
         $merged = [];
-        foreach ($this->sorted()->intervals as $span) {
+        foreach ($set->intervals as $span) {
             if ([] !== $merged) {
                 $lastIndex = array_key_last($merged);
                 $prevSpan = $merged[$lastIndex];

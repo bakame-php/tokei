@@ -11,7 +11,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Fixed
 
-- None
+- `IntervalSet::union` now accept `Interval` and/or `IntervalSet` as arguments to compute the union between sets/intervals
 
 ### Deprecated
 
