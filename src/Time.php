@@ -79,11 +79,24 @@ final readonly class Time implements JsonSerializable
     }
 
     /**
-     * @throws InvalidTime
+     * @throws InvalidTime|TimeException
      */
-    public static function now(?DateTimeZone $timezone = null): self
+    public static function now(DateTimeZone|string|null $timezone = null): self
     {
-        return self::fromDate(new DateTimeImmutable(timezone: $timezone));
+        return self::fromDate(new DateTimeImmutable(timezone: self::filterTimezone($timezone)));
+    }
+
+    private static function filterTimezone(DateTimeZone|string|null $timezone): ?DateTimeZone
+    {
+        try {
+            return match (true) {
+                null === $timezone => null,
+                $timezone instanceof DateTimeZone => $timezone,
+                default => new DateTimeZone($timezone),
+            };
+        } catch (Throwable $exception) {
+            throw new TimeException('Timezone must be a valid IANA Timezone Name supported by '.DateTimeZone::class, previous: $exception);
+        }
     }
 
     /**
@@ -193,7 +206,7 @@ final readonly class Time implements JsonSerializable
      */
     public function toLocaleString(
         string $locale,
-        ?DateTimeZone $timezone = null,
+        DateTimeZone|string|null $timezone = null,
         TimeFormatLength $length = TimeFormatLength::Medium
     ): string {
         static $isSupported = null;
@@ -206,6 +219,8 @@ final readonly class Time implements JsonSerializable
             TimeFormatLength::Medium => IntlDateFormatter::MEDIUM,
             TimeFormatLength::Short => IntlDateFormatter::SHORT,
         };
+
+        $timezone = self::filterTimezone($timezone);
 
         try {
             $formatted = (new IntlDateFormatter(

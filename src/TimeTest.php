@@ -388,8 +388,8 @@ final class TimeTest extends TestCase
 
         self::assertSame('23:54:23', $original->toString());
         self::assertSame('08:54:23', $updated->toString());
-        self::assertNotSame($updated->toLocaleString('tr-CY'), $updated->toLocaleString('en_US'));
-        self::assertNotSame($updated->toLocaleString('en_US', new DateTimeZone('Africa/Nairobi')), $updated->toLocaleString('en_US'));
+        self::assertNotSame($updated->toLocaleString(locale: 'tr-CY', length: TimeFormatLength::Short), $updated->toLocaleString(locale: 'tr-CY', length: TimeFormatLength::Long));
+        self::assertNotSame($updated->toLocaleString('en_US', 'Africa/Nairobi'), $updated->toLocaleString('en_US'));
 
         $this->expectException(TimeException::class);
         $updated->toLocaleString('foo-bar');
@@ -646,6 +646,13 @@ final class TimeTest extends TestCase
 
     public function test_time_now(): void
     {
-        self::assertFalse(Time::now()->equals(Time::now(new DateTimeZone('Asia/Tokyo'))));
+        self::assertFalse(Time::now()->equals(Time::now('Asia/Tokyo')));
+    }
+
+    public function test_invalid_timezone_identifier(): void
+    {
+        $this->expectException(TimeException::class);
+
+        Time::now('Asia/Paris');
     }
 }

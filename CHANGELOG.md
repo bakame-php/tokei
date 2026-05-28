@@ -16,6 +16,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 - `IntervalSet::union` now accept `Interval` and/or `IntervalSet` as arguments to compute the union between sets/intervals
 - `IntervalSet::difference` edge cases when dealing with collapsed or circular Intervals.
+- `Time::toLocaleString` and `Time::now` accepts timezone string identifier as well as fully instantiated `DateTimeZone` instances.
 
 ### Deprecated
 
