@@ -19,8 +19,8 @@ use function unserialize;
 
 use const JSON_UNESCAPED_SLASHES;
 
-#[CoversClass(IntervalFormat::class)]
-#[CoversClass(DurationFormat::class)]
+#[CoversClass(IntervalNotation::class)]
+#[CoversClass(DurationNotation::class)]
 #[CoversClass(IntervalSet::class)]
 #[CoversClass(Interval::class)]
 final class IntervalSetTest extends TestCase
@@ -513,14 +513,14 @@ final class IntervalSetTest extends TestCase
     {
         $set = new IntervalSet($this->i(1, 2), $this->i(3, 4));
 
-        self::assertSame([$this->i(1, 2)->format(IntervalFormat::Iso80000), $this->i(3, 4)->format(IntervalFormat::Iso80000)], $set->allFormatted(IntervalFormat::Iso80000));
-        self::assertSame([$this->i(1, 2)->format(), $this->i(3, 4)->format()], $set->allFormatted());
-        self::assertSame([$this->i(1, 2)->format(IntervalFormat::Bourbaki), $this->i(3, 4)->format(IntervalFormat::Bourbaki)], $set->allFormatted(IntervalFormat::Bourbaki));
+        self::assertSame([$this->i(1, 2)->toNotation(IntervalNotation::Iso80000), $this->i(3, 4)->toNotation(IntervalNotation::Iso80000)], $set->allFormatted(IntervalNotation::Iso80000));
+        self::assertSame([$this->i(1, 2)->toNotation(), $this->i(3, 4)->toNotation()], $set->allFormatted());
+        self::assertSame([$this->i(1, 2)->toNotation(IntervalNotation::Bourbaki), $this->i(3, 4)->toNotation(IntervalNotation::Bourbaki)], $set->allFormatted(IntervalNotation::Bourbaki));
     }
 
     public function test_json_encoded_set(): void
     {
-        self::assertStringContainsString('"12:00:00.000000/PT6H"', (string) json_encode(Business::shifts(), JSON_UNESCAPED_SLASHES));
+        self::assertStringContainsString('"12:00:00/PT6H"', (string) json_encode(Business::shifts(), JSON_UNESCAPED_SLASHES));
     }
 
     public function test_native_conversion(): void

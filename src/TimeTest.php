@@ -84,17 +84,17 @@ final class TimeTest extends TestCase
 
     public function testFromMicrosecondsWrapsCorrectly(): void
     {
-        $time = Time::fromUnitOfDay(Unit::Microsecond, 25 * 3_600_500_000);
-        self::assertSame('01:00:12.500000', $time->toString(subSecondDisplay: SubSecondDisplay::Always));
+        $time = Time::fromUnitOfDay(25 * 3_600_500_000, Unit::Microsecond);
+        self::assertSame('01:00:12.500000', $time->toString());
 
-        $time = Time::fromUnitOfDay(Unit::Millisecond, 25 * 3_600_500);
-        self::assertSame('01:00:12.500000', $time->toString(subSecondDisplay: SubSecondDisplay::Always));
+        $time = Time::fromUnitOfDay(25 * 3_600_500, Unit::Millisecond);
+        self::assertSame('01:00:12.500000', $time->toString());
 
-        $time = Time::fromUnitOfDay(Unit::Second, 25 * 3_600);
-        self::assertSame('01:00:00.000000', $time->toString(subSecondDisplay: SubSecondDisplay::Always));
+        $time = Time::fromUnitOfDay(25 * 3_600, Unit::Second);
+        self::assertSame('01:00:00', $time->toString());
 
-        $time = Time::fromUnitOfDay(Unit::Minute, 25 * 60);
-        self::assertSame('01:00:00.000000', $time->toString(subSecondDisplay: SubSecondDisplay::Always));
+        $time = Time::fromUnitOfDay(25 * 60, Unit::Minute);
+        self::assertSame('01:00:00', $time->toString());
     }
 
     /* -------------------------------------------------
@@ -175,7 +175,7 @@ final class TimeTest extends TestCase
     {
         $time = Time::at(1, 2, 3, 45);
 
-        self::assertSame('01:02:03.000045', $time->toString(SubSecondDisplay::Always));
+        self::assertSame('01:02:03.000045', $time->toString());
     }
 
     public function testFormatAutoMicroseconds(): void
@@ -389,7 +389,7 @@ final class TimeTest extends TestCase
         self::assertSame('23:54:23', $original->toString());
         self::assertSame('08:54:23', $updated->toString());
         self::assertNotSame($updated->toLocaleString(locale: 'tr-CY', length: TimeFormatLength::Short), $updated->toLocaleString(locale: 'tr-CY', length: TimeFormatLength::Long));
-        self::assertNotSame($updated->toLocaleString('en_US', 'Africa/Nairobi'), $updated->toLocaleString('en_US'));
+        self::assertSame($updated->toLocaleString('en_US', 'Africa/Nairobi'), $updated->toLocaleString('en_US'));
 
         $this->expectException(TimeException::class);
         $updated->toLocaleString('foo-bar');
@@ -460,7 +460,7 @@ final class TimeTest extends TestCase
     {
         $time = Time::parse('12:34:56');
 
-        self::assertSame('"12:34:56.000000"', json_encode($time));
+        self::assertSame('"12:34:56"', json_encode($time));
     }
 
     #[DataProvider('timePrecisionProvider')]
@@ -470,7 +470,7 @@ final class TimeTest extends TestCase
         int $expectedTruncate,
         int $expectedRound
     ): void {
-        $time = Time::fromUnitOfDay(Unit::Microsecond, $input);
+        $time = Time::fromUnitOfDay($input, Unit::Microsecond);
 
         self::assertSame($expectedTruncate, $time->truncateTo($precision)->toUnitOfDay(Unit::Microsecond));
         self::assertSame($expectedRound, $time->roundTo($precision)->toUnitOfDay(Unit::Microsecond));

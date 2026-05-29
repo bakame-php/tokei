@@ -52,10 +52,10 @@ use Bakame\Tokei\Time;
 
 $timeB = Time::parse("10:30:15.123456");
 $timeA = Time::at(hour: 10, minute: 30, second: 15);
-$timeC = Time::fromUnitOfDay(Unit::Microsecond, 123_456_789);
-$timeC = Time::fromUnitOfDay(Unit::Millisecond, 123_456);
-$timeC = Time::fromUnitOfDay(Unit::Second, 123);
-$timeC = Time::fromUnitOfDay(Unit::Minute, 456);
+$timeC = Time::fromUnitOfDay(123_456_789, Unit::Microsecond);
+$timeC = Time::fromUnitOfDay(123_456, Unit::Millisecond);
+$timeC = Time::fromUnitOfDay(123, Unit::Second);
+$timeC = Time::fromUnitOfDay(456, Unit::Minute);
 ```
 
 > [!WARNING]
@@ -85,7 +85,7 @@ $time->microsecond;  // returns 123456
 
 ```php
 Time::toUnitOfDay(Unit $unit): float; // returns the time value according to the provided
-Time::toString(SubSecondDisplay $subSecond = SubSecondDisplay::Auto): string
+Time::toString(): string
 Time::toLocaleString(string $locale, ?DateTimeZone $timezone = null): string
 ```
 
@@ -97,16 +97,10 @@ Example:
 ```php
 $time = Time::parse("10:30:15.123456");
 
-$time->toString(SubSecondDisplay::Auto);   // 10:30:15.123456 (default)
-$time->toString(SubSecondDisplay::Never);  // 10:30:15
-$time->toString(SubSecondDisplay::Always); // 10:30:15.123456
-$time->toMicroOfDay();                                // 37815123456
-$time->toLocaleString('en-US');                       // "10:30:15 AM"
+$time->toString();              // 10:30:15.123456 (default)
+$time->toMicroOfDay();          // 37815123456
+$time->toLocaleString('en-US'); // "10:30:15 AM"
 ```
-
-- `SubSecondDisplay::Auto` only show the microseconds if their value is less than `0`.
-- `SubSecondDisplay::Never` never show the fraction.
-- `SubSecondDisplay::Always` always show the fraction..
 
 #### Modifying time
 
@@ -153,7 +147,7 @@ To simplify reasoning around time you can also truncate or round its value to on
 the unit declare on the `Bakame\Tokei\Unit` enum
 
 ```php
-$t = Time::fromUnitOfDay(Unit::Microsecond, 3_150_000_000);
+$t = Time::fromUnitOfDay(3_150_000_000, Unit::Microsecond);
 $t->toString();                            // returns "00:52:30"
 $t->truncateTo(Unit::Minutes)->toString(); // returns "00:52:00"
 $t->roundTo(Unit::Minutes)->toString();    // returns "00:53:00"
@@ -205,8 +199,8 @@ values between both differences methods:
 $a = Time::at(hour: 23); // 23:00
 $b = Time::at(hour: 1);  // 01:00
 
-$a->diff($b)->format(DurationFormat::Iso8601);     // returns "-PT22H"
-$a->distance($b)->format(DurationFormat::Iso8601); // returns "PT2H"
+$a->diff($b)->toNotation(DurationNotation::Iso8601);     // returns "-PT22H"
+$a->distance($b)->toNotation(DurationNotation::Iso8601); // returns "PT2H"
 ```
 
 #### Interacting with PHP's native Date API
@@ -256,16 +250,16 @@ The `Duration` class can be instantiated either by providing:
 use Bakame\Tokei\Duration;
 
 $durationA = Duration::of(hours: 2, seconds:59);
-$durationB = Duration::fromIso8601('P2WT3H'); //2 weeks and 3 hours
+$durationB = Duration::fromNotation('P2WT3H', DurationNotation::Iso8601); //2 weeks and 3 hours
 $durationC = Duration::fromDateInterval(new DateInterval('PT23M3S')); 
 
 ```
 
 > [!IMPORTANT]
-> `Duration::fromIso8601` only parse ISO8601 notations with deterministic part **(ie: years and months are excluded)**
+> `Duration::fromNotation` only parse ISO8601 notations with deterministic part **(ie: years and months are excluded)**
 
 ```php
-$duration = Duration::fromIso8601('-P2YT3H');
+$duration = Duration::fromNotation('[10:00:00, 12:00:00)', DurationNotation::Iso800000);
 // throws a Bakame\Tokei\InvalidDuration exception 
 // because of the presence of the Y component
 ```
@@ -290,27 +284,27 @@ $durationB->isEmpty()     // returns true when the duration is zero, false other
 #### Formatting
 
 ```php
-Duration::format(DurationFormat $format, SubSecondDisplay $subSecondDisplay = SubSecondDisplay::Auto): string
+Duration::toNotation(DurationNotation $notation, Unit $unit): string
 Duration::toDateInterval(): DateInterval
 Duration::total(Unit $unit = Unit::Microseconds): float
 ```
 
-Formatting the duration string representation is returned by the `Duration::format` with the help of the `DurationFormat` Enum
+Formatting the duration string representation is returned by the `Duration::format` with the help of the `DurationNotation` Enum
 
-When using the `DurationFormat::Clock` the following human-readable format is used:
+When using the `DurationNotation::Chrono` the following human-readable format is used:
 
 ```php
 [-]H:mm:ss[.microseconds]
 ```
-- microseconds are optional (its display is controlled by the `SubSecondDisplay` Enum and mimics `Time::toString` behaviour)
+- microseconds are optional
 - negative values are prefixed with `-`
 
-When using the `DurationFormat::Iso8601` formats the instance value is converted into a ISO8601 compatible string.
+When using the `DurationNotation::Iso8601` formats the instance value is converted into a ISO8601 compatible string.
 The returned string may not be compatible with PHP's `DateInterval` constructor but is valid withing the `ISO8601` extended specification.
 
 ```php
 $duration = Duration::of(hours: 25, seconds: 5); 
-$duration->format(DurationFormat::Iso8601); // returns 'P1D1H5S'
+$duration->toNotation(DurationNotation::Iso8601); // returns 'P1D1H5S'
 ```
 
 > [!IMPORTANT]
@@ -318,14 +312,14 @@ $duration->format(DurationFormat::Iso8601); // returns 'P1D1H5S'
 > - to have a predictive representation `W` is not used; `7D` multiple are used instead.
 
 ```php
-$duration = Duration::fromIso8601('-P2W'); 
-$duration->format(DurationFormat::Iso8601); // returns '-P14D'
+$duration = Duration::fromNotation('-P2W', DurationNotation::Iso8601); 
+$duration->toNotation(DurationNotation::Iso8601); // returns '-P14D'
 ```
-Last but not least a compact format more suited for debugging is returns using the `DurationFormat::Compact` case.
+Last but not least a compact format more suited for debugging is returns using the `DurationNotation::Compact` case.
 
 ```php
 $duration = Duration::of(hours: 25, seconds: 5); 
-$duration->format(DurationFormat::Compact); // returns '1d 1h 5s'
+$duration->toNotation(DurationNotation::Compact); // returns '1d 1h 5s'
 ```
 
 The `Duration` class also allows conversion in time units and in `DateInterval` instances.
@@ -371,18 +365,17 @@ $b = $a->truncateTo(Unit::Minute);
 $c = $b->negate();
 $d = $c->increment(minutes: -10);
 
-echo $a->format(DurationFormat::Clock);                          // returns "1:01:01.500000"
-echo $a->format(DurationFormat::Clock, SubSecondDisplay::Never); // returns "1:01:01"
-echo $b->format(DurationFormat::Clock);                          // returns "1:01:00"
-echo $c->format(DurationFormat::Clock);                          // returns "-1:01:00"
-echo $c->abs()->format(DurationFormat::Clock);                   // returns "1:01:00"
-echo $a->sum($b, $c, $d)->format(DurationFormat::Clock);         // returns "-0:09:58.500000"
+echo $a->toNotation(DurationNotation::Chrono);                          // returns "1:01:01.500000"
+echo $b->toNotation(DurationNotation::Chrono);                          // returns "1:01:00"
+echo $c->toNotation(DurationNotation::Chrono);                          // returns "-1:01:00"
+echo $c->abs()->toNotation(DurationNotation::Chrono);                   // returns "1:01:00"
+echo $a->sum($b, $c, $d)->toNotation(DurationNotation::Chrono);         // returns "-0:09:58.500000"
 
 $microseconds = 3_761_500_000;
 $a = Duration::of(microseconds: $microseconds);
-$a->format(DurationFormat::Clock);             // returns "1:02:41.500000"
-$a->truncateTo(Unit::Minute)->format(DurationFormat::Clock); // returns "1:02:00"
-$a->roundTo(Unit::Minute)->format(DurationFormat::Clock);    // returns "1:03:00"
+$a->toNotation(DurationNotation::Chrono);                           // returns "1:02:41.500000"
+$a->truncateTo(Unit::Minute)->toNotation(DurationNotation::Chrono); // returns "1:02:00"
+$a->roundTo(Unit::Minute)->toNotation(DurationNotation::Chrono);    // returns "1:03:00"
 ```
 
 #### Comparing duration
@@ -403,7 +396,7 @@ Convenient methods based on `Duration::compareTo` are also available:
 
 ```php
 $duration = Duration::of(microseconds: 3_661_500_000);
-$other = Duration::fromIso8601('PT1H1S');
+$other = Duration::fromNotation('PT1H1S', DurationNotation::Iso8601);
 
 $duration->isShorterThan($other);        // returns false
 $duration->isShorterThanOrEqual($other); // returns false
@@ -490,7 +483,7 @@ enum IntervalType
 using the following Enum:
 
 ```php
-enum IntervalFormat
+enum IntervalNotation
 {
     case Iso8601StartDuration;
     case Iso8601DurationEnd;
@@ -508,11 +501,11 @@ Out of the box, to following formatting algorithm are possible:
 
 ```php
 $interval = Interval::between(Time::midnight(), Time::noon());
-$interval->format(IntervalFormat::Iso8601StartDuration); // returns 00:00:00/PT12H
-$interval->format(IntervalFormat::Iso8601StartEnd);      // returns 00:00:00/12:00:00
-$interval->format(IntervalFormat::Iso8601DurationEnd);   // returns PT12H?00:00:00
-$interval->format(IntervalFormat::Iso80000);             // returns [00:00:00,12:00:00)
-$interval->format(IntervalFormat::Bourbaki);             // returns [00:00:00,12:00:00[
+$interval->toNotation(IntervalNotation::Iso8601StartDuration); // returns 00:00:00/PT12H
+$interval->toNotation(IntervalNotation::Iso8601StartEnd);      // returns 00:00:00/12:00:00
+$interval->toNotation(IntervalNotation::Iso8601DurationEnd);   // returns PT12H?00:00:00
+$interval->toNotation(IntervalNotation::Iso80000);             // returns [00:00:00,12:00:00)
+$interval->toNotation(IntervalNotation::Bourbaki);             // returns [00:00:00,12:00:00[
 ```
 
 #### Iterations
@@ -637,8 +630,8 @@ Supports the same formatting arguments as the `Interval::format` method.
 
 ```php
 IntervalSet::allFormatted(
-    IntervalFormat $format = IntervalFormat::Iso8601StartDuration,
-    SubSecondDisplay $subSecondDisplay = SubSecondDisplay::Auto,
+    IntervalNotation $format = IntervalNotation::Iso8601StartDuration,
+    ?Unit $unitOfDay = null,
 ): list<string> //all interval are converted to their Interval::format string representation
 ```
 

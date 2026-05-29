@@ -10,12 +10,6 @@ use DateTimeInterface;
 use JsonSerializable;
 
 use function array_filter;
-use function array_map;
-use function count;
-use function explode;
-use function preg_match;
-use function str_starts_with;
-use function trim;
 use function usort;
 
 /**
@@ -24,9 +18,6 @@ use function usort;
  */
 final readonly class Interval implements JsonSerializable
 {
-    private const string REGEXP_ISO80000 = '/^\[(?<start>[^,)]*),(?<end>[^,)]*)\)$/';
-    private const string REGEXP_BARBOUKI = '/^\[(?<start>[^,\[]*),(?<end>[^,\[]*)\[$/';
-
     public Time $start;
     public Time $end;
     public Duration $duration;
@@ -42,7 +33,7 @@ final readonly class Interval implements JsonSerializable
         $this->duration = $duration;
         $this->linearStart = (int) $this->start->toUnitOfDay(Unit::Microsecond);
         $this->linearEnd = $this->linearStart + (int) $duration->total(Unit::Microsecond);
-        $this->end = Time::fromUnitOfDay(Unit::Microsecond, $this->linearEnd);
+        $this->end = Time::fromUnitOfDay($this->linearEnd, Unit::Microsecond);
         $this->type = $this->setType();
     }
 
@@ -91,98 +82,9 @@ final readonly class Interval implements JsonSerializable
         return new self($start, $start->distance($end));
     }
 
-    /**
-     * Returns a new instance from ISO601 notation.
-     *
-     * the following notations are supported and in the example will generate the same instance
-     *
-     *  - '10:00:00/PT1H' -> start time / duration
-     *  - 'PT1H/11:00:00' -> duration / end time
-     *  - '10:00:00/11:00:00' -> start time / end time
-     *
-     * @param non-empty-string $notation
-     *
-     * @throws InvalidInterval
-     * @throws InvalidDuration
-     * @throws InvalidTime
-     */
-    public static function fromIso8601(string $notation): self
+    public static function fromNotation(string $value, IntervalNotation $notation, ?Unit $unitOfDay = null): self
     {
-        $parts = explode('/', trim($notation), 2);
-        2 === count($parts) || throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601');
-        [$first, $last] = array_map(trim(...), $parts);
-
-        $isDurationNotation = static fn (string $notation): bool => str_starts_with($notation, 'P') || str_starts_with($notation, '-P');
-
-        return match (true) {
-            $isDurationNotation($first) => self::until(
-                Time::parse($last) ?? throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601'),
-                Duration::parseIso8601($first) ?? throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601')
-            ),
-            $isDurationNotation($last) => self::since(
-                Time::parse($first) ?? throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601'),
-                Duration::parseIso8601($last) ?? throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601')
-            ),
-            default => self::between(
-                Time::parse($first) ?? throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601'),
-                Time::parse($last) ?? throw InvalidInterval::dueToMalformedNotation($notation, 'ISO 8601')
-            ),
-        };
-    }
-
-    /**
-     * Returns a new instance from ISO80000 notation.
-     *
-     * @param non-empty-string $notation
-     *
-     * @throws InvalidInterval
-     * @throws InvalidDuration
-     * @throws InvalidTime
-     */
-    public static function fromIso80000(string $notation): self
-    {
-        return self::fromMatchedPattern(self::REGEXP_ISO80000, $notation, 'ISO 80000');
-    }
-
-    /**
-     * Returns a new instance from Bourbaki notation.
-     *
-     * @param non-empty-string $notation
-     *
-     * @throws InvalidInterval
-     * @throws InvalidDuration
-     * @throws InvalidTime
-     */
-    public static function fromBourbaki(string $notation): self
-    {
-        return self::fromMatchedPattern(self::REGEXP_BARBOUKI, $notation, 'BARBOUKI');
-    }
-
-    /**
-     * @param non-empty-string $pattern
-     * @param non-empty-string $notation
-     * @param non-empty-string $source
-     *
-     * @throws InvalidInterval
-     * @throws InvalidDuration
-     * @throws InvalidTime
-     */
-    private static function fromMatchedPattern(string $pattern, string $notation, string $source): self
-    {
-        $trimmedNotation = trim($notation);
-        1 === preg_match($pattern, $trimmedNotation, $found) || throw InvalidInterval::dueToMalformedNotation($notation, $source);
-
-        $start = trim($found['start']);
-        $end = trim($found['end']);
-
-        '' !== $start || '' !== $end || throw InvalidInterval::dueToMalformedNotation($notation, $source);
-        $start = '' !== $start ? Time::parse($start) : Time::midnight();
-        $end = '' !== $end ? Time::parse($end) : Time::midnight();
-
-        $start instanceof Time || throw InvalidInterval::dueToMalformedNotation($notation, $source);
-        $end instanceof Time || throw InvalidInterval::dueToMalformedNotation($notation, $source);
-
-        return self::between($start, $end);
+        return $notation->decode($value, $unitOfDay);
     }
 
     /**
@@ -196,7 +98,7 @@ final readonly class Interval implements JsonSerializable
     {
         $linearStart <= $linearEnd || throw new InvalidInterval('Invalid linear span: the start must be shorter or equal to the end linear span.');
 
-        return new self(Time::fromUnitOfDay(Unit::Microsecond, $linearStart), Duration::of(microseconds: $linearEnd - $linearStart));
+        return new self(Time::fromUnitOfDay($linearStart, Unit::Microsecond), Duration::of(microseconds: $linearEnd - $linearStart));
     }
 
     /**
@@ -233,11 +135,9 @@ final readonly class Interval implements JsonSerializable
      *
      * @return non-empty-string
      */
-    public function format(
-        IntervalFormat $format = IntervalFormat::Iso8601StartDuration,
-        SubSecondDisplay $subSecondDisplay = SubSecondDisplay::Auto
-    ): string {
-        return $format->format($this, $subSecondDisplay);
+    public function toNotation(IntervalNotation $notation = IntervalNotation::Iso8601StartDuration, ?Unit $unitOfDay = null): string
+    {
+        return $notation->encode($this, $unitOfDay);
     }
 
     /**
@@ -258,7 +158,7 @@ final readonly class Interval implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->format(subSecondDisplay: SubSecondDisplay::Always);
+        return $this->toNotation();
     }
 
     /**
@@ -316,6 +216,16 @@ final readonly class Interval implements JsonSerializable
         return self::between($this->start->add($duration->negated()), $this->end->add($duration));
     }
 
+    public function roundTo(Unit $unit): self
+    {
+        return $this->startingOn($this->start->roundTo($unit))->endingOn($this->end->roundTo($unit));
+    }
+
+    public function truncateTo(Unit $unit): self
+    {
+        return $this->startingOn($this->start->truncateTo($unit))->endingOn($this->end->truncateTo($unit));
+    }
+
     /**
      * @throws InvalidDuration
      */
@@ -347,7 +257,7 @@ final readonly class Interval implements JsonSerializable
         $step *= $direction;
         for ($cursor = $start; $direction > 0 ? $cursor <= $end : $cursor >= $end; $cursor += $step) {
             if ($cursor !== $this->linearEnd) {
-                yield Time::fromUnitOfDay(Unit::Microsecond, $cursor);
+                yield Time::fromUnitOfDay($cursor, Unit::Microsecond);
             }
         }
     }
@@ -381,8 +291,8 @@ final readonly class Interval implements JsonSerializable
             /** @var int $next */
             $next = $forward ? min($cursor + $step, $limit) : max($cursor - $step, $limit);
             $result[] = $forward
-                ? self::between(Time::fromUnitOfDay(Unit::Microsecond, $cursor), Time::fromUnitOfDay(Unit::Microsecond, $next))
-                : self::between(Time::fromUnitOfDay(Unit::Microsecond, $next), Time::fromUnitOfDay(Unit::Microsecond, $cursor));
+                ? self::between(Time::fromUnitOfDay($cursor, Unit::Microsecond), Time::fromUnitOfDay($next, Unit::Microsecond))
+                : self::between(Time::fromUnitOfDay($next, Unit::Microsecond), Time::fromUnitOfDay($cursor, Unit::Microsecond));
 
             $cursor = $next;
         }
@@ -538,7 +448,7 @@ final readonly class Interval implements JsonSerializable
         $this->duration = $properties['duration'];
         $this->linearStart = (int) $this->start->toUnitOfDay(Unit::Microsecond);
         $this->linearEnd = $this->linearStart + (int) $properties['duration']->total(Unit::Microsecond);
-        $this->end = Time::fromUnitOfDay(Unit::Microsecond, $this->linearEnd);
+        $this->end = Time::fromUnitOfDay($this->linearEnd, Unit::Microsecond);
         $this->type = $this->setType();
     }
 }

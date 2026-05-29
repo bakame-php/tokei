@@ -1,0 +1,204 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Bakame\Tokei;
+
+use function filter_var;
+use function is_int;
+use function is_string;
+use function number_format;
+use function preg_match;
+use function trim;
+
+use const FILTER_VALIDATE_FLOAT;
+use const FILTER_VALIDATE_INT;
+
+enum IntervalNotation
+{
+    case Bourbaki;
+    case Iso80000;
+    case Iso8601StartDuration;
+    case Iso8601DurationEnd;
+    case Iso8601StartEnd;
+    case Iso8601;
+
+    private const string REGEXP_ISO80000 = '/^\[(?<start>[^,)]*),(?<end>[^,)]*)\)$/';
+    private const string REGEXP_BOURBAKI = '/^\[(?<start>[^,\[]*),(?<end>[^,\[]*)\[$/';
+    private const string REGEXP_ISO8601 = '/^(?<start>[^\/]+)\/(?<end>[^\/]+)$/';
+
+    /**
+     * @see https://en.wikipedia.org/wiki/Interval_(mathematics)#Notations_for_intervals
+     * @see https://en.wikipedia.org/wiki/ISO_31-11
+     *
+     * @throws InvalidTime
+     *
+     * @return non-empty-string
+     */
+    public function encode(Interval $interval, ?Unit $unit = null): string
+    {
+        $start = $this->formatTime($interval->start, $unit);
+        $end = $this->formatTime($interval->end, $unit);
+
+        return match ($this) {
+            self::Iso8601,
+            self::Iso8601StartDuration => $start.'/'.$interval->duration->toNotation(),
+            self::Iso8601DurationEnd => $interval->duration->toNotation().'/'.$end,
+            self::Iso8601StartEnd => $start.'/'.$end,
+            self::Iso80000 => '['.$start.','.$end.')',
+            self::Bourbaki => '['.$start.','.$end.'[',
+        };
+    }
+
+    /**
+     * @throws InvalidInterval|InvalidDuration|InvalidTime
+     */
+    public function decode(string $notation, ?Unit $unitOfDay = null): Interval
+    {
+        $trimmedNotation = trim($notation);
+        $pattern = match ($this) {
+            self::Bourbaki => self::REGEXP_BOURBAKI,
+            self::Iso80000 => self::REGEXP_ISO80000,
+            default => self::REGEXP_ISO8601,
+        };
+
+        1 === preg_match($pattern, $trimmedNotation, $found) || throw InvalidInterval::dueToMalformedNotation($notation, $this);
+
+        $start = trim($found['start']);
+        $end = trim($found['end']);
+
+        '' !== $start || '' !== $end || throw InvalidInterval::dueToMalformedNotation($notation, $this);
+
+        return match ($this) {
+            self::Bourbaki,
+            self::Iso80000 => $this->parseMathInterval($start, $end, $notation, $unitOfDay),
+            default => $this->parseIso8601Interval($start, $end, $notation),
+        };
+    }
+
+    private function formatTime(Time $time, ?Unit $unit): string
+    {
+        if (null === $unit || !$this->supportsUnit()) {
+            return $time->toString();
+        }
+
+        $value = $time->toUnitOfDay($unit);
+
+        return is_int($value)
+            ? (string) $value
+            : number_format($value, decimals: 6, decimal_separator: '.', thousands_separator: '');
+    }
+
+    /**
+     * @throws InvalidInterval|InvalidTime|InvalidDuration
+     */
+    private function parseMathInterval(string $start, string $end, string $notation, ?Unit $unitOfDay): Interval
+    {
+        $start = $this->normalizeMathIntervalValue($start);
+        $end = $this->normalizeMathIntervalValue($end);
+
+        $start ??= is_string($end) ? '00:00' : 0;
+        $end ??= is_string($start) ? '00:00' : 0;
+
+        (get_debug_type($start) === get_debug_type($end))
+            || is_string($start)
+            || null !== $unitOfDay
+            || throw InvalidInterval::dueToMalformedNotation($notation, $this);
+
+        return Interval::between(
+            $this->createTime($start, $unitOfDay, $notation),
+            $this->createTime($end, $unitOfDay, $notation),
+        );
+    }
+
+    private function normalizeMathIntervalValue(string $value): int|float|string|null
+    {
+        if ('' === $value) {
+            return null;
+        }
+
+        $intValue = filter_var($value, FILTER_VALIDATE_INT);
+        if (false !== $intValue) {
+            return $intValue;
+        }
+
+        $floatValue = filter_var($value, FILTER_VALIDATE_FLOAT);
+        if (false !== $floatValue) {
+            return $floatValue;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @throws InvalidInterval|InvalidTime
+     */
+    private function createTime(int|string|float $value, ?Unit $unitOfDay, string $notation): Time
+    {
+        return match (true) {
+            null !== $unitOfDay && !is_string($value) => Time::fromUnitOfDay($value, $unitOfDay),
+            is_string($value) => Time::parse($value) ?? throw InvalidInterval::dueToMalformedNotation($notation, $this),
+            default => throw InvalidInterval::dueToMalformedNotation($notation, $this),
+        };
+    }
+
+    /**
+     * @throws InvalidInterval|InvalidTime|InvalidDuration
+     */
+    private function parseIso8601Interval(string $start, string $end, string $notation): Interval
+    {
+        $isDurationNotation = static fn (string $notation): bool => str_starts_with($notation, 'P') || str_starts_with($notation, '-P');
+
+        return match (true) {
+            $this->supportsDurationEnd() && $isDurationNotation($start) => Interval::until(
+                end: Time::parse($end) ?? throw InvalidInterval::dueToMalformedNotation($notation, $this),
+                duration: DurationNotation::Iso8601->decode($start)
+            ),
+            $this->supportsStartDuration() && $isDurationNotation($end) => Interval::since(
+                start:Time::parse($start) ?? throw InvalidInterval::dueToMalformedNotation($notation, $this),
+                duration: DurationNotation::Iso8601->decode($end),
+            ),
+            $this->supportsStartEnd() => Interval::between(
+                start: Time::parse($start) ?? throw InvalidInterval::dueToMalformedNotation($notation, $this),
+                end: Time::parse($end) ?? throw InvalidInterval::dueToMalformedNotation($notation, $this),
+            ),
+            default => throw InvalidInterval::dueToMalformedNotation($notation, $this),
+        };
+    }
+
+    private function supportsStartDuration(): bool
+    {
+        return match ($this) {
+            self::Iso8601,
+            self::Iso8601StartDuration => true,
+            default => false,
+        };
+    }
+
+    private function supportsDurationEnd(): bool
+    {
+        return match ($this) {
+            self::Iso8601,
+            self::Iso8601DurationEnd => true,
+            default => false,
+        };
+    }
+
+    private function supportsStartEnd(): bool
+    {
+        return match ($this) {
+            self::Iso8601,
+            self::Iso8601StartEnd => true,
+            default => false,
+        };
+    }
+
+    private function supportsUnit(): bool
+    {
+        return match ($this) {
+            self::Bourbaki,
+            self::Iso80000 => true,
+            default => false,
+        };
+    }
+}

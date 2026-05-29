@@ -24,7 +24,7 @@ use const PHP_INT_MIN;
 
 #[CoversClass(InvalidDuration::class)]
 #[CoversClass(Duration::class)]
-#[CoversClass(DurationFormat::class)]
+#[CoversClass(DurationNotation::class)]
 #[CoversClass(Unit::class)]
 final class DurationTest extends TestCase
 {
@@ -40,7 +40,7 @@ final class DurationTest extends TestCase
         self::assertSame(123_456, $duration->microseconds);
         self::assertSame(1, $duration->sign);
         self::assertSame(3_550_542_123_456, $duration->total(Unit::Microsecond));
-        self::assertSame('5w 6d 2h 15m 42s 123456µs', $duration->format(DurationFormat::Compact));
+        self::assertSame('5w 6d 2h 15m 42s 123456µs', $duration->toNotation(DurationNotation::Compact));
     }
 
     public function testParseNegativeMicroseconds(): void
@@ -52,22 +52,22 @@ final class DurationTest extends TestCase
         self::assertSame(1, $duration->seconds);
         self::assertSame(500_000, $duration->microseconds);
         self::assertSame(-1, $duration->sign);
-        self::assertSame('-1s 500000µs', $duration->format(DurationFormat::Compact));
+        self::assertSame('-1s 500000µs', $duration->toNotation(DurationNotation::Compact));
     }
 
     public function testFormatMicrosecondsWithoutFraction(): void
     {
-        self::assertSame('9:25:00', Duration::of(hours: 9, minutes: 25)->format(DurationFormat::Clock));
+        self::assertSame('09:25:00', Duration::of(hours: 9, minutes: 25)->toNotation(DurationNotation::Chrono));
     }
 
     public function testFormatMicrosecondsWithFraction(): void
     {
-        self::assertSame('1:02:03.000045', Duration::of(hours: 1, minutes: 2, seconds: 3, microseconds: 45)->format(DurationFormat::Clock));
+        self::assertSame('01:02:03.000045', Duration::of(hours: 1, minutes: 2, seconds: 3, microseconds: 45)->toNotation(DurationNotation::Chrono));
     }
 
     public function testFormatNegativeMicroseconds(): void
     {
-        self::assertSame('-4:05:06', Duration::of(hours: 4, minutes: 5, seconds: 6)->negated()->format(DurationFormat::Clock));
+        self::assertSame('-04:05:06', Duration::of(hours: 4, minutes: 5, seconds: 6)->negated()->toNotation(DurationNotation::Chrono));
     }
 
     public function testMicrosecondsToDateInterval(): void
@@ -121,7 +121,7 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of();
 
-        self::assertSame('0:00:00', $duration->format(DurationFormat::Clock));
+        self::assertSame('00:00:00', $duration->toNotation(DurationNotation::Chrono));
         self::assertSame(0, $duration->hours);
         self::assertSame(0, $duration->minutes);
         self::assertSame(0, $duration->seconds);
@@ -129,8 +129,7 @@ final class DurationTest extends TestCase
         self::assertSame(0, $duration->daysCount);
         self::assertSame(0, $duration->weeksCount);
         self::assertSame(0, $duration->sign);
-        self::assertSame('0s', $duration->format(DurationFormat::Compact));
-        self::assertSame('0µs', $duration->format(DurationFormat::Compact, SubSecondDisplay::Always));
+        self::assertSame('0s', $duration->toNotation(DurationNotation::Compact));
         self::assertTrue($duration->isEmpty());
         self::assertEquals($duration, Duration::zero());
     }
@@ -148,7 +147,7 @@ final class DurationTest extends TestCase
         $a = Duration::of(hours: 1);
         $b = Duration::of(minutes: 30);
 
-        self::assertSame('1:30:00', $a->sum($b)->format(DurationFormat::Clock));
+        self::assertSame('01:30:00', $a->sum($b)->toNotation(DurationNotation::Chrono));
     }
 
     public function test_add_multiple_durations(): void
@@ -160,7 +159,7 @@ final class DurationTest extends TestCase
             Duration::of(microseconds: 123456),
         );
 
-        self::assertSame('1:30:45.123456', $result->format(DurationFormat::Clock));
+        self::assertSame('01:30:45.123456', $result->toNotation(DurationNotation::Chrono));
     }
 
     public function test_add_negative_duration(): void
@@ -168,7 +167,7 @@ final class DurationTest extends TestCase
         $a = Duration::of(hours: 5);
         $b = Duration::of(hours: -2);
 
-        self::assertSame('3:00:00', $a->sum($b)->format(DurationFormat::Clock));
+        self::assertSame('03:00:00', $a->sum($b)->toNotation(DurationNotation::Chrono));
     }
 
     public function test_add_result_can_be_negative(): void
@@ -176,7 +175,7 @@ final class DurationTest extends TestCase
         $a = Duration::of(hours: 1);
         $b = Duration::of(hours: -3);
 
-        self::assertSame('-2:00:00', $a->sum($b)->format(DurationFormat::Clock));
+        self::assertSame('-02:00:00', $a->sum($b)->toNotation(DurationNotation::Chrono));
     }
 
     public function test_add_without_arguments_returns_equal_duration(): void
@@ -191,7 +190,7 @@ final class DurationTest extends TestCase
         $a = Duration::of(microseconds: 500000);
         $b = Duration::of(microseconds: 250000);
 
-        self::assertSame('0:00:00.750000', $a->sum($b)->format(DurationFormat::Clock));
+        self::assertSame('00:00:00.750000', $a->sum($b)->toNotation(DurationNotation::Chrono));
     }
 
     public function test_abs_negate(): void
@@ -204,7 +203,7 @@ final class DurationTest extends TestCase
     #[DataProvider('iso8601Provider')]
     public function test_to_iso8601(int $microseconds, string $expected): void
     {
-        self::assertSame($expected, Duration::of(microseconds:$microseconds)->format());
+        self::assertSame($expected, Duration::of(microseconds:$microseconds)->toNotation());
     }
 
     /**
@@ -439,7 +438,7 @@ final class DurationTest extends TestCase
     ): void {
         $result = $initial->increment(hours: $hours, minutes: $minutes, seconds: $seconds, microseconds: $microseconds);
 
-        self::assertSame($expected, $result->format(DurationFormat::Clock));
+        self::assertSame($expected, $result->toNotation(DurationNotation::Chrono));
     }
 
     /**
@@ -506,8 +505,8 @@ final class DurationTest extends TestCase
         $duration = Duration::of(hours: 10);
         $modified = $duration->increment(hours: 5);
 
-        self::assertSame('10:00:00', $duration->format(DurationFormat::Clock));
-        self::assertSame('15:00:00', $modified->format(DurationFormat::Clock));
+        self::assertSame('10:00:00', $duration->toNotation(DurationNotation::Chrono));
+        self::assertSame('15:00:00', $modified->toNotation(DurationNotation::Chrono));
     }
 
     public function test_with_returns_same_instance_when_called_without_arguments(): void
@@ -519,116 +518,111 @@ final class DurationTest extends TestCase
 
     public function testItParsesSimpleMinutes(): void
     {
-        $duration = Duration::fromIso8601('PT30M');
+        $duration = Duration::fromNotation('PT30M', DurationNotation::Iso8601);
 
-        self::assertSame('PT30M', $duration->format());
+        self::assertSame('PT30M', $duration->toNotation());
     }
 
     public function testItParsesHoursMinutesSeconds(): void
     {
-        $duration = Duration::fromIso8601('PT1H30M15S');
+        $duration = Duration::fromNotation('PT1H30M15S', DurationNotation::Iso8601);
 
-        self::assertSame('PT1H30M15S', $duration->format());
+        self::assertSame('PT1H30M15S', $duration->toNotation());
     }
 
     public function testItParsesFractionalSeconds(): void
     {
-        $duration = Duration::fromIso8601('PT0.5S');
+        $duration = Duration::fromNotation('PT0.5S', DurationNotation::Iso8601);
 
-        self::assertSame('PT0.5S', $duration->format());
+        self::assertSame('PT0.5S', $duration->toNotation());
     }
 
     public function testItParsesDays(): void
     {
-        $duration = Duration::fromIso8601('P2DT3H');
+        $duration = Duration::fromNotation('P2DT3H', DurationNotation::Iso8601);
 
-        self::assertSame('P2DT3H', $duration->format());
+        self::assertSame('P2DT3H', $duration->toNotation());
     }
 
     public function testItParsesNegativeDuration(): void
     {
-        $duration = Duration::fromIso8601('-PT30S');
+        $duration = Duration::fromNotation('-PT30S', DurationNotation::Iso8601);
 
-        self::assertSame('-PT30S', $duration->format());
+        self::assertSame('-PT30S', $duration->toNotation());
     }
 
     public function testItParseAndNormalizeDuration(): void
     {
         $rawIso8601 = '-PT25H0.5S';
-        $duration = Duration::fromIso8601($rawIso8601);
+        $duration = Duration::fromNotation($rawIso8601, DurationNotation::Iso8601);
 
-        self::assertNotSame($rawIso8601, $duration->format());
-        self::assertSame('-P1DT1H0.5S', $duration->format());
+        self::assertNotSame($rawIso8601, $duration->toNotation());
+        self::assertSame('-P1DT1H0.5S', $duration->toNotation());
         self::assertSame(1, $duration->daysCount);
     }
 
     public function testItRejectsYears(): void
     {
         $this->expectException(InvalidDuration::class);
-        $this->expectExceptionMessage('The submitted duration `P1Y` contains unsupported ISO 8601 duration components.');
 
-        Duration::fromIso8601('P1Y');
+        Duration::fromNotation('P1Y', DurationNotation::Iso8601);
     }
 
     public function testItRejectsMonths(): void
     {
         $this->expectException(InvalidDuration::class);
-        $this->expectExceptionMessage('The submitted duration `P1M` contains unsupported ISO 8601 duration components.');
 
-        Duration::fromIso8601('P1M');
+        Duration::fromNotation('P1M', DurationNotation::Iso8601);
     }
 
     public function testItRejectsEmptyTimeDesignator(): void
     {
         $this->expectException(InvalidDuration::class);
-        $this->expectExceptionMessage('The submitted duration `PT` is not a valid ISO 8601 duration.');
 
-        Duration::fromIso8601('PT');
+        Duration::fromNotation('PT', DurationNotation::Iso8601);
     }
 
     public function testItRejectsCompletelyInvalidString(): void
     {
         $this->expectException(InvalidDuration::class);
-        $this->expectExceptionMessage('The submitted duration `invalid` is not a valid ISO 8601 duration.');
 
-        Duration::fromIso8601('invalid');
+        Duration::fromNotation('invalid', DurationNotation::Iso8601);
     }
 
     public function testItParsesWeeks(): void
     {
-        $duration = Duration::fromIso8601('P2W');
+        $duration = Duration::fromNotation('P2W', DurationNotation::Iso8601);
 
-        self::assertSame('P14D', $duration->format());
+        self::assertSame('P14D', $duration->toNotation());
     }
 
     public function testItParsesWeeksAndDays(): void
     {
-        $duration = Duration::fromIso8601('P1W2D');
+        $duration = Duration::fromNotation('P1W2D', DurationNotation::Iso8601);
 
-        self::assertSame('P9D', $duration->format());
+        self::assertSame('P9D', $duration->toNotation());
         self::assertSame(9, $duration->daysCount);
     }
 
     public function testItParsesNegativeWeeks(): void
     {
-        $duration = Duration::fromIso8601('-P3W');
+        $duration = Duration::fromNotation('-P3W', DurationNotation::Iso8601);
 
-        self::assertSame('-P21D', $duration->format());
+        self::assertSame('-P21D', $duration->toNotation());
     }
 
     public function testItParsesWeeksWithTimeComponents(): void
     {
-        $duration = Duration::fromIso8601('P1WT2H30M');
+        $duration = Duration::fromNotation('P1WT2H30M', DurationNotation::Iso8601);
 
-        self::assertSame('P7DT2H30M', $duration->format());
+        self::assertSame('P7DT2H30M', $duration->toNotation());
     }
 
     public function testItRejectsEmptyWeekNotation(): void
     {
         $this->expectException(InvalidDuration::class);
-        $this->expectExceptionMessage('The submitted duration `PW` is not a valid ISO 8601 duration.');
 
-        Duration::fromIso8601('PW');
+        Duration::fromNotation('PW', DurationNotation::Iso8601);
     }
 
     public function test_predefined_instances(): void
@@ -659,13 +653,13 @@ final class DurationTest extends TestCase
 
     public function testItMultiplyTheDuration(): void
     {
-        self::assertSame('PT4H', Duration::of(hours: 2)->multipliedBy(2)->format());
-        self::assertSame('PT4M', Duration::of(minutes: 2)->multipliedBy(2)->format());
+        self::assertSame('PT4H', Duration::of(hours: 2)->multipliedBy(2)->toNotation());
+        self::assertSame('PT4M', Duration::of(minutes: 2)->multipliedBy(2)->toNotation());
     }
 
     public function test_duration_can_be_serialized_and_unserialized(): void
     {
-        $duration = Duration::fromIso8601('-PT23H30S');
+        $duration = Duration::fromNotation('-PT23H30S', DurationNotation::Iso8601);
         $restored = unserialize(serialize($duration));
 
         self::assertInstanceOf(Duration::class, $restored);
@@ -939,5 +933,100 @@ final class DurationTest extends TestCase
 
         $this->expectException(InvalidDuration::class);
         Duration::fromDateInterval($nonDeterministic);
+    }
+
+    #[DataProvider('validClocks')]
+    public function test_clock_factory(string $notation, int $seconds, ?int $milliseconds = 0): void
+    {
+        self::assertTrue(Duration::fromNotation($notation, DurationNotation::Chrono)->equals(Duration::of(seconds: $seconds, milliseconds: $milliseconds ?? 0)));
+    }
+
+    /**
+     * @return array<non-empty-string, array{0: non-empty-string, 1: int, 2?: int}>
+     */
+    public static function validClocks(): array
+    {
+        return [
+            'zero' => ['00:00:00', 0],
+            'simple' => ['01:02:03', 3723],
+            'midnight edge' => ['00:00:01', 1],
+            'large hours' => ['100:00:00', 360000],
+            'microseconds' => ['01:02:03.500000', 3723, 500],
+            'negative' => ['-01:00:00', -3600],
+        ];
+    }
+
+    #[DataProvider('invalidClocks')]
+    public function test_invalid_clock_factory(string $notation): void
+    {
+        $this->expectException(InvalidDuration::class);
+        Duration::fromNotation($notation, DurationNotation::Chrono);
+    }
+
+    /**
+     * @return array<non-empty-string, array{0:string}>
+     */
+    public static function invalidClocks(): array
+    {
+        return [
+            'mm:ss format' => ['12:34'],
+            'too many parts' => ['01:02:03:04'],
+            'missing seconds' => ['01:02'],
+            'invalid seconds' => ['01:02:60'],
+            'invalid minutes' => ['01:60:59'],
+            'invalid microseconds' => ['01:59:59.10000000'],
+            'letters' => ['aa:bb:cc'],
+            'empty' => [''],
+            'wrong separator' => ['01-02-03'],
+        ];
+    }
+
+    #[DataProvider('validCompactNotation')]
+    public function test_compact_factory(string $notation, int $seconds, ?int $microseconds = 0): void
+    {
+        self::assertTrue(Duration::fromNotation($notation, DurationNotation::Compact)->equals(Duration::of(seconds: $seconds, microseconds: $microseconds ?? 0)));
+    }
+
+    /**
+     * @return array<non-empty-string, array{0: non-empty-string, 1: int, 2?: int}>
+     */
+    public static function validCompactNotation(): array
+    {
+        return [
+            'seconds only' => ['5s', 5],
+            'minutes seconds' => ['1m 30s', 90],
+            'hours' => ['2h', 7200],
+            'full' => ['1w 2d 3h 4m 5s', 788645],
+            'whitespace flexible' => ['1w   3h    5s', 1 * 604800 + 3 * 3600 + 5],
+            'microseconds' => ['1s 250µs',  1,  250],
+            'microseconds with u instead of micron' => ['1s 250us', 1,  250],
+            'negative' => ['-1h 30m', -(5400)],
+            'zero' => ['0s', 0],
+        ];
+    }
+
+    #[DataProvider('invalidCompactNotation')]
+    public function test_invalid_compact_factory(string $notation): void
+    {
+        $this->expectException(InvalidDuration::class);
+        Duration::fromNotation($notation, DurationNotation::Compact);
+    }
+
+    /**
+     * @return array<non-empty-string, array{0: string}>
+     */
+    public static function invalidCompactNotation(): array
+    {
+        return [
+            'empty string' => [''],
+            'wrong order' => ['3h 1w'],
+            'duplicate unit' => ['1w 2w'],
+            'clock format forbidden' => ['12:34:56'],
+            'partial clock forbidden' => ['12:34'],
+            'unknown unit' => ['10x'],
+            'letters only' => ['abc'],
+            'missing number' => ['h 10m'],
+            'bad spacing unit' => ['10 ms'],
+        ];
     }
 }

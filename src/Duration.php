@@ -16,26 +16,12 @@ use function array_shift;
 use function array_sum;
 use function intdiv;
 use function is_int;
-use function preg_match;
 
 use const PHP_INT_MAX;
 use const PHP_INT_MIN;
 
 final readonly class Duration implements JsonSerializable
 {
-    private const string DURATION_PATTERN = '/^
-        (?<sign>[+-])?
-        P
-        (?=.*?(?:\d+W|\d+D|T\d+H|T\d+M|T\d+(?:\.\d+)?S)) # look-ahead to restrict support for ISO8601 formats
-        (?:(?<weeks>\d+)W)?
-        (?:(?<days>\d+)D)?
-        (?:T
-            (?:(?<hours>\d+)H)?
-            (?:(?<minutes>\d+)M)?
-            (?:(?<seconds>\d+(?:\.\d+)?)S)?
-        )?
-    $/x';
-
     public int $hours;
     public int $minutes;
     public int $seconds;
@@ -93,7 +79,6 @@ final readonly class Duration implements JsonSerializable
         int|float $seconds,
         int $microseconds
     ): int {
-
         return Unit::Day->toMicroseconds($days)
             + Unit::Hour->toMicroseconds($hours)
             + Unit::Minute->toMicroseconds($minutes)
@@ -121,46 +106,11 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * Parses and returns a new instance from ISO8601 string representation.
-     *
-     * @see self::parseIso8601()
-     *
      * @throws InvalidDuration
      */
-    public static function fromIso8601(string $notation): self
+    public static function fromNotation(string $value, DurationNotation $notation): self
     {
-        return self::parseIso8601($notation) ?? throw InvalidDuration::dueToMalformedIso8601($notation);
-    }
-
-    /**
-     * Parses and returns a new instance from ISO8601 string representation.
-     *  Because the duration does not handle in a deterministic way month and year components
-     * the following restrictions apply:
-     *
-     * - only W, D, H, S are allowed
-     * - Y is rejected
-     * - M is only allowed in the time section (PT30M) to represents minutes
-     * - fractional values are only allowed on seconds
-     * - at least one unit must exist
-     * - negative marker is allowed in front of the expression
-     *
-     * @throws InvalidDuration
-     */
-    public static function parseIso8601(string $notation): ?self
-    {
-        if (1 !== preg_match(self::DURATION_PATTERN, $notation, $parts)) {
-            return null;
-        }
-
-        $microseconds = self::toMicroseconds(
-            days: (((int) ($parts['weeks'] ?? 0) * 7) + (int) ($parts['days'] ?? 0)),
-            hours: (int) ($parts['hours'] ?? 0),
-            minutes: (int) ($parts['minutes'] ?? 0),
-            seconds: (float) ($parts['seconds'] ?? 0),
-            microseconds: 0
-        );
-
-        return self::of(microseconds: '-' === ($parts['sign'] ?? '') ? -$microseconds : $microseconds);
+        return $notation->decode($value);
     }
 
     /**
@@ -212,11 +162,9 @@ final readonly class Duration implements JsonSerializable
     /**
      * @return non-empty-string
      */
-    public function format(
-        DurationFormat $format = DurationFormat::Iso8601,
-        SubSecondDisplay $subSecondDisplay = SubSecondDisplay::Auto
-    ): string {
-        return $format->format($this, $subSecondDisplay);
+    public function toNotation(DurationNotation $notation = DurationNotation::Iso8601): string
+    {
+        return $notation->encode($this);
     }
 
     public function toDateInterval(?DateTimeInterface $relativeTo = null): DateInterval
@@ -251,7 +199,7 @@ final readonly class Duration implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->format();
+        return $this->toNotation();
     }
 
     /**

@@ -150,7 +150,7 @@ final readonly class Time implements JsonSerializable
         return new self(-1);
     }
 
-    public static function fromUnitOfDay(Unit $unit, int $value): self
+    public static function fromUnitOfDay(int|float $value, Unit $unit): self
     {
         return new self($unit->toMicroseconds($value));
     }
@@ -186,17 +186,12 @@ final readonly class Time implements JsonSerializable
     /**
      * @return non-empty-string
      */
-    public function toString(SubSecondDisplay $subSecondDisplay = SubSecondDisplay::Auto): string
+    public function toString(): string
     {
         $pad = static fn (int $v): string => str_pad((string) $v, 2, '0', STR_PAD_LEFT);
         $base = $pad($this->hour).':'.$pad($this->minute).':'.$pad($this->second);
-        $includeSubSeconds = match ($subSecondDisplay) {
-            SubSecondDisplay::Always => true,
-            SubSecondDisplay::Never => false,
-            SubSecondDisplay::Auto => 0 !== $this->microsecond,
-        };
 
-        return ! $includeSubSeconds
+        return 0 === $this->microsecond
             ? $base
             : $base.'.'.str_pad((string) $this->microsecond, 6, '0', STR_PAD_LEFT);
     }
@@ -228,7 +223,7 @@ final readonly class Time implements JsonSerializable
                 dateType: IntlDateFormatter::NONE,
                 timeType: $timeType,
                 timezone: $timezone,
-            ))->format($this->applyTo(new DateTimeImmutable(timezone: new DateTimeZone('UTC'))));
+            ))->format($this->applyTo(new DateTimeImmutable(timezone: $timezone)));
         } catch (Throwable $exception) {
             throw new TimeException('Unable to convert to locale "'.$locale.'" the current time; Please verify your locale.', previous: $exception);
         }
@@ -243,7 +238,7 @@ final readonly class Time implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->toString(subSecondDisplay: SubSecondDisplay::Always);
+        return $this->toString();
     }
 
     /**

@@ -84,11 +84,11 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      * @return list<non-empty-string>
      */
     public function allFormatted(
-        IntervalFormat $format = IntervalFormat::Iso8601StartDuration,
-        SubSecondDisplay $subSecondDisplay = SubSecondDisplay::Auto,
+        IntervalNotation $notation = IntervalNotation::Iso8601StartDuration,
+        ?Unit $unitOfDay = null,
     ): array {
         return array_map(
-            static fn (Interval $interval): string => $interval->format(format: $format, subSecondDisplay: $subSecondDisplay),
+            static fn (Interval $interval): string => $interval->toNotation($notation, $unitOfDay),
             $this->intervals
         );
     }
