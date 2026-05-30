@@ -86,7 +86,7 @@ enum IntervalNotation
 
         return is_int($value)
             ? (string) $value
-            : number_format($value, decimals: 6, decimal_separator: '.', thousands_separator: '');
+            : number_format(num: $value, decimals: 6, decimal_separator: '.', thousands_separator: '');
     }
 
     /**

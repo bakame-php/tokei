@@ -17,6 +17,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `TimeFormatLength` to `Time::toLocaleString` method to allow fine-grained locale string representation supported by `intl` extension
 - `IntervalNotation` to improve Interval encoding and decoding from and to string representation.
 - `DurationNotation` to improve Duration encoding and decoding from and to string representation.
+- `RoundingMode` to simplify rounding
 
 ### Fixed
 
@@ -41,6 +42,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC BREAK:** `IntervalFormat` is removed and replaced by `IntervalNotation`
 - **BC BREAK:** `Interval::fromIso8601` is removed and replaced by `Interval::fromNotation`
 - **BC BREAK:** `SubSecondDisplay` is removed with no remplacement.
+- **BC BREAK:** `truncateTo` is removed use `roundTo` instead
 
 ## [0.1.0 - asagao](https://github.com/bakame-php/tokei/releases/tag/0.1.0) - 2026-05-27
 

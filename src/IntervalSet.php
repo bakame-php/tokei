@@ -11,6 +11,7 @@ use IteratorAggregate;
 use JsonSerializable;
 use SortDirection;
 use Traversable;
+use TypeError;
 use UnitEnum;
 use ValueError;
 
@@ -605,7 +606,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
             };
         }
 
-        is_string($sortDirection) || throw new ValueError("unknown sort direction enum '".$sortDirection::class."'");
+        is_string($sortDirection) || throw new TypeError('Argument ($sortDirection) must be of type SortDirection, '.$sortDirection::class.' given,');
         $sortDirection = strtolower($sortDirection);
 
         return match ($sortDirection) {

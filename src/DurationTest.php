@@ -234,7 +234,7 @@ final class DurationTest extends TestCase
         self::assertSame(
             $expectedMicroseconds,
             Duration::of(microseconds:$microseconds)
-                ->truncateTo($precision)
+                ->roundTo($precision, RoundingMode::Floor)
                 ->total(Unit::Microsecond),
         );
     }
@@ -289,7 +289,7 @@ final class DurationTest extends TestCase
     ): void {
         $duration = Duration::of(microseconds:$microseconds);
 
-        $result = $duration->truncateTo($precision);
+        $result = $duration->roundTo($precision, RoundingMode::Floor);
 
         self::assertNotSame($duration, $result);
     }
@@ -309,8 +309,8 @@ final class DurationTest extends TestCase
         $positive = Duration::of(microseconds:3_661_500_000);
         $negative = Duration::of(microseconds:-3_661_500_000);
 
-        self::assertTrue($positive->truncateTo(Unit::Minute)->total(Unit::Microsecond) > 0);
-        self::assertTrue($negative->truncateTo(Unit::Minute)->total(Unit::Microsecond) < 0);
+        self::assertTrue($positive->roundTo(Unit::Minute, RoundingMode::Floor)->total(Unit::Microsecond) > 0);
+        self::assertTrue($negative->roundTo(Unit::Minute, RoundingMode::Floor)->total(Unit::Microsecond) < 0);
     }
 
     #[TestWith([PHP_INT_MIN], 'overflow with lower bound integer')]
@@ -678,7 +678,7 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(microseconds:  $input);
 
-        self::assertSame($expected, $duration->roundTo($precision)->total(Unit::Microsecond));
+        self::assertSame($expected, $duration->roundTo($precision, RoundingMode::Round)->total(Unit::Microsecond));
     }
 
     /**

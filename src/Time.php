@@ -324,16 +324,9 @@ final readonly class Time implements JsonSerializable
             ? $this : self::at($hour, $minute, $second, $microsecond);
     }
 
-    public function truncateTo(Unit $unit): self
+    public function roundTo(Unit $unit, RoundingMode $roundingMode = RoundingMode::Round): self
     {
-        $truncated = $unit->truncate($this->value);
-
-        return $this->value === $truncated ? $this : new self($truncated);
-    }
-
-    public function roundTo(Unit $unit): self
-    {
-        $rounded = $unit->round($this->value);
+        $rounded = $unit->round($this->value, $roundingMode);
 
         return $this->value === $rounded ? $this : new self($rounded);
     }

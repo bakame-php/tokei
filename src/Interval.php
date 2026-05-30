@@ -82,6 +82,9 @@ final readonly class Interval implements JsonSerializable
         return new self($start, $start->distance($end));
     }
 
+    /**
+     * @throws InvalidDuration|InvalidTime|InvalidInterval
+     */
     public static function fromNotation(string $value, IntervalNotation $notation, ?Unit $unitOfDay = null): self
     {
         return $notation->decode($value, $unitOfDay);
@@ -216,14 +219,14 @@ final readonly class Interval implements JsonSerializable
         return self::between($this->start->add($duration->negated()), $this->end->add($duration));
     }
 
-    public function roundTo(Unit $unit): self
+    /**
+     * @throws InvalidDuration
+     */
+    public function roundTo(Unit $unit, RoundingMode $roundingMode): self
     {
-        return $this->startingOn($this->start->roundTo($unit))->endingOn($this->end->roundTo($unit));
-    }
-
-    public function truncateTo(Unit $unit): self
-    {
-        return $this->startingOn($this->start->truncateTo($unit))->endingOn($this->end->truncateTo($unit));
+        return $this
+            ->startingOn($this->start->roundTo($unit, $roundingMode))
+            ->endingOn($this->end->roundTo($unit, $roundingMode));
     }
 
     /**

@@ -110,15 +110,13 @@ with the following methods:
 
 - `Time::add` will add a duration to change the time;
 - `Time::with` will adjust a specific time component;
-- `Time::truncateTo` will adjust a specific time component;
 - `Time::roundTo` will adjust a specific time component;
 - `Time::clamp` will adjust the time against two other time references;
 
 ```php
 Time::add(Duration $duration): Time
 Time::with(?int $hour = null, ?int $minute = null, ?int $second = null, ?int $microsecond = null): Time
-Time::truncateTo(Unit $precision): Time
-Time::roundTo(Unit $precision): Time
+Time::roundTo(Unit $precision, RoundingMode $roundingMode): Time
 Time::clamp(Time $min, Time $max): Time
 ```
 
@@ -149,8 +147,8 @@ the unit declare on the `Bakame\Tokei\Unit` enum
 ```php
 $t = Time::fromUnitOfDay(3_150_000_000, Unit::Microsecond);
 $t->toString();                            // returns "00:52:30"
-$t->truncateTo(Unit::Minutes)->toString(); // returns "00:52:00"
-$t->roundTo(Unit::Minutes)->toString();    // returns "00:53:00"
+$t->roundTo(Unit::Minutes, RoundingMode::Truncate)->toString(); // returns "00:52:00"
+$t->roundTo(Unit::Minutes, RoundingMode::Round)->toString();    // returns "00:53:00"
 ```
 
 #### Comparing times
@@ -342,8 +340,7 @@ Duration::sum(Duration ...$duration): Duration
 Duration::increment(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $microseconds = 0): Duration
 Duration::multipliedBy(int $factor): Duration
 Duration::dividedBy(int $factor): Duration
-Duration::truncateTo(Unit $precision): Duration
-Duration::roundTo(Unit $precision): Duration
+Duration::roundTo(Unit $precision, RoundingMode $roundingMode): Duration
 Duration::clamp(Duration $min, Duration $max): Duration
 ```
 
@@ -352,7 +349,6 @@ You can:
 - make it unsigned using the `Duration::abs` method
 - invert its signing using the `Duration::negate` method
 - update the duration using fixed duration parts `Duration::increment` method
-- truncate its value to one of the unit declare on the `Bakame\Tokei\Unit` enum
 - round its value to one of the unit declare on the `Bakame\Tokei\Unit` enum
 - clamp its value against two other `Duration` instances
 - sum multiple `Duration` instance using the `Duration::sum` method
@@ -361,7 +357,7 @@ You can:
 ```php
 $microseconds = 3_661_500_000;
 $a = Duration::of(microseconds: $microseconds);
-$b = $a->truncateTo(Unit::Minute);
+$b = $a->roundTo(Unit::Minute, RoundingMode::Ceil);
 $c = $b->negate();
 $d = $c->increment(minutes: -10);
 
@@ -374,8 +370,8 @@ echo $a->sum($b, $c, $d)->toNotation(DurationNotation::Chrono);         // retur
 $microseconds = 3_761_500_000;
 $a = Duration::of(microseconds: $microseconds);
 $a->toNotation(DurationNotation::Chrono);                           // returns "1:02:41.500000"
-$a->truncateTo(Unit::Minute)->toNotation(DurationNotation::Chrono); // returns "1:02:00"
-$a->roundTo(Unit::Minute)->toNotation(DurationNotation::Chrono);    // returns "1:03:00"
+$a->roundTo(Unit::Minute, RoudingMode::Truncate)->toNotation(DurationNotation::Chrono); // returns "1:02:00"
+$a->roundTo(Unit::Minute, RoudingMode::Round)->toNotation(DurationNotation::Chrono);    // returns "1:03:00"
 ```
 
 #### Comparing duration
@@ -529,6 +525,7 @@ Interval::splitAt(Time ...$steps): IntervalSet
 ```php
 Interval::startingOn(Time $time): self
 Interval::endingOn(Time $time): self
+Interval::roundTo(Unit $precision, RoundingMode $roundingMode): self
 Interval::expand(Duration $duration): self
 Interval::shift(Duration $duration): self
 Interval::shiftBound(Bound $from, Duration $duration): self

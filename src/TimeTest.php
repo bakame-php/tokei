@@ -468,12 +468,14 @@ final class TimeTest extends TestCase
         int $input,
         Unit $precision,
         int $expectedTruncate,
-        int $expectedRound
+        int $expectedRound,
+        int $expectedCeil,
     ): void {
         $time = Time::fromUnitOfDay($input, Unit::Microsecond);
 
-        self::assertSame($expectedTruncate, $time->truncateTo($precision)->toUnitOfDay(Unit::Microsecond));
+        self::assertSame($expectedTruncate, $time->roundTo($precision, RoundingMode::Floor)->toUnitOfDay(Unit::Microsecond));
         self::assertSame($expectedRound, $time->roundTo($precision)->toUnitOfDay(Unit::Microsecond));
+        self::assertSame($expectedCeil, $time->roundTo($precision, RoundingMode::Ceil)->toUnitOfDay(Unit::Microsecond));
     }
 
     /**
@@ -489,6 +491,7 @@ final class TimeTest extends TestCase
                 Unit::Second,
                 10_000_000,
                 10_000_000,
+                10_000_000,
             ],
 
             'seconds truncate down' => [
@@ -496,12 +499,14 @@ final class TimeTest extends TestCase
                 Unit::Second,
                 10_000_000,
                 10_000_000,
+                11_000_000,
             ],
 
             'seconds round up' => [
                 10_500_000,
                 Unit::Second,
                 10_000_000,
+                11_000_000,
                 11_000_000,
             ],
 
@@ -510,6 +515,7 @@ final class TimeTest extends TestCase
                 Unit::Minute,
                 3_120_000_000, // 52m truncate
                 3_180_000_000, // 53m round
+                3_180_000_000, // 53m round
             ],
 
             'milliseconds' => [
@@ -517,6 +523,7 @@ final class TimeTest extends TestCase
                 Unit::Millisecond,
                 1_000,
                 1_000,
+                2_000,
             ],
         ];
     }
