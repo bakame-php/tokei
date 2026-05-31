@@ -326,6 +326,28 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     }
 
     /**
+     * Transforms each Interval in the set using the given callback
+     * and returns a new IntervalSet containing the resulting Intervals.
+     *
+     * This is a structure-preserving map operation:
+     * - The number of intervals is preserved
+     * - The result remains an IntervalSet
+     * - The callback must return a valid Interval for each input
+     *
+     * Unlike map(), which yields a generic iterable of values,
+     * transform() rewraps the result into an IntervalSet.
+     *
+     * @param callable(Interval, int=): Interval $callback
+     *
+     *
+     * @throws InvalidDuration If any produced Interval is invalid
+     */
+    public function transform(callable $callback): self
+    {
+        return new self(...$this->map($callback));
+    }
+
+    /**
      * @param callable(Interval, int=): bool $callback
      *
      * @throws InvalidDuration

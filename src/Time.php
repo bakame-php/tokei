@@ -299,7 +299,7 @@ final readonly class Time implements JsonSerializable
     /**
      * @throws InvalidDuration
      */
-    public function add(Duration $duration): self
+    public function shift(Duration $duration): self
     {
         if ($duration->isEmpty()) {
             return $this;

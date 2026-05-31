@@ -7,7 +7,9 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 ### Added
 
 - `Time::fromString`
+- `Time::shift`
 - `IntervalSet::each`
+- `IntervalSet::transform`
 - `Interval::roundTo`
 - `Interval::toNotation`
 - `Interval::fromNotation`
@@ -46,6 +48,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC BREAK:** `Interval::fromIso8601` is removed and replaced by `Interval::fromNotation`
 - **BC BREAK:** `SubSecondDisplay` is removed with no remplacement.
 - **BC BREAK:** `truncateTo` is removed use `roundTo` instead
+- **BC BREAK:** `Time::add` is removed use `Time::shift` instead
 
 ## [0.1.0 - asagao](https://github.com/bakame-php/tokei/releases/tag/0.1.0) - 2026-05-27
 

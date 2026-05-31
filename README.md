@@ -108,29 +108,29 @@ Because `Time` is an immutable VO, any change to its value will return a new ins
 with the updated value and leave the original object unchanged. You can modify the time
 with the following methods:
 
-- `Time::add` will add a duration to change the time;
+- `Time::shift` will add a duration to change the time;
 - `Time::with` will adjust a specific time component;
 - `Time::roundTo` will adjust a specific time component;
 - `Time::clamp` will adjust the time against two other time references;
 
 ```php
-Time::add(Duration $duration): Time
+Time::shift(Duration $duration): Time
 Time::with(?int $hour = null, ?int $minute = null, ?int $second = null, ?int $microsecond = null): Time
 Time::roundTo(Unit $precision, RoundingMode $roundingMode): Time
 Time::clamp(Time $min, Time $max): Time
 ```
 
-The `add` and `with` methods act differently in regard to wrapping around 24hours automatically.
+The `shift` and `with` methods act differently in regard to wrapping around 24hours automatically.
 The `Time::add` supports wrapping whereas `Time::with` does not and instead
 throws an `InvalidTime` exception instead
 
 ```php
 // adding 2 hours
-$time = Time::noon()->add(Duration::of(hours: 2, minutes: 15));
+$time = Time::noon()->shift(Duration::of(hours: 2, minutes: 15));
 $time->toString(); // returns "14:15:00"
 
 // adding 12 hours
-$time = Time::noon()->add(Duration::of(hours: 12, minutes: 15));
+$time = Time::noon()->shift(Duration::of(hours: 12, minutes: 15));
 $time->toString(); // returns "00:15:00"
 
 // setting the hour to
@@ -146,9 +146,9 @@ the unit declare on the `Bakame\Tokei\Unit` enum
 
 ```php
 $t = Time::fromUnitOfDay(3_150_000_000, Unit::Microsecond);
-$t->toString();                            // returns "00:52:30"
+$t->toString(); // returns "00:52:30"
 $t->roundTo(Unit::Minutes, RoundingMode::Truncate)->toString(); // returns "00:52:00"
-$t->roundTo(Unit::Minutes, RoundingMode::Nearest)->toString();    // returns "00:53:00"
+$t->roundTo(Unit::Minutes, RoundingMode::Nearest)->toString();  // returns "00:53:00"
 ```
 
 #### Comparing times
@@ -282,7 +282,7 @@ $durationB->isEmpty()     // returns true when the duration is zero, false other
 #### Formatting
 
 ```php
-Duration::toNotation(DurationNotation $notation, Unit $unit): string
+Duration::toNotation(DurationNotation $notation): string
 Duration::toDateInterval(): DateInterval
 Duration::total(Unit $unit = Unit::Microseconds): float
 ```
@@ -338,6 +338,7 @@ Duration::abs(): Duration
 Duration::negated(): Duration
 Duration::sum(Duration ...$duration): Duration
 Duration::increment(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $microseconds = 0): Duration
+Duration::decrement(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $microseconds = 0): Duration
 Duration::multipliedBy(int $factor): Duration
 Duration::dividedBy(int $factor): Duration
 Duration::roundTo(Unit $precision, RoundingMode $roundingMode): Duration
@@ -359,7 +360,7 @@ $microseconds = 3_661_500_000;
 $a = Duration::of(microseconds: $microseconds);
 $b = $a->roundTo(Unit::Minute, RoundingMode::Ceil);
 $c = $b->negate();
-$d = $c->increment(minutes: -10);
+$d = $c->decrement(minutes: 10);
 
 echo $a->toNotation(DurationNotation::Chrono);                          // returns "1:01:01.500000"
 echo $b->toNotation(DurationNotation::Chrono);                          // returns "1:01:00"
@@ -446,10 +447,8 @@ Interval::until(Time $end, Duration $duration): self;
 Interval::around(Time $midRange, Duration $duration): self;
 Interval::collapsed(Time $at): self;
 Interval::circular(Time $at): self;
-Interval::fromIso8601(string $notation): self
-Interval::fromIso80000(string $notation): self
-Interval::fromBourbaki(string $notation): self
 Interval::fullDay(): self //a 24h-long instance starting at 00:00:00
+Interval::fromNotation(string $value, IntervalNotation $notation, ?Unit $unitOfDay = null): self
 ```
 
 #### Accessors
@@ -658,6 +657,7 @@ IntervalSet::any(callable $callback): bool
 IntervalSet::every(callable $callback): bool
 IntervalSet::each(callable $callback): bool
 IntervalSet::map(callable $callback): iterable
+IntervalSet::transform(callable $callback): IntervalSet
 IntervalSet::reduce(callable $callback, mixed $initial = null): mixed
 IntervalSet::filter(callable $callback): IntervalSet
 IntervalSet::sortedUsing(callable $callback): IntervalSet;

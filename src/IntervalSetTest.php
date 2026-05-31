@@ -245,7 +245,7 @@ final class IntervalSetTest extends TestCase
     public function test_difference_of_disjoint_intervals_returns_original(): void
     {
         $a = Interval::between(Time::at(10), Time::at(20));
-        $b = Interval::between(Time::at(10)->add(Duration::of(hours: 10)), Time::at(20)->add(Duration::of(hours: 10)));
+        $b = Interval::between(Time::at(10)->shift(Duration::of(hours: 10)), Time::at(20)->shift(Duration::of(hours: 10)));
 
         $result = (new IntervalSet($a))->difference(new IntervalSet($b));
 
@@ -288,7 +288,7 @@ final class IntervalSetTest extends TestCase
     public function test_difference_of_overlapping_right_side(): void
     {
         $a = Interval::between(Time::at(10), Time::at(20));
-        $b = Interval::between(Time::at(15), Time::at(23)->add(Duration::of(hours: 2)));
+        $b = Interval::between(Time::at(15), Time::at(23)->shift(Duration::of(hours: 2)));
 
         $result = (new IntervalSet($a))->difference(new IntervalSet($b));
 
@@ -310,7 +310,7 @@ final class IntervalSetTest extends TestCase
     public function test_difference_of_covering_interval_returns_empty(): void
     {
         $a = Interval::between(Time::at(10), Time::at(20));
-        $b = Interval::between(Time::at(5), Time::at(2)->add(Duration::of(hours: 1)));
+        $b = Interval::between(Time::at(5), Time::at(2)->shift(Duration::of(hours: 1)));
 
         $result = (new IntervalSet($a))->difference(new IntervalSet($b));
 
