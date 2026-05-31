@@ -51,7 +51,7 @@ final readonly class Interval implements JsonSerializable
      */
     public static function since(Time $start, Duration $duration): self
     {
-        return new self($start, -1 === $duration->sign ? $start->distance($start->add($duration)) : $duration);
+        return new self($start, $start->distance($start->add($duration)));
     }
 
     /**
@@ -61,7 +61,7 @@ final readonly class Interval implements JsonSerializable
     {
         $start = $end->add($duration->negated());
 
-        return new self($start, $start->isAfter($end) ? $start->distance($end) : $duration);
+        return new self($start, $start->distance($end));
     }
 
     /**
@@ -224,9 +224,10 @@ final readonly class Interval implements JsonSerializable
      */
     public function roundTo(Unit $unit, RoundingMode $roundingMode): self
     {
-        return $this
-            ->startingOn($this->start->roundTo($unit, $roundingMode))
-            ->endingOn($this->end->roundTo($unit, $roundingMode));
+        $start = $this->start->roundTo($unit, $roundingMode);
+        $end = $this->end->roundTo($unit, $roundingMode);
+
+        return $start->equals($this->start) && $end->equals($this->end) ? $this : self::between($start, $end);
     }
 
     /**

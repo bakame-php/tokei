@@ -120,7 +120,9 @@ enum DurationNotation
             microseconds: (int) ($parts['microseconds'] ?? 0),
         );
 
-        return Duration::of(microseconds: '-' === ($parts['sign'] ?? '') ? -$microseconds : $microseconds);
+        $duration = Duration::of(microseconds: $microseconds);
+
+        return '-' === ($parts['sign'] ?? '') ? $duration->negated() : $duration;
     }
 
     /**
@@ -149,7 +151,9 @@ enum DurationNotation
             microseconds: 0
         );
 
-        return Duration::of(microseconds: '-' === ($parts['sign'] ?? '') ? -$microseconds : $microseconds);
+        $duration = Duration::of(microseconds: $microseconds);
+
+        return '-' === ($parts['sign'] ?? '') ? $duration->negated() : $duration;
     }
 
     private static function toMicroseconds(

@@ -63,6 +63,14 @@ final readonly class Duration implements JsonSerializable
         int $milliseconds = 0,
         int $microseconds = 0,
     ): self {
+        0 <= $weeks || throw new InvalidDuration('the weeks can not be a expressed with a negative number.');
+        0 <= $days || throw new InvalidDuration('the days can not be a expressed with a negative number.');
+        0 <= $hours || throw new InvalidDuration('the hours can not be a expressed with a negative number.');
+        0 <= $minutes || throw new InvalidDuration('the minutes can not be a expressed with a negative number.');
+        0 <= $seconds || throw new InvalidDuration('the seconds can not be a expressed with a negative number.');
+        0 <= $milliseconds || throw new InvalidDuration('the milliseconds can not be a expressed with a negative number.');
+        0 <= $microseconds || throw new InvalidDuration('the microseconds can not be a expressed with a negative number.');
+
         return new self(self::toMicroseconds(
             days: ($weeks * 7) + $days,
             hours: $hours,
@@ -270,6 +278,29 @@ final readonly class Duration implements JsonSerializable
             milliseconds: $milliseconds,
             microseconds: $microseconds
         ));
+    }
+
+    /**
+     * @throws InvalidDuration if the value can not be inverted
+     */
+    public function decrement(
+        int $weeks = 0,
+        int $days = 0,
+        int $hours = 0,
+        int $minutes = 0,
+        int $seconds = 0,
+        int $milliseconds = 0,
+        int $microseconds = 0
+    ): self {
+        return $this->sum(self::of(
+            weeks: $weeks,
+            days: $days,
+            hours: $hours,
+            minutes: $minutes,
+            seconds: $seconds,
+            milliseconds: $milliseconds,
+            microseconds: $microseconds
+        )->negated());
     }
 
     /**
