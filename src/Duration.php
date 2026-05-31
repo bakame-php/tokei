@@ -52,7 +52,15 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @throws InvalidDuration if the value can not be inverted
+     * @param non-negative-int $weeks
+     * @param non-negative-int $days
+     * @param non-negative-int $hours
+     * @param non-negative-int $minutes
+     * @param non-negative-int $seconds
+     * @param non-negative-int $milliseconds
+     * @param non-negative-int $microseconds
+     *
+     * @throws InvalidDuration
      */
     public static function of(
         int $weeks = 0,
@@ -63,13 +71,8 @@ final readonly class Duration implements JsonSerializable
         int $milliseconds = 0,
         int $microseconds = 0,
     ): self {
-        0 <= $weeks || throw new InvalidDuration('the weeks can not be a expressed with a negative number.');
-        0 <= $days || throw new InvalidDuration('the days can not be a expressed with a negative number.');
-        0 <= $hours || throw new InvalidDuration('the hours can not be a expressed with a negative number.');
-        0 <= $minutes || throw new InvalidDuration('the minutes can not be a expressed with a negative number.');
-        0 <= $seconds || throw new InvalidDuration('the seconds can not be a expressed with a negative number.');
-        0 <= $milliseconds || throw new InvalidDuration('the milliseconds can not be a expressed with a negative number.');
-        0 <= $microseconds || throw new InvalidDuration('the microseconds can not be a expressed with a negative number.');
+        /* @phpstan-ignore-next-line */
+        (0 <= $weeks && 0 <= $days && 0 <= $hours && 0 <= $minutes && 0 <= $seconds && 0 <= $milliseconds && 0 <= $microseconds) || throw new InvalidDuration('No duration part can be expressed with a negative number.');
 
         return new self(self::toMicroseconds(
             days: ($weeks * 7) + $days,
@@ -258,7 +261,15 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @throws InvalidDuration if the value can not be inverted
+     * @param non-negative-int $weeks
+     * @param non-negative-int $days
+     * @param non-negative-int $hours
+     * @param non-negative-int $minutes
+     * @param non-negative-int $seconds
+     * @param non-negative-int $milliseconds
+     * @param non-negative-int $microseconds
+     *
+     * @throws InvalidDuration
      */
     public function increment(
         int $weeks = 0,
@@ -281,7 +292,15 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @throws InvalidDuration if the value can not be inverted
+     * @param non-negative-int $weeks
+     * @param non-negative-int $days
+     * @param non-negative-int $hours
+     * @param non-negative-int $minutes
+     * @param non-negative-int $seconds
+     * @param non-negative-int $milliseconds
+     * @param non-negative-int $microseconds
+     *
+     * @throws InvalidDuration
      */
     public function decrement(
         int $weeks = 0,

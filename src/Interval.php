@@ -99,9 +99,11 @@ final readonly class Interval implements JsonSerializable
      */
     public static function fromLinearSpan(int $linearStart, int $linearEnd): self
     {
-        $linearStart <= $linearEnd || throw new InvalidInterval('Invalid linear span: the start must be shorter or equal to the end linear span.');
+        $duration = $linearEnd - $linearStart;
 
-        return new self(Time::fromUnitOfDay($linearStart, Unit::Microsecond), Duration::of(microseconds: $linearEnd - $linearStart));
+        0 <= $duration || throw new InvalidInterval('Invalid linear span: the start must be shorter or equal to the end linear span.');
+
+        return new self(Time::fromUnitOfDay($linearStart, Unit::Microsecond), Duration::of(microseconds: $duration));
     }
 
     /**

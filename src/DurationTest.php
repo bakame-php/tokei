@@ -10,7 +10,6 @@ use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 
 use function json_encode;
@@ -290,12 +289,17 @@ final class DurationTest extends TestCase
         ];
     }
 
+    /**
+     * @throws InvalidDuration
+     */
     #[DataProvider('truncateImmutabilityProvider')]
     public function test_truncate_is_immutable(
         int $microseconds,
         Unit $precision,
     ): void {
-        $duration = Duration::of(microseconds:$microseconds);
+        $duration = 0 > $microseconds
+            ? Duration::of(microseconds: -$microseconds)->negated()
+            : Duration::of(microseconds:$microseconds);
 
         $result = $duration->roundTo($precision, RoundingMode::Floor);
 
@@ -303,7 +307,7 @@ final class DurationTest extends TestCase
     }
 
     /**
-     * @return iterable<array{0: int, 1: Unit}>
+     * @return iterable<array{0: non-negative-int, 1: Unit}>
      */
     public static function truncateImmutabilityProvider(): iterable
     {
@@ -321,13 +325,12 @@ final class DurationTest extends TestCase
         self::assertTrue($negative->roundTo(Unit::Minute, RoundingMode::Floor)->total(Unit::Microsecond) < 0);
     }
 
-    #[TestWith([PHP_INT_MAX], 'overflow with upper bound integer')]
-    public function test_it_can_not_invert_all_values(int $bound): void
+    public function test_it_can_not_invert_php_int_max(): void
     {
         $this->expectException(InvalidDuration::class);
         $this->expectExceptionMessage('The duration exceeds the supported range.');
 
-        Duration::of(microseconds:$bound)->negated();
+        Duration::of(microseconds:PHP_INT_MAX)->negated();
     }
 
     /* -------------------------------------------------
@@ -430,10 +433,14 @@ final class DurationTest extends TestCase
         self::assertFalse(Duration::of(hours: 2)->isShorterThanOrEqual(Duration::of(hours: 1)));
     }
 
-    /* -------------------------------------------------
-     * with
-     * ------------------------------------------------- */
-
+    /**
+     * @param non-negative-int $hours
+     * @param non-negative-int $minutes
+     * @param non-negative-int $seconds
+     * @param non-negative-int $microseconds
+     *
+     * @throws InvalidDuration
+     */
     #[DataProvider('withProvider')]
     public function test_with(
         Duration $initial,
@@ -946,6 +953,11 @@ final class DurationTest extends TestCase
         Duration::fromDateInterval($nonDeterministic);
     }
 
+    /**
+     * @param non-negative-int|null $milliseconds
+     *
+     * @throws InvalidDuration
+     */
     #[DataProvider('validClocks')]
     public function test_clock_factory(string $notation, int $seconds, ?int $milliseconds = 0): void
     {
@@ -995,6 +1007,11 @@ final class DurationTest extends TestCase
         ];
     }
 
+    /**
+     * @param non-negative-int|null $microseconds
+     *
+     * @throws InvalidDuration
+     */
     #[DataProvider('validCompactNotation')]
     public function test_compact_factory(string $notation, int $seconds, ?int $microseconds = 0): void
     {

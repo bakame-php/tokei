@@ -90,6 +90,7 @@ enum DurationNotation
         ($seconds >= 0 && $seconds < 60) || throw InvalidDuration::dueToMalformedSecond($seconds);
         ($microseconds >= 0 && $microseconds < 1_000_000) || throw InvalidDuration::dueToMalformedMicrosecond($microseconds);
 
+        /** @var non-negative-int $microseconds */
         $microseconds = self::toMicroseconds(
             days: 0,
             hours: (int) $parts['hours'],
@@ -98,7 +99,9 @@ enum DurationNotation
             microseconds: $microseconds,
         );
 
-        return Duration::of(microseconds: '-' === $parts['sign'] ? -$microseconds : $microseconds);
+        $duration = Duration::of(microseconds: $microseconds);
+
+        return '-' === $parts['sign'] ? $duration->negated() : $duration;
     }
 
     /**
@@ -112,6 +115,7 @@ enum DurationNotation
 
         ('' !== $notation && 1 === preg_match(self::REGEXP_COMPACT, $notation, $parts)) || throw new InvalidDuration('Unknown or bad format `'.$notation.'`.');
 
+        /** @var non-negative-int $microseconds */
         $microseconds = self::toMicroseconds(
             days: (((int) ($parts['weeks'] ?? 0) * 7) + (int) ($parts['days'] ?? 0)),
             hours: (int) ($parts['hours'] ?? 0),
@@ -143,6 +147,7 @@ enum DurationNotation
     {
         1 === preg_match(self::REGEXP_ISO8601, $notation, $parts) || throw InvalidDuration::dueToMalformedIso8601($notation);
 
+        /** @var non-negative-int $microseconds */
         $microseconds = self::toMicroseconds(
             days: (((int) ($parts['weeks'] ?? 0) * 7) + (int) ($parts['days'] ?? 0)),
             hours: (int) ($parts['hours'] ?? 0),

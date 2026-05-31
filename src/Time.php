@@ -353,7 +353,11 @@ final readonly class Time implements JsonSerializable
      */
     public function diff(self $other): Duration
     {
-        return Duration::of(microseconds: $other->value - $this->value);
+        $duration = $other->value - $this->value;
+
+        return 0 > $duration
+            ? Duration::of(microseconds: -$duration)->negated()
+            : Duration::of(microseconds: $duration);
     }
 
     /**
@@ -361,7 +365,11 @@ final readonly class Time implements JsonSerializable
      */
     public function distance(self $other): Duration
     {
-        return Duration::of(microseconds: Unit::Day->wrap($other->value - $this->value));
+        $duration = Unit::Day->wrap($other->value - $this->value);
+
+        return 0 > $duration
+            ? Duration::of(microseconds: -$duration)->negated()
+            : Duration::of(microseconds: $duration);
     }
 
     /**
