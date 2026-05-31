@@ -115,6 +115,14 @@ final readonly class Time implements JsonSerializable
     /**
      * @throws InvalidTime
      */
+    public static function fromString(string $notation, string $separator = ':'): self
+    {
+        return self::parse($notation, $separator) ?? throw new InvalidTime('Unable to parse time string : '.$notation);
+    }
+
+    /**
+     * @throws InvalidTime
+     */
     public static function parse(string $notation, string $separator = ':'): ?self
     {
         (1 === strlen($separator) && !ctype_digit($separator)) || throw InvalidTime::dueToInvalidSeparator($separator);

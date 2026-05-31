@@ -12,6 +12,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Interval::fromNotation`
 - `Interval::truncateTo`
 - `Duration::fromDateInterval`
+- `Duration::decrement`
 - `Duration::fromNotation`
 - `Duration::toNotation`
 - `TimeFormatLength` to `Time::toLocaleString` method to allow fine-grained locale string representation supported by `intl` extension
@@ -28,6 +29,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Time::toLocaleString` improve timezone handling, the time is no longer affected by the timezone shift.
 - **BC BREAK:** `Duration::toNotation` using Chrono format will always output the hours parts with at least two digits previously for hours below 10 one digit was used.
 - **BC BREAK:** Renamed method suffixe "Clock" to "Chrono" like in chronometer which is a better description for `Duration`
+- **BC BREAK:** `Duration::of` no longer accepts negative integer use `negated()` of `fromNotation`.
 
 ### Deprecated
 
