@@ -128,6 +128,13 @@ final class TimeTest extends TestCase
         self::assertNull(Time::parse('99:99:99'));
     }
 
+    public function testParseInvalidThrows(): void
+    {
+        $this->expectException(InvalidTime::class);
+
+        Time::fromString('99:99:99');
+    }
+
     public function testParseDateTime(): void
     {
         $dt = new DateTimeImmutable('2024-01-01 10:20:30.123456');
@@ -241,7 +248,8 @@ final class TimeTest extends TestCase
         $a = Time::at(8);
         $b = Time::at(10);
 
-        self::assertSame(2 * 3_600_000_000, $a->diff($b)->total(Unit::Microsecond));
+        self::assertSame(7_200_000_000, $a->diff($b)->total(Unit::Microsecond));
+        self::assertSame(-7_200_000_000, $b->diff($a)->total(Unit::Microsecond));
     }
 
     public function testDiffForwardWraps(): void
@@ -249,9 +257,7 @@ final class TimeTest extends TestCase
         $a = Time::at(23);
         $b = Time::at(1);
 
-        $diff = $a->distance($b);
-
-        self::assertSame(2 * 3_600_000_000, $diff->total(Unit::Microsecond));
+        self::assertSame(7_200_000_000, $a->distance($b)->total(Unit::Microsecond));
     }
 
     /* -------------------------------------------------
@@ -267,7 +273,7 @@ final class TimeTest extends TestCase
 
     public function testMicroseconds(): void
     {
-        self::assertSame(10 * 3_600_000_000, Time::at(10)->toUnitOfDay(Unit::Microsecond));
+        self::assertSame(36_000_000_000, Time::at(10)->toUnitOfDay(Unit::Microsecond));
     }
 
     public function test_apply_to_datetime_immutable(): void
@@ -616,9 +622,7 @@ final class TimeTest extends TestCase
     #[DataProvider('clampProvider')]
     public function testClamp(Time $time, Time $min, Time $max, Time $expected): void
     {
-        $result = $time->clamp($min, $max);
-
-        self::assertTrue($result->equals($expected));
+        self::assertTrue($time->clamp($min, $max)->equals($expected));
     }
 
     /**

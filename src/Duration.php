@@ -9,7 +9,6 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use JsonSerializable;
 
-use function abs;
 use function array_column;
 use function array_reduce;
 use function array_shift;
@@ -40,7 +39,7 @@ final readonly class Duration implements JsonSerializable
         ($value > PHP_INT_MIN + 1 && $value < PHP_INT_MAX) || throw InvalidDuration::dueToOverflow();
 
         $this->sign = $this->value <=> 0 ;
-        $microseconds = abs($this->value);
+        $microseconds = 0 > $this->value ? -$this->value : $this->value;
         $this->weeksCount = Unit::Week->whole($microseconds);
         $this->daysCount = Unit::Day->whole($microseconds);
         $this->hours = Unit::Hour->whole($microseconds);
@@ -242,7 +241,7 @@ final readonly class Duration implements JsonSerializable
      */
     public function roundTo(Unit $precision, RoundingMode $roundingMode = RoundingMode::Nearest): self
     {
-        $micro = abs($this->value);
+        $micro = -1 === $this->sign ? -$this->value : $this->value;
         $rounded = $precision->round($micro, $roundingMode);
 
         return $micro === $rounded ? $this : new self($this->sign * $rounded);
@@ -406,7 +405,7 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @param array{0: array{microseconds: int}, 1:array{}} $data
+     * @param array{0: array{microseconds: int}, 1: array{}} $data
      *
      * @throws InvalidDuration
      */

@@ -11,7 +11,6 @@ use IntlDateFormatter;
 use JsonSerializable;
 use Throwable;
 
-use function abs;
 use function array_reduce;
 use function array_shift;
 use function class_exists;
@@ -47,7 +46,7 @@ final readonly class Time implements JsonSerializable
     private function __construct(int $value)
     {
         $this->value = Unit::Day->wrap($value);
-        $microseconds = abs($this->value);
+        $microseconds = 0 > $this->value ? -$this->value : $this->value;
         $this->hour = Unit::Hour->whole($microseconds);
         $microseconds = Unit::Hour->remainder($microseconds);
         $this->minute = Unit::Minute->whole($microseconds);
@@ -326,9 +325,9 @@ final readonly class Time implements JsonSerializable
         $microsecond ??= $this->microsecond;
 
         return $hour === $this->hour
-            && $minute === $this->minute
-            && $second === $this->second
-            && $microsecond === $this->microsecond
+        && $minute === $this->minute
+        && $second === $this->second
+        && $microsecond === $this->microsecond
             ? $this : self::at($hour, $minute, $second, $microsecond);
     }
 
@@ -365,11 +364,10 @@ final readonly class Time implements JsonSerializable
      */
     public function distance(self $other): Duration
     {
+        /** @var non-negative-int $duration */
         $duration = Unit::Day->wrap($other->value - $this->value);
 
-        return 0 > $duration
-            ? Duration::of(microseconds: -$duration)->negated()
-            : Duration::of(microseconds: $duration);
+        return Duration::of(microseconds: $duration);
     }
 
     /**

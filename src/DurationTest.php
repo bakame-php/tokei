@@ -442,7 +442,7 @@ final class DurationTest extends TestCase
      * @throws InvalidDuration
      */
     #[DataProvider('withProvider')]
-    public function test_with(
+    public function test_increment(
         Duration $initial,
         int $hours,
         int $minutes,
@@ -514,7 +514,7 @@ final class DurationTest extends TestCase
         ];
     }
 
-    public function test_with_preserves_original_instance(): void
+    public function test_increment_preserves_original_instance(): void
     {
         $duration = Duration::of(hours: 10);
         $modified = $duration->increment(hours: 5);
@@ -523,11 +523,27 @@ final class DurationTest extends TestCase
         self::assertSame('15:00:00', $modified->toNotation(DurationNotation::Chrono));
     }
 
-    public function test_with_returns_same_instance_when_called_without_arguments(): void
+    public function test_decrement_preserves_original_instance(): void
+    {
+        $duration = Duration::of(hours: 10);
+        $modified = $duration->decrement(hours: 5);
+
+        self::assertSame('10:00:00', $duration->toNotation(DurationNotation::Chrono));
+        self::assertSame('05:00:00', $modified->toNotation(DurationNotation::Chrono));
+    }
+
+    public function test_increment_returns_same_instance_when_called_without_arguments(): void
     {
         $duration = Duration::of(hours: 1);
 
         self::assertSame($duration, $duration->increment());
+    }
+
+    public function test_decrement_returns_same_instance_when_called_without_arguments(): void
+    {
+        $duration = Duration::of(hours: 1);
+
+        self::assertSame($duration, $duration->decrement());
     }
 
     public function testItParsesSimpleMinutes(): void
@@ -690,13 +706,11 @@ final class DurationTest extends TestCase
     #[DataProvider('roundToProvider')]
     public function test_round_to(int $input, Unit $precision, int $expected): void
     {
-        if (0 > $input) {
-            $duration = Duration::of(microseconds:  abs($input))->negated();
-        } else {
-            $duration = Duration::of(microseconds:  $input);
-        }
+        $duration = 0 > $input
+            ? Duration::of(microseconds:  -$input)->negated()
+            : Duration::of(microseconds:  $input);
 
-        self::assertSame($expected, $duration->roundTo($precision, RoundingMode::Nearest)->total(Unit::Microsecond));
+        self::assertSame($expected, $duration->roundTo($precision)->total(Unit::Microsecond));
     }
 
     /**

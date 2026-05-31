@@ -601,10 +601,36 @@ final class IntervalSetTest extends TestCase
             Interval::between(Time::at(hour: 10), Time::at(hour: 13)),
             Interval::between(Time::noon(), Time::at(hour: 13)),
         );
-        $sorted = $set->sorted(sortDirection:   'descending');
+        $sorted = $set->sorted(sortDirection: 'descending');
 
         self::assertNotSame($set, $sorted);
         self::assertSame($set->last(), $sorted->first());
+    }
+
+    public function test_sorting_a_set_descending_with_the_end_boundary(): void
+    {
+        $set = new IntervalSet(
+            Interval::between(Time::at(hour: 10), Time::at(hour: 13)),
+            Interval::between(Time::noon(), Time::at(hour: 13)),
+        );
+        $sorted = $set->sorted(sortDirection: 'descending', sortBound: Bound::End);
+
+        self::assertNotSame($set, $sorted);
+        self::assertSame($set->last(), $sorted->first());
+    }
+
+    public function test_transform(): void
+    {
+        $duration = Duration::of(hours: 1);
+        $set = new IntervalSet(
+            Interval::between(Time::at(hour: 10), Time::at(hour: 13)),
+            Interval::between(Time::noon(), Time::at(hour: 13)),
+        );
+        $res = $set->transform(fn (Interval $interval) => $interval->lasting(Bound::End, $duration));
+
+        self::assertNotEquals($set, $res);
+        self::assertCount(2, $res);
+        self::assertTrue($res->every(fn (Interval $interval) => $interval->duration->equals($duration)));
     }
 
     public function test_sorting_with_an_invalid_sorting_direction(): void
