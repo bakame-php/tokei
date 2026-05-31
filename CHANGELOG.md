@@ -6,6 +6,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Added
 
+- `Time::fromString`
 - `IntervalSet::each`
 - `Interval::roundTo`
 - `Interval::toNotation`

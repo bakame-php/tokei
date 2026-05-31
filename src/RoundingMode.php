@@ -7,6 +7,6 @@ namespace Bakame\Tokei;
 enum RoundingMode
 {
     case Floor;
-    case Round;
+    case Nearest;
     case Ceil;
 }

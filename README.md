@@ -148,7 +148,7 @@ the unit declare on the `Bakame\Tokei\Unit` enum
 $t = Time::fromUnitOfDay(3_150_000_000, Unit::Microsecond);
 $t->toString();                            // returns "00:52:30"
 $t->roundTo(Unit::Minutes, RoundingMode::Truncate)->toString(); // returns "00:52:00"
-$t->roundTo(Unit::Minutes, RoundingMode::Round)->toString();    // returns "00:53:00"
+$t->roundTo(Unit::Minutes, RoundingMode::Nearest)->toString();    // returns "00:53:00"
 ```
 
 #### Comparing times

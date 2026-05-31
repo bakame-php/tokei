@@ -237,7 +237,7 @@ final readonly class Duration implements JsonSerializable
     /**
      * @throws InvalidDuration
      */
-    public function roundTo(Unit $precision, RoundingMode $roundingMode = RoundingMode::Round): self
+    public function roundTo(Unit $precision, RoundingMode $roundingMode = RoundingMode::Nearest): self
     {
         $micro = abs($this->value);
         $rounded = $precision->round($micro, $roundingMode);

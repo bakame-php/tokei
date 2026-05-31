@@ -939,9 +939,9 @@ final class IntervalTest extends TestCase
             $interval->toNotation(IntervalNotation::Iso8601StartEnd, Unit::Minute)
         );
         self::assertSame('10:00:00/12:00:00', $interval->roundTo(Unit::Second, RoundingMode::Floor)->toNotation(IntervalNotation::Iso8601StartEnd));
-        self::assertSame('10:00:01/12:00:00', $interval->roundTo(Unit::Second, RoundingMode::Round)->toNotation(IntervalNotation::Iso8601StartEnd));
+        self::assertSame('10:00:01/12:00:00', $interval->roundTo(Unit::Second, RoundingMode::Nearest)->toNotation(IntervalNotation::Iso8601StartEnd));
         self::assertSame('[600,720[', $interval->roundTo(Unit::Second, RoundingMode::Floor)->toNotation(IntervalNotation::Bourbaki, Unit::Minute));
-        self::assertSame('[600.016667,720[', $interval->roundTo(Unit::Second, RoundingMode::Round)->toNotation(IntervalNotation::Bourbaki, Unit::Minute));
+        self::assertSame('[600.016667,720[', $interval->roundTo(Unit::Second, RoundingMode::Nearest)->toNotation(IntervalNotation::Bourbaki, Unit::Minute));
         self::assertSame('[600.016667,720[', Interval::fromNotation(
             '[600.016667,720[',
             IntervalNotation::Bourbaki,

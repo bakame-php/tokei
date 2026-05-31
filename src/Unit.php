@@ -38,13 +38,13 @@ enum Unit
         };
     }
 
-    public function round(int $valueInMicro, RoundingMode $mode = RoundingMode::Round): int
+    public function round(int $valueInMicro, RoundingMode $mode = RoundingMode::Nearest): int
     {
         $unit = $this->microseconds();
 
         $precision = match ($mode) {
             RoundingMode::Floor => 0,
-            RoundingMode::Round => intdiv($unit, 2),
+            RoundingMode::Nearest => intdiv($unit, 2),
             RoundingMode::Ceil => $unit - 1,
         };
 

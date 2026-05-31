@@ -202,7 +202,11 @@ final class DurationTest extends TestCase
     #[DataProvider('iso8601Provider')]
     public function test_to_iso8601(int $microseconds, string $expected): void
     {
-        self::assertSame($expected, Duration::of(microseconds:$microseconds)->toNotation());
+        $duration = 0 > $microseconds
+            ? Duration::of(microseconds: -$microseconds)->negated()
+            : Duration::of(microseconds: $microseconds);
+
+        self::assertSame($expected, $duration->toNotation());
     }
 
     /**
@@ -219,8 +223,8 @@ final class DurationTest extends TestCase
         yield 'microseconds precision' => [3_661_000_123, 'PT1H1M1.000123S'];
         yield 'sub second only' => [123, 'PT0.000123S'];
         yield 'trim trailing zeros' => [1_500_000, 'PT1.5S'];
-        //yield 'negative fractional duration' => [-1_500_000, '-PT1.5S'];
-        //yield 'negative complex duration' => [-3_661_000_123, '-PT1H1M1.000123S'];
+        yield 'negative fractional duration' => [-1_500_000, '-PT1.5S'];
+        yield 'negative complex duration' => [-3_661_000_123, '-PT1H1M1.000123S'];
         yield '24 hours duration' => [86_400_000_000, 'P1D'];
     }
 
@@ -230,9 +234,14 @@ final class DurationTest extends TestCase
         Unit $precision,
         int $expectedMicroseconds,
     ): void {
+
+        $duration = 0 > $microseconds
+            ? Duration::of(microseconds: -$microseconds)->negated()
+            : Duration::of(microseconds: $microseconds);
+
         self::assertSame(
             $expectedMicroseconds,
-            Duration::of(microseconds:$microseconds)
+            $duration
                 ->roundTo($precision, RoundingMode::Floor)
                 ->total(Unit::Microsecond),
         );
@@ -274,13 +283,11 @@ final class DurationTest extends TestCase
             1_000_000,
         ];
 
-        /*
-         yield 'negative duration is preserved when inverted' => [
-            -3_661_500_000,
-            Unit::Minute,
-            -3_660_000_000,
+        yield 'negative duration is preserved when inverted' => [
+           -3_661_500_000,
+           Unit::Minute,
+           -3_660_000_000,
         ];
-        */
     }
 
     #[DataProvider('truncateImmutabilityProvider')]
@@ -682,7 +689,7 @@ final class DurationTest extends TestCase
             $duration = Duration::of(microseconds:  $input);
         }
 
-        self::assertSame($expected, $duration->roundTo($precision, RoundingMode::Round)->total(Unit::Microsecond));
+        self::assertSame($expected, $duration->roundTo($precision, RoundingMode::Nearest)->total(Unit::Microsecond));
     }
 
     /**
@@ -942,7 +949,11 @@ final class DurationTest extends TestCase
     #[DataProvider('validClocks')]
     public function test_clock_factory(string $notation, int $seconds, ?int $milliseconds = 0): void
     {
-        self::assertTrue(Duration::fromNotation($notation, DurationNotation::Chrono)->equals(Duration::of(seconds: $seconds, milliseconds: $milliseconds ?? 0)));
+        $duration = 0 > $seconds
+            ? Duration::of(seconds: -$seconds, milliseconds: $milliseconds ?? 0)->negated()
+            : Duration::of(seconds: $seconds, milliseconds: $milliseconds ?? 0);
+
+        self::assertTrue(Duration::fromNotation($notation, DurationNotation::Chrono)->equals($duration));
     }
 
     /**
@@ -956,7 +967,6 @@ final class DurationTest extends TestCase
             'midnight edge' => ['00:00:01', 1],
             'large hours' => ['100:00:00', 360000],
             'microseconds' => ['01:02:03.500000', 3723, 500],
-            //'negative' => ['-01:00:00', -3600],
         ];
     }
 
@@ -988,7 +998,11 @@ final class DurationTest extends TestCase
     #[DataProvider('validCompactNotation')]
     public function test_compact_factory(string $notation, int $seconds, ?int $microseconds = 0): void
     {
-        self::assertTrue(Duration::fromNotation($notation, DurationNotation::Compact)->equals(Duration::of(seconds: $seconds, microseconds: $microseconds ?? 0)));
+        $duration = 0 > $seconds
+            ? Duration::of(seconds: -$seconds, microseconds: $microseconds ?? 0)->negated()
+            : Duration::of(seconds: $seconds, microseconds: $microseconds ?? 0);
+
+        self::assertTrue(Duration::fromNotation($notation, DurationNotation::Compact)->equals($duration));
     }
 
     /**
@@ -1002,9 +1016,9 @@ final class DurationTest extends TestCase
             'hours' => ['2h', 7200],
             'full' => ['1w 2d 3h 4m 5s', 788645],
             'whitespace flexible' => ['1w   3h    5s', 1 * 604800 + 3 * 3600 + 5],
-            'microseconds' => ['1s 250µs',  1,  250],
+            'microseconds' => ['1s 250µs', 1, 250],
             'microseconds with u instead of micron' => ['1s 250us', 1,  250],
-            //'negative' => ['-1h 30m', -5400],
+            'negative' => ['-1h 30m', -5400],
             'zero' => ['0s', 0],
         ];
     }
