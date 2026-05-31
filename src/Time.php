@@ -15,25 +15,9 @@ use function array_reduce;
 use function array_shift;
 use function class_exists;
 use function is_int;
-use function preg_match;
-use function preg_quote;
-use function str_pad;
-use function str_replace;
-use function strlen;
-use function substr;
-use function trim;
-
-use const STR_PAD_LEFT;
 
 final readonly class Time implements JsonSerializable
 {
-    private const string TIME_PATTERN = '/^
-        (?<hour>\d{1,2}){{SEP}}
-        (?<minute>\d{1,2})({{SEP}}
-        (?<second>\d{1,2}))?
-        (?:\.(?<micro>\d{1,6}))?
-    $/x';
-
     private int $value;
     public int $hour;
     public int $minute;
@@ -77,14 +61,6 @@ final readonly class Time implements JsonSerializable
         );
     }
 
-    /**
-     * @throws InvalidTime|TimeException
-     */
-    public static function now(DateTimeZone|string|null $timezone = null): self
-    {
-        return self::fromDate(new DateTimeImmutable(timezone: self::filterTimezone($timezone)));
-    }
-
     private static function filterTimezone(DateTimeZone|string|null $timezone): ?DateTimeZone
     {
         try {
@@ -114,32 +90,9 @@ final readonly class Time implements JsonSerializable
     /**
      * @throws InvalidTime
      */
-    public static function fromString(string $notation, string $separator = ':'): self
+    public static function fromNotation(string $value, TimeNotation $notation = TimeNotation::Iso8601): self
     {
-        return self::parse($notation, $separator) ?? throw new InvalidTime('Unable to parse time string : '.$notation);
-    }
-
-    /**
-     * @throws InvalidTime
-     */
-    public static function parse(string $notation, string $separator = ':'): ?self
-    {
-        (1 === strlen($separator) && !ctype_digit($separator)) || throw InvalidTime::dueToInvalidSeparator($separator);
-
-        $notation = trim($notation);
-        $escaped = preg_quote($separator, '/');
-        if (1 !== preg_match(str_replace('{{SEP}}', $escaped, self::TIME_PATTERN), $notation, $parts)) {
-            return null;
-        }
-
-        $hour = (int) $parts['hour'];
-        $minute = (int) ($parts['minute'] ?? 0);
-        $second = (int) ($parts['second'] ?? 0);
-        $micro = isset($parts['micro']) ? (int) str_pad(substr($parts['micro'], 0, 6), 6, '0') : 0;
-
-        return ($hour > 23 || $minute > 59 || $second > 59)
-            ? null
-            : self::at($hour, $minute, $second, $micro);
+        return $notation->decode($value);
     }
 
     public static function midnight(): self
@@ -157,7 +110,15 @@ final readonly class Time implements JsonSerializable
         return new self(-1);
     }
 
-    public static function fromUnitOfDay(int|float $value, Unit $unit): self
+    /**
+     * @throws InvalidTime|TimeException
+     */
+    public static function now(DateTimeZone|string|null $timezone = null): self
+    {
+        return self::fromDate(new DateTimeImmutable(timezone: self::filterTimezone($timezone)));
+    }
+
+    public static function fromOffset(int|float $value, Unit $unit): self
     {
         return new self($unit->toMicroseconds($value));
     }
@@ -185,7 +146,7 @@ final readonly class Time implements JsonSerializable
         return array_reduce($times, fn (self $max, self $item): self => $item->isAfter($max) ? $item : $max, $max);
     }
 
-    public function toUnitOfDay(Unit $unit): int|float
+    public function toOffset(Unit $unit): int|float
     {
         return $unit->divide($this->value);
     }
@@ -193,14 +154,9 @@ final readonly class Time implements JsonSerializable
     /**
      * @return non-empty-string
      */
-    public function toString(): string
+    public function toNotation(TimeNotation $notation = TimeNotation::Iso8601): string
     {
-        $pad = static fn (int $v): string => str_pad((string) $v, 2, '0', STR_PAD_LEFT);
-        $base = $pad($this->hour).':'.$pad($this->minute).':'.$pad($this->second);
-
-        return 0 === $this->microsecond
-            ? $base
-            : $base.'.'.str_pad((string) $this->microsecond, 6, '0', STR_PAD_LEFT);
+        return $notation->encode($this);
     }
 
     /**
@@ -245,7 +201,7 @@ final readonly class Time implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->toString();
+        return $this->toNotation();
     }
 
     /**
@@ -375,7 +331,7 @@ final readonly class Time implements JsonSerializable
      */
     public function __serialize(): array
     {
-        return [['microseconds' => (int) $this->toUnitOfDay(Unit::Microsecond)], []];
+        return [['microseconds' => (int) $this->toOffset(Unit::Microsecond)], []];
     }
 
     /**

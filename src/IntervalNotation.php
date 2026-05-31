@@ -79,10 +79,10 @@ enum IntervalNotation
     private function formatTime(Time $time, ?Unit $unit): string
     {
         if (null === $unit || !$this->supportsUnit()) {
-            return $time->toString();
+            return $time->toNotation();
         }
 
-        $value = $time->toUnitOfDay($unit);
+        $value = $time->toOffset($unit);
 
         return is_int($value)
             ? (string) $value
@@ -136,8 +136,8 @@ enum IntervalNotation
     private function createTime(int|string|float $value, ?Unit $unitOfDay, string $notation): Time
     {
         return match (true) {
-            null !== $unitOfDay && !is_string($value) => Time::fromUnitOfDay($value, $unitOfDay),
-            is_string($value) => Time::parse($value) ?? throw InvalidInterval::dueToMalformedNotation($notation, $this),
+            null !== $unitOfDay && !is_string($value) => Time::fromOffset($value, $unitOfDay),
+            is_string($value) => TimeNotation::Iso8601->decode($value),
             default => throw InvalidInterval::dueToMalformedNotation($notation, $this),
         };
     }
@@ -151,16 +151,16 @@ enum IntervalNotation
 
         return match (true) {
             $this->supportsDurationEnd() && $isDurationNotation($start) => Interval::until(
-                end: Time::parse($end) ?? throw InvalidInterval::dueToMalformedNotation($notation, $this),
+                end: TimeNotation::Iso8601->decode($end),
                 duration: DurationNotation::Iso8601->decode($start)
             ),
             $this->supportsStartDuration() && $isDurationNotation($end) => Interval::since(
-                start:Time::parse($start) ?? throw InvalidInterval::dueToMalformedNotation($notation, $this),
+                start: TimeNotation::Iso8601->decode($start),
                 duration: DurationNotation::Iso8601->decode($end),
             ),
             $this->supportsStartEnd() => Interval::between(
-                start: Time::parse($start) ?? throw InvalidInterval::dueToMalformedNotation($notation, $this),
-                end: Time::parse($end) ?? throw InvalidInterval::dueToMalformedNotation($notation, $this),
+                start: TimeNotation::Iso8601->decode($start),
+                end: TimeNotation::Iso8601->decode($end),
             ),
             default => throw InvalidInterval::dueToMalformedNotation($notation, $this),
         };

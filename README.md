@@ -36,13 +36,13 @@ The `Bakame\Tokei\Time` object is designed to be, cyclic (24h wrap-around) and p
 You can create a `Time` instance:
 
 - using its time components via the `Time::at` method;
-- by parsing a time string using the `Time::parse` method;
-- using `Time::atMicroOfDay`, `Time::atMilliOfDay`, `Time::atSecondOfDay` or `Time::atMinuteOfDay`; The value will represent respectively the microseconds, milliseconds, seconds or minutes from midnight.
+- by parsing a time string using the `Time::fromNotation` method;
+- using `Time::fromOffset`; The value will represent respectively a quantity in a specified base Unit from midnight.
 
 ```php
 Time::at(int $hour = 0, int $minute = 0, int $second = 0, int $microsecond = 0): Time;
-Time::parse(string $value,  string $separator = ':'): ?Time
-Time::fromUnitOfDay(int $value, Unit $unit): Time
+Time::fronNotation(string $value, TimeNotation $notation = TimeNotation::Iso8601): Time
+Time::fromOffset(int $value, Unit $unit): Time
 ```
 
 Here's some usage example.
@@ -50,16 +50,13 @@ Here's some usage example.
 ```php
 use Bakame\Tokei\Time;
 
-$timeB = Time::parse("10:30:15.123456");
 $timeA = Time::at(hour: 10, minute: 30, second: 15);
-$timeC = Time::fromUnitOfDay(123_456_789, Unit::Microsecond);
-$timeC = Time::fromUnitOfDay(123_456, Unit::Millisecond);
-$timeC = Time::fromUnitOfDay(123, Unit::Second);
-$timeC = Time::fromUnitOfDay(456, Unit::Minute);
+$timeB = Time::fronNotation("10:30:15.123456", TimeNotation::Iso8601);
+$timeC = Time::fromOffset(123_456_789, Unit::Microsecond);
+$timeC = Time::fromOffset(123_456, Unit::Millisecond);
+$timeC = Time::fromOffset(123, Unit::Second);
+$timeC = Time::fromOffset(456, Unit::Minute);
 ```
-
-> [!WARNING]
-> On failure, with `Time::parse`, `null` is returned instead of an exception being thrown.
 
 To ease instantiation, predefined instances can be obtained with the following methods:
 
@@ -67,6 +64,7 @@ To ease instantiation, predefined instances can be obtained with the following m
 Time::midnight(); // 00:00:00
 Time::noon();     // 12:00:00
 Time::endOfDay(); // 23:59:59.999999
+Time::now();      // the current time
 ```
 
 #### Accessors
@@ -74,7 +72,7 @@ Time::endOfDay(); // 23:59:59.999999
 Once instantiated you can access each time component using the following methods
 
 ```php
-$time = Time::parse("10:30:15.123456");
+$time = Time::fromNotation("10:30:15.123456");
 $time->hour;         // returns 10
 $time->minute;       // returns 30
 $time->second;       // returns 15
@@ -84,7 +82,7 @@ $time->microsecond;  // returns 123456
 #### Formatting
 
 ```php
-Time::toUnitOfDay(Unit $unit): float; // returns the time value according to the provided
+Time::toOffset(Unit $unit): float; // returns the time value according to the provided
 Time::toString(): string
 Time::toLocaleString(string $locale, ?DateTimeZone $timezone = null): string
 ```
@@ -95,11 +93,11 @@ of its polyfill otherwise a `TimeException` will be thrown.
 Example:
 
 ```php
-$time = Time::parse("10:30:15.123456");
-
-$time->toString();              // 10:30:15.123456 (default)
-$time->toMicroOfDay();          // 37815123456
-$time->toLocaleString('en-US'); // "10:30:15 AM"
+$time = Time::at(hour: 10, minute: 30, second: 15, microsecond: 123456");
+$time->toNotation();                       // 10:30:15.123456 (default)
+$time->toNotation(TimeNotation::Compact);  // 10h30m15s123456µs
+$time->toOffset();                         // 37815123456
+$time->toLocaleString('en-US');            // "10:30:15 AM"
 ```
 
 #### Modifying time

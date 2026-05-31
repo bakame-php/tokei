@@ -553,7 +553,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
                 array_shift($merged);
                 array_pop($merged);
 
-                $merged[] = Interval::fromLinearSpan($last->linearStart, $first->linearEnd + Unit::Day->microseconds());
+                $merged[] = Interval::fromLinearSpan($last->linearStart, $first->linearEnd + Unit::Day->inMicroseconds());
             }
         }
 

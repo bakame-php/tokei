@@ -31,9 +31,9 @@ final readonly class Interval implements JsonSerializable
     {
         $this->start = $start;
         $this->duration = $duration;
-        $this->linearStart = (int) $this->start->toUnitOfDay(Unit::Microsecond);
+        $this->linearStart = (int) $this->start->toOffset(Unit::Microsecond);
         $this->linearEnd = $this->linearStart + (int) $duration->total(Unit::Microsecond);
-        $this->end = Time::fromUnitOfDay($this->linearEnd, Unit::Microsecond);
+        $this->end = Time::fromOffset($this->linearEnd, Unit::Microsecond);
         $this->type = $this->setType();
     }
 
@@ -85,7 +85,7 @@ final readonly class Interval implements JsonSerializable
     /**
      * @throws InvalidDuration|InvalidTime|InvalidInterval
      */
-    public static function fromNotation(string $value, IntervalNotation $notation, ?Unit $unitOfDay = null): self
+    public static function fromNotation(string $value, IntervalNotation $notation = IntervalNotation::Iso8601StartDuration, ?Unit $unitOfDay = null): self
     {
         return $notation->decode($value, $unitOfDay);
     }
@@ -103,7 +103,7 @@ final readonly class Interval implements JsonSerializable
 
         0 <= $duration || throw new InvalidInterval('Invalid linear span: the start must be shorter or equal to the end linear span.');
 
-        return new self(Time::fromUnitOfDay($linearStart, Unit::Microsecond), Duration::of(microseconds: $duration));
+        return new self(Time::fromOffset($linearStart, Unit::Microsecond), Duration::of(microseconds: $duration));
     }
 
     /**
@@ -263,7 +263,7 @@ final readonly class Interval implements JsonSerializable
         $step *= $direction;
         for ($cursor = $start; $direction > 0 ? $cursor <= $end : $cursor >= $end; $cursor += $step) {
             if ($cursor !== $this->linearEnd) {
-                yield Time::fromUnitOfDay($cursor, Unit::Microsecond);
+                yield Time::fromOffset($cursor, Unit::Microsecond);
             }
         }
     }
@@ -297,8 +297,8 @@ final readonly class Interval implements JsonSerializable
             /** @var int $next */
             $next = $forward ? min($cursor + $step, $limit) : max($cursor - $step, $limit);
             $result[] = $forward
-                ? self::between(Time::fromUnitOfDay($cursor, Unit::Microsecond), Time::fromUnitOfDay($next, Unit::Microsecond))
-                : self::between(Time::fromUnitOfDay($next, Unit::Microsecond), Time::fromUnitOfDay($cursor, Unit::Microsecond));
+                ? self::between(Time::fromOffset($cursor, Unit::Microsecond), Time::fromOffset($next, Unit::Microsecond))
+                : self::between(Time::fromOffset($next, Unit::Microsecond), Time::fromOffset($cursor, Unit::Microsecond));
 
             $cursor = $next;
         }
@@ -377,9 +377,9 @@ final readonly class Interval implements JsonSerializable
             return false;
         }
 
-        $timeInMicro = $time->toUnitOfDay(Unit::Microsecond);
+        $timeInMicro = $time->toOffset(Unit::Microsecond);
         if ($this->linearEnd > $this->linearStart && $timeInMicro < $this->linearStart) {
-            $timeInMicro += Unit::Day->microseconds();
+            $timeInMicro += Unit::Day->inMicroseconds();
         }
 
         return $timeInMicro >= $this->linearStart
@@ -452,9 +452,9 @@ final readonly class Interval implements JsonSerializable
         [$properties] = $data;
         $this->start = $properties['start'];
         $this->duration = $properties['duration'];
-        $this->linearStart = (int) $this->start->toUnitOfDay(Unit::Microsecond);
+        $this->linearStart = (int) $this->start->toOffset(Unit::Microsecond);
         $this->linearEnd = $this->linearStart + (int) $properties['duration']->total(Unit::Microsecond);
-        $this->end = Time::fromUnitOfDay($this->linearEnd, Unit::Microsecond);
+        $this->end = Time::fromOffset($this->linearEnd, Unit::Microsecond);
         $this->type = $this->setType();
     }
 }

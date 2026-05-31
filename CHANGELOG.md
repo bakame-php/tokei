@@ -6,7 +6,10 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Added
 
-- `Time::fromString`
+- `Time::fromNotation`
+- `Time::toNotation`
+- `Time::fromOffset`
+- `Time::toOffset`
 - `Time::shift`
 - `IntervalSet::each`
 - `IntervalSet::transform`
@@ -48,6 +51,8 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC BREAK:** `SubSecondDisplay` is removed with no remplacement.
 - **BC BREAK:** `truncateTo` is removed use `roundTo` instead with the new `RoundingMode` enum
 - **BC BREAK:** `Time::add` is removed use `Time::shift` instead
+- **BC BREAK:** `Time::fromUnitOfDay` is removed use `Time::fromOffset` instead
+- **BC BREAK:** `Time::toString` is removed use `Time::toNotation` instead
 
 ## [0.1.0 - asagao](https://github.com/bakame-php/tokei/releases/tag/0.1.0) - 2026-05-27
 

@@ -305,10 +305,10 @@ final class IntervalTest extends TestCase
 
         self::assertCount(4, $times);
 
-        self::assertSame('09:00:00', $times[0]->toString());
-        self::assertSame('09:15:00', $times[1]->toString());
-        self::assertSame('09:30:00', $times[2]->toString());
-        self::assertSame('09:45:00', $times[3]->toString());
+        self::assertSame('09:00:00', $times[0]->toNotation());
+        self::assertSame('09:15:00', $times[1]->toNotation());
+        self::assertSame('09:30:00', $times[2]->toNotation());
+        self::assertSame('09:45:00', $times[3]->toNotation());
     }
 
     public function test_range_backward(): void
@@ -318,10 +318,10 @@ final class IntervalTest extends TestCase
 
         self::assertCount(4, $times);
 
-        self::assertSame('09:45:00', $times[0]->toString());
-        self::assertSame('09:30:00', $times[1]->toString());
-        self::assertSame('09:15:00', $times[2]->toString());
-        self::assertSame('09:00:00', $times[3]->toString());
+        self::assertSame('09:45:00', $times[0]->toNotation());
+        self::assertSame('09:30:00', $times[1]->toNotation());
+        self::assertSame('09:15:00', $times[2]->toNotation());
+        self::assertSame('09:00:00', $times[3]->toNotation());
     }
 
     public function test_range_with_zero_duration(): void
@@ -694,12 +694,12 @@ final class IntervalTest extends TestCase
     /**
      * @param non-empty-string $input
      *
-     * @throws InvalidInterval
+     * @throws InvalidInterval|InvalidTime
      */
     #[DataProvider('iso80000InvalidProvider')]
     public function test_from_iso80000_invalid(string $input): void
     {
-        $this->expectException(InvalidInterval::class);
+        $this->expectException(TimeException::class);
 
         Interval::fromNotation($input, IntervalNotation::Iso80000);
     }

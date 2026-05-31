@@ -25,9 +25,4 @@ class InvalidTime extends TimeException
     {
         return new self("Microsecond must be between 0 and 999999, got $microsecond.");
     }
-
-    public static function dueToInvalidSeparator(string $separator): self
-    {
-        return new self("Time separator must be a single non-digit character, got $separator.");
-    }
 }

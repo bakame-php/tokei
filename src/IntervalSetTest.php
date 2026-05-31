@@ -399,11 +399,11 @@ final class IntervalSetTest extends TestCase
 
         self::assertSame(
             array_map(
-                fn (Interval $i) => $i->start->toUnitOfDay(Unit::Microsecond),
+                fn (Interval $i) => $i->start->toOffset(Unit::Microsecond),
                 $set->all()
             ),
             array_map(
-                fn (Interval $i) => $i->start->toUnitOfDay(Unit::Microsecond),
+                fn (Interval $i) => $i->start->toOffset(Unit::Microsecond),
                 iterator_to_array($result)
             )
         );
@@ -419,7 +419,7 @@ final class IntervalSetTest extends TestCase
 
         $filtered = $set->filter(
             fn (Interval $i): bool =>
-                $i->start->toUnitOfDay(Unit::Microsecond) >= Time::at(3)->toUnitOfDay(Unit::Microsecond)
+                $i->start->toOffset(Unit::Microsecond) >= Time::at(3)->toOffset(Unit::Microsecond)
         );
 
         self::assertCount(2, $filtered);
@@ -492,8 +492,8 @@ final class IntervalSetTest extends TestCase
         self::assertInstanceOf(Interval::class, $result);
 
         self::assertSame(
-            $this->i(10, 20)->start->toUnitOfDay(Unit::Microsecond),
-            $result->start->toUnitOfDay(Unit::Microsecond)
+            $this->i(10, 20)->start->toOffset(Unit::Microsecond),
+            $result->start->toOffset(Unit::Microsecond)
         );
     }
 
