@@ -89,8 +89,8 @@ $time->microsecond;  // returns 123456
 #### Formatting
 
 ```php
-Time::toOffset(Unit $unit): float; // returns the time value according to the provided
 Time::format(TimeFormat $format = TimeFormat::Iso8601): string
+Time::toOffset(Unit $unit): float; // returns the time value according to the provided
 Time::toLocaleString(string $locale, ?DateTimeZone $timezone = null, LocaleVerbosity $verbosity = LocaleVerbosity::Medium): string
 ```
 
@@ -289,7 +289,7 @@ $durationB->microseconds; // returns 234_000
 $durationB->sign;         // returns 1
 $durationB->daysCount;    // returns the absolute number of complete 24-hour days contained in the duration
 $durationB->weeksCount;   // returns the absolute number of complete weeks contained in the duration
-$durationB->isEmpty()     // returns true when the duration is zero, false otherhwise 
+$durationB->isZero()      // returns true when the duration is zero, false otherwise 
 ```
 
 #### Formatting
@@ -363,7 +363,7 @@ You can:
 
 - make it unsigned using the `Duration::abs` method
 - invert its signing using the `Duration::negate` method
-- update the duration using fixed duration parts with the `Duration::increment` and `Duration::decrement` methods
+- update the duration using fixed duration parts with the `Duration::increase` and `Duration::decrease` methods
 - round its value to one of the unit declare on the `Bakame\Tokei\Unit` enum
 - clamp its value against two other `Duration` instances
 - sum multiple `Duration` instance using the `Duration::sum` method
@@ -390,7 +390,7 @@ $a->roundTo(Unit::Minute, RoudingMode::Round)->format(DurationFormat::Timer);   
 ```
 
 > [!IMPORTANT]
-> `Duration::increment` and `Duration::decrement` can only take non-negative arguments otherwise an exception will be
+> `Duration::increase` and `Duration::decrease` can only take non-negative arguments otherwise an exception will be
 > throw Use `Duration::sum` to aggregate signed duration objects.
 
 #### Comparing duration
@@ -465,7 +465,9 @@ Interval::until(Time $end, Duration $duration): self;
 Interval::around(Time $midRange, Duration $duration): self;
 Interval::collapsed(Time $at): self;
 Interval::circular(Time $at): self;
-Interval::fullDay(): self //a 24h-long instance starting at 00:00:00
+Interval::fullDay(): self 
+//a 24h-long instance starting at 00:00:00
+// equivalent to Interval::circular(Time::midnight());
 Interval::fromFormat(string $value, IntervalFormat $format, ?Unit $unit = null): self
 ```
 
