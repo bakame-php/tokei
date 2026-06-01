@@ -29,14 +29,14 @@ final readonly class Time implements JsonSerializable
      */
     private function __construct(int $value)
     {
-        $this->value = Unit::Day->wrap($value);
+        $this->value =  UnitTransformer::wrap($value, Unit::Day);
         $microseconds = 0 > $this->value ? -$this->value : $this->value;
-        $this->hour = Unit::Hour->whole($microseconds);
-        $microseconds = Unit::Hour->remainder($microseconds);
-        $this->minute = Unit::Minute->whole($microseconds);
-        $microseconds = Unit::Minute->remainder($microseconds);
-        $this->second = Unit::Second->whole($microseconds);
-        $this->microsecond = Unit::Second->remainder($microseconds);
+        $this->hour = UnitTransformer::whole($microseconds, Unit::Hour);
+        $microseconds = UnitTransformer::remainder($microseconds, Unit::Hour);
+        $this->minute = UnitTransformer::whole($microseconds, Unit::Minute);
+        $microseconds = UnitTransformer::remainder($microseconds, Unit::Minute);
+        $this->second = UnitTransformer::whole($microseconds, Unit::Second);
+        $this->microsecond = UnitTransformer::remainder($microseconds, Unit::Second);
     }
 
     /**
@@ -54,9 +54,9 @@ final readonly class Time implements JsonSerializable
         ($microsecond >= 0 && $microsecond < 1_000_000) || throw InvalidTime::dueToMalformedMicrosecond($microsecond);
 
         return new self(
-            Unit::Hour->toMicroseconds($hour)
-            + Unit::Minute->toMicroseconds($minute)
-            + Unit::Second->toMicroseconds($second)
+            UnitTransformer::toMicroseconds($hour, Unit::Hour)
+            + UnitTransformer::toMicroseconds($minute, Unit::Minute)
+            + UnitTransformer::toMicroseconds($second, Unit::Second)
             + $microsecond
         );
     }
@@ -97,7 +97,7 @@ final readonly class Time implements JsonSerializable
 
     public static function fromOffset(int|float $value, Unit $unit): self
     {
-        return new self($unit->toMicroseconds($value));
+        return new self(UnitTransformer::toMicroseconds($value, $unit));
     }
 
     public static function midnight(): self
@@ -107,7 +107,7 @@ final readonly class Time implements JsonSerializable
 
     public static function noon(): self
     {
-        return new self(Unit::Hour->toMicroseconds(12));
+        return new self(UnitTransformer::toMicroseconds(12, Unit::Hour));
     }
 
     public static function endOfDay(): self
@@ -148,7 +148,7 @@ final readonly class Time implements JsonSerializable
 
     public function toOffset(Unit $unit): int|float
     {
-        return $unit->divide($this->value);
+        return UnitTransformer::fromMicroseconds($this->value, $unit);
     }
 
     /**
@@ -165,20 +165,18 @@ final readonly class Time implements JsonSerializable
     public function toLocaleString(
         string $locale,
         DateTimeZone|string|null $timezone = null,
-        TimeFormatLength $length = TimeFormatLength::Medium
+        LocaleVerbosity $verbosity = LocaleVerbosity::Medium
     ): string {
         static $isSupported = null;
         $isSupported = $isSupported ?? class_exists(IntlDateFormatter::class);
         $isSupported || throw new TimeException('Support for time locale formatting requires the `intl` extension for best performance or run "composer require symfony/polyfill-intl-icu" to install a polyfill.');
-
-        $timeType = match ($length) {
-            TimeFormatLength::Full => IntlDateFormatter::FULL,
-            TimeFormatLength::Long => IntlDateFormatter::LONG,
-            TimeFormatLength::Medium => IntlDateFormatter::MEDIUM,
-            TimeFormatLength::Short => IntlDateFormatter::SHORT,
-        };
-
         $timezone = self::filterTimezone($timezone);
+        $timeType = match ($verbosity) {
+            LocaleVerbosity::Full => IntlDateFormatter::FULL,
+            LocaleVerbosity::Long => IntlDateFormatter::LONG,
+            LocaleVerbosity::Medium => IntlDateFormatter::MEDIUM,
+            LocaleVerbosity::Short => IntlDateFormatter::SHORT,
+        };
 
         try {
             $formatted = (new IntlDateFormatter(
@@ -191,7 +189,7 @@ final readonly class Time implements JsonSerializable
             throw new TimeException('Unable to convert to locale "'.$locale.'" the current time; Please verify your locale.', previous: $exception);
         }
 
-        return false !== $formatted ? $formatted : throw new TimeException('Unable to convert to locale "'.$locale.'" the current time.');
+        return false !== $formatted ? $formatted : throw new TimeException('Unable to convert to locale "'.$locale.'" the time "'.$this->format().'".');
     }
 
     /**
@@ -287,9 +285,9 @@ final readonly class Time implements JsonSerializable
             ? $this : self::at($hour, $minute, $second, $microsecond);
     }
 
-    public function roundTo(Unit $unit, RoundingMode $roundingMode = RoundingMode::Nearest): self
+    public function roundTo(Unit $unit, RoundingStrategy $strategy = RoundingStrategy::Nearest): self
     {
-        $rounded = $unit->round($this->value, $roundingMode);
+        $rounded = UnitTransformer::round($this->value, $unit, $strategy);
 
         return $this->value === $rounded ? $this : new self($rounded);
     }
@@ -321,7 +319,7 @@ final readonly class Time implements JsonSerializable
     public function distance(self $other): Duration
     {
         /** @var non-negative-int $duration */
-        $duration = Unit::Day->wrap($other->value - $this->value);
+        $duration = UnitTransformer::wrap($other->value - $this->value, Unit::Day);
 
         return Duration::of(microseconds: $duration);
     }

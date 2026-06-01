@@ -9,6 +9,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use TypeError;
 use ValueError;
 
 use function array_map;
@@ -850,6 +851,14 @@ final class IntervalSetTest extends TestCase
         $intervals = new IntervalSet();
 
         self::assertSame($intervals, $intervals->gaps());
+    }
+
+    public function test_sorting_fails_with_wrong_enum(): void
+    {
+        $intervals = new IntervalSet();
+        $this->expectException(TypeError::class);
+
+        $intervals->sorted(sortDirection: Business::Afternoon);
     }
 }
 

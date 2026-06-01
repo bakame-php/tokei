@@ -23,7 +23,7 @@ composer require bakame/tokei
 You need:
 
 - **PHP >= 8.3** but the latest stable version of PHP is recommended
-- to be able to get the locale string version of the time you need the `ext-intl` extension or use its polyfill.
+- to be able to get the locale string version of the time you need the `ext-intl` extension or use a polyfill for `IntlDateFormatter`.
 
 ## Documentation
 
@@ -91,7 +91,7 @@ $time->microsecond;  // returns 123456
 ```php
 Time::toOffset(Unit $unit): float; // returns the time value according to the provided
 Time::format(TimeFormat $format = TimeFormat::Iso8601): string
-Time::toLocaleString(string $locale, ?DateTimeZone $timezone = null): string
+Time::toLocaleString(string $locale, ?DateTimeZone $timezone = null, LocaleVerbosity $verbosity = LocaleVerbosity::Medium): string
 ```
 
 To work as expected the `Time::toLocaleString` requires the presence of the Intl extension or
@@ -100,11 +100,17 @@ of its polyfill otherwise a `TimeException` will be thrown.
 Example:
 
 ```php
-$time = Time::at(hour: 10, minute: 30, second: 15, microsecond: 123456");
-$time->format();                     // 10:30:15.123456 (default)
-$time->format(TimeFormat::Compact);  // 10h30m15s123456µs
-$time->toOffset();                   // 37815123456
-$time->toLocaleString('en-US');      // "10:30:15 AM"
+$time = Time::at(hour: 10, minute: 30, second: 15, microsecond: 123456);
+echo $time->format();
+// 10:30:15.123456
+echo $time->format(TimeFormat::Compact);
+// 10h30m15s123456µs
+echo $time->toOffset(Unit::Second);
+// 37815.123456
+echo $time->toLocaleString('en-US');
+// 10:30:15 AM
+echo $time->toLocaleString('de-DE', 'Africa/Nairobi', LocaleVerbosity::Full);
+// 10:30:15 Ostafrikanische Zeit
 ```
 
 #### Modifying time
@@ -121,7 +127,7 @@ with the following methods:
 ```php
 Time::shift(Duration $duration): Time
 Time::with(?int $hour = null, ?int $minute = null, ?int $second = null, ?int $microsecond = null): Time
-Time::roundTo(Unit $precision, RoundingMode $roundingMode = RoundingMode::Nearest): Time
+Time::roundTo(Unit $unit, RoundingStrategy $strategy = RoundingStrategy::Nearest): Time
 Time::clamp(Time $min, Time $max): Time
 ```
 
@@ -152,8 +158,8 @@ the unit declare on the `Bakame\Tokei\Unit` enum
 ```php
 $t = Time::fromUnitOfDay(3_150_000_000, Unit::Microsecond);
 $t->format(); // returns "00:52:30"
-$t->roundTo(Unit::Minutes, RoundingMode::Truncate)->format(); // returns "00:52:00"
-$t->roundTo(Unit::Minutes, RoundingMode::Nearest)->format();  // returns "00:53:00"
+$t->roundTo(Unit::Minutes, RoundingStrategy::Floor)->format(); // returns "00:52:00"
+$t->roundTo(Unit::Minutes, RoundingStrategy::Nearest)->format();  // returns "00:53:00"
 ```
 
 #### Comparing times
@@ -349,7 +355,7 @@ Duration::decrease(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes =
 Duration::sum(Duration ...$duration): Duration
 Duration::multipliedBy(int $factor): Duration
 Duration::dividedBy(int $factor): Duration
-Duration::roundTo(Unit $precision, RoundingMode $roundingMode): Duration
+Duration::roundTo(Unit $precision, RoundingStrategy $strategy): Duration
 Duration::clamp(Duration $min, Duration $max): Duration
 ```
 
@@ -366,7 +372,7 @@ You can:
 ```php
 $microseconds = 3_661_500_000;
 $a = Duration::of(microseconds: $microseconds);
-$b = $a->roundTo(Unit::Minute, RoundingMode::Ceil);
+$b = $a->roundTo(Unit::Minute, RoundingStrategy::Ceil);
 $c = $b->negate();
 $d = $c->decrement(minutes: 10);
 
@@ -544,7 +550,7 @@ Interval::splitAt(Time ...$steps): IntervalSet
 ```php
 Interval::startingOn(Time $time): self
 Interval::endingOn(Time $time): self
-Interval::roundTo(Unit $precision, RoundingMode $roundingMode): self
+Interval::roundTo(Unit $unit, RoundingStrategy $strategy): self
 Interval::expand(Duration $duration): self
 Interval::shift(Duration $duration): self
 Interval::shiftBound(Duration $duration, Bound $from): self

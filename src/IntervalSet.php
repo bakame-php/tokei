@@ -22,7 +22,6 @@ use function array_pop;
 use function array_shift;
 use function count;
 use function in_array;
-use function is_string;
 use function max;
 use function min;
 use function strtolower;
@@ -441,7 +440,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
 
             $current = IntervalType::Circular !== $interval->type
                 ? [[$interval->linearStart, $interval->linearEnd]]
-                : [[0, Unit::Day->toMicroseconds(1)]];
+                : [[0, UnitTransformer::toMicroseconds(1, Unit::Day)]];
 
             foreach ($otherIntervals as $otherInterval) {
                 if (IntervalType::Collapsed === $otherInterval->type) {
@@ -586,13 +585,13 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      *
      * @throws InvalidDuration
      */
-    public function sorted(Bound $sortBound = Bound::Start, UnitEnum|string $sortDirection = 'asc'): self
+    public function sorted(Bound $sortBound = Bound::Start, UnitEnum|string $sortDirection = 'ascending'): self
     {
         return $this->sortedUsing(self::filterCompare($sortBound, self::filterSortDirection($sortDirection)));
     }
 
     /**
-     * @param 'asc'|'desc' $sortDirection
+     * @param 'ascending'|'descending' $sortDirection
      *
      * @return Closure(Interval, Interval): int
      */
@@ -603,7 +602,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
             Bound::End => static fn (Interval $x, Interval $y) => $x->linearEnd <=> $y->linearEnd,
         };
 
-        $primary = 'asc' === $sortDirection ? $primary : static fn (Interval $x, Interval $y) => $primary($y, $x);
+        $primary = 'ascending' === $sortDirection ? $primary : static fn (Interval $x, Interval $y) => $primary($y, $x);
         $secondary = static fn (Interval $x, Interval $y): int => $x->duration->compareTo($y->duration);
 
         return static function (Interval $x, Interval $y) use ($primary, $secondary): int {
@@ -614,24 +613,19 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     }
 
     /**
-     * @return 'asc'|'desc'
+     * @return 'ascending'|'descending'
      */
     private static function filterSortDirection(UnitEnum|string $sortDirection): string
     {
-        if (enum_exists('\SortDirection') && $sortDirection instanceof SortDirection) {
-            return match ($sortDirection) {
-                SortDirection::Ascending => 'asc',
-                SortDirection::Descending => 'desc',
-                default => throw new ValueError("Unknown sort direction '$sortDirection->name'"),
-            };
+        if ($sortDirection instanceof UnitEnum) {
+            'SortDirection' === $sortDirection::class || throw new TypeError('Argument ($sortDirection) must be of type SortDirection, '.$sortDirection::class.' given,');
+
+            $sortDirection = $sortDirection->name;
         }
 
-        is_string($sortDirection) || throw new TypeError('Argument ($sortDirection) must be of type SortDirection, '.$sortDirection::class.' given,');
-        $sortDirection = strtolower($sortDirection);
-
-        return match ($sortDirection) {
-            'asc', 'ascending' => 'asc',
-            'desc', 'descending' => 'desc',
+        return match (strtolower($sortDirection)) {
+            'asc', 'ascending' => 'ascending',
+            'desc', 'descending' => 'descending',
             default => throw new ValueError("Unknown sort direction '$sortDirection'")
         };
     }

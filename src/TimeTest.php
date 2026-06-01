@@ -20,6 +20,7 @@ use function unserialize;
 #[CoversClass(Time::class)]
 #[CoversClass(TimeFormat::class)]
 #[CoversClass(Unit::class)]
+#[CoversClass(UnitTransformer::class)]
 final class TimeTest extends TestCase
 {
     /* -------------------------------------------------
@@ -373,7 +374,10 @@ final class TimeTest extends TestCase
 
         self::assertSame('23:54:23', $original->format());
         self::assertSame('08:54:23', $updated->format());
-        self::assertNotSame($updated->toLocaleString(locale: 'tr-CY', length: TimeFormatLength::Short), $updated->toLocaleString(locale: 'tr-CY', length: TimeFormatLength::Long));
+        self::assertNotSame(
+            $updated->toLocaleString(locale: 'tr-CY', verbosity: LocaleVerbosity::Short),
+            $updated->toLocaleString(locale: 'tr-CY', verbosity: LocaleVerbosity::Long)
+        );
         self::assertSame($updated->toLocaleString('en_US', 'Africa/Nairobi'), $updated->toLocaleString('en_US'));
 
         $this->expectException(TimeException::class);
@@ -458,9 +462,9 @@ final class TimeTest extends TestCase
     ): void {
         $time = Time::fromOffset($input, Unit::Microsecond);
 
-        self::assertSame($expectedTruncate, $time->roundTo($precision, RoundingMode::Floor)->toOffset(Unit::Microsecond));
+        self::assertSame($expectedTruncate, $time->roundTo($precision, RoundingStrategy::Floor)->toOffset(Unit::Microsecond));
         self::assertSame($expectedRound, $time->roundTo($precision)->toOffset(Unit::Microsecond));
-        self::assertSame($expectedCeil, $time->roundTo($precision, RoundingMode::Ceil)->toOffset(Unit::Microsecond));
+        self::assertSame($expectedCeil, $time->roundTo($precision, RoundingStrategy::Ceil)->toOffset(Unit::Microsecond));
     }
 
     /**

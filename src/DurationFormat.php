@@ -168,10 +168,10 @@ enum DurationFormat
         int|float $seconds,
         int $microseconds
     ): int {
-        return Unit::Day->toMicroseconds($days)
-            + Unit::Hour->toMicroseconds($hours)
-            + Unit::Minute->toMicroseconds($minutes)
-            + Unit::Second->toMicroseconds($seconds)
+        return UnitTransformer::toMicroseconds($days, Unit::Day)
+            + UnitTransformer::toMicroseconds($hours, Unit::Hour)
+            + UnitTransformer::toMicroseconds($minutes, Unit::Minute)
+            + UnitTransformer::toMicroseconds($seconds, Unit::Second)
             + $microseconds;
     }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
-enum TimeFormatLength
+enum LocaleVerbosity
 {
     case Short;
     case Medium;

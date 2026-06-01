@@ -224,10 +224,10 @@ final readonly class Interval implements JsonSerializable
     /**
      * @throws InvalidDuration
      */
-    public function roundTo(Unit $unit, RoundingMode $roundingMode): self
+    public function roundTo(Unit $unit, RoundingStrategy $strategy = RoundingStrategy::Nearest): self
     {
-        $start = $this->start->roundTo($unit, $roundingMode);
-        $end = $this->end->roundTo($unit, $roundingMode);
+        $start = $this->start->roundTo($unit, $strategy);
+        $end = $this->end->roundTo($unit, $strategy);
 
         return $start->equals($this->start) && $end->equals($this->end) ? $this : self::between($start, $end);
     }

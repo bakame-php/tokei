@@ -40,14 +40,14 @@ final readonly class Duration implements JsonSerializable
 
         $this->sign = $this->value <=> 0 ;
         $microseconds = 0 > $this->value ? -$this->value : $this->value;
-        $this->weeksCount = Unit::Week->whole($microseconds);
-        $this->daysCount = Unit::Day->whole($microseconds);
-        $this->hours = Unit::Hour->whole($microseconds);
-        $microseconds = Unit::Hour->remainder($microseconds);
-        $this->minutes = Unit::Minute->whole($microseconds);
-        $microseconds = Unit::Minute->remainder($microseconds);
-        $this->seconds = Unit::Second->whole($microseconds);
-        $this->microseconds = Unit::Second->remainder($microseconds);
+        $this->weeksCount = UnitTransformer::whole($microseconds, Unit::Week);
+        $this->daysCount = UnitTransformer::whole($microseconds, Unit::Day);
+        $this->hours = UnitTransformer::whole($microseconds, Unit::Hour);
+        $microseconds = UnitTransformer::remainder($microseconds, Unit::Hour);
+        $this->minutes = UnitTransformer::whole($microseconds, Unit::Minute);
+        $microseconds = UnitTransformer::remainder($microseconds, Unit::Minute);
+        $this->seconds = UnitTransformer::whole($microseconds, Unit::Second);
+        $this->microseconds = UnitTransformer::remainder($microseconds, Unit::Second);
     }
 
     /**
@@ -78,7 +78,7 @@ final readonly class Duration implements JsonSerializable
             hours: $hours,
             minutes: $minutes,
             seconds: $seconds,
-            microseconds: Unit::Millisecond->toMicroseconds($milliseconds) + $microseconds
+            microseconds: UnitTransformer::toMicroseconds($milliseconds, Unit::Millisecond) + $microseconds
         ));
     }
 
@@ -89,10 +89,10 @@ final readonly class Duration implements JsonSerializable
         int|float $seconds,
         int $microseconds
     ): int {
-        return Unit::Day->toMicroseconds($days)
-            + Unit::Hour->toMicroseconds($hours)
-            + Unit::Minute->toMicroseconds($minutes)
-            + Unit::Second->toMicroseconds($seconds)
+        return UnitTransformer::toMicroseconds($days, Unit::Day)
+            + UnitTransformer::toMicroseconds($hours, Unit::Hour)
+            + UnitTransformer::toMicroseconds($minutes, Unit::Minute)
+            + UnitTransformer::toMicroseconds($seconds, Unit::Second)
             + $microseconds;
     }
 
@@ -109,7 +109,7 @@ final readonly class Duration implements JsonSerializable
             hours: $interval->h,
             minutes: $interval->i,
             seconds: $interval->s,
-            microseconds: Unit::Second->toMicroseconds($interval->f),
+            microseconds: UnitTransformer::toMicroseconds($interval->f, Unit::Second),
         );
 
         return new self(1 === $interval->invert ? -$microseconds : $microseconds);
@@ -118,7 +118,7 @@ final readonly class Duration implements JsonSerializable
     /**
      * @throws InvalidDuration
      */
-    public static function fromFormat(string $value, DurationFormat $format): self
+    public static function fromFormat(string $value, DurationFormat $format = DurationFormat::Iso8601): self
     {
         return $format->decode($value);
     }
@@ -185,7 +185,7 @@ final readonly class Duration implements JsonSerializable
         $interval->i = $this->minutes;
         $interval->s = $this->seconds;
         if (0 !== $this->microseconds) {
-            $interval->f = Unit::Second->divide($this->microseconds);
+            $interval->f = UnitTransformer::fromMicroseconds($this->microseconds, Unit::Second);
         }
         $interval->invert = -1 === $this->sign ? 1 : 0;
         if (null === $relativeTo) {
@@ -201,7 +201,7 @@ final readonly class Duration implements JsonSerializable
 
     public function total(Unit $unit): int|float
     {
-        return $unit->divide($this->value);
+        return UnitTransformer::fromMicroseconds($this->value, $unit);
     }
 
     /**
@@ -239,12 +239,11 @@ final readonly class Duration implements JsonSerializable
     /**
      * @throws InvalidDuration
      */
-    public function roundTo(Unit $precision, RoundingMode $roundingMode = RoundingMode::Nearest): self
+    public function roundTo(Unit $unit, RoundingStrategy $strategy = RoundingStrategy::Nearest): self
     {
-        $micro = -1 === $this->sign ? -$this->value : $this->value;
-        $rounded = $precision->round($micro, $roundingMode);
+        $rounded = UnitTransformer::round($this->value, $unit, $strategy);
 
-        return $micro === $rounded ? $this : new self($this->sign * $rounded);
+        return $this->value === $rounded ? $this : new self($rounded);
     }
 
     /**
