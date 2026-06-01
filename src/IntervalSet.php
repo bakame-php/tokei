@@ -84,12 +84,10 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      *
      * @return list<non-empty-string>
      */
-    public function allFormatted(
-        IntervalNotation $notation = IntervalNotation::Iso8601StartDuration,
-        ?Unit $unitOfDay = null,
-    ): array {
+    public function allFormatted(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): array
+    {
         return array_map(
-            static fn (Interval $interval): string => $interval->toNotation($notation, $unitOfDay),
+            static fn (Interval $interval): string => $interval->format($format, $unit),
             $this->intervals
         );
     }
@@ -337,7 +335,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      * Unlike map(), which yields a generic iterable of values,
      * transform() rewraps the result into an IntervalSet.
      *
-     * @param callable(Interval, int=): Interval $callback
+     * @param callable(Interval, int=): (Interval|IntervalSet) $callback
      *
      *
      * @throws InvalidDuration If any produced Interval is invalid

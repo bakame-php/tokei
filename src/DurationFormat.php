@@ -12,13 +12,13 @@ use function trim;
 
 use const STR_PAD_LEFT;
 
-enum DurationNotation
+enum DurationFormat
 {
     case Iso8601;
     case Compact;
-    case Chrono;
+    case Timer;
 
-    private const string REGEXP_CHRONO = '@^
+    private const string REGEXP_TIMER = '@^
         (?<sign>-)?\s*
         (?<hours>\d+):
         (?<minutes>\d{1,2}):
@@ -52,12 +52,12 @@ enum DurationNotation
     /**
      * @throws InvalidDuration
      */
-    public function decode(string $notation): Duration
+    public function decode(string $data): Duration
     {
         return match ($this) {
-            self::Iso8601 => self::fromIso8601($notation),
-            self::Chrono => self::fromChrono($notation),
-            self::Compact => self::fromCompact($notation),
+            self::Iso8601 => self::fromIso8601($data),
+            self::Timer => self::fromTimer($data),
+            self::Compact => self::fromCompact($data),
         };
     }
 
@@ -68,7 +68,7 @@ enum DurationNotation
     {
         return match ($this) {
             self::Iso8601 => self::toIso8601($duration),
-            self::Chrono => self::toChrono($duration),
+            self::Timer => self::toTimer($duration),
             self::Compact => self::toCompact($duration),
         };
     }
@@ -78,9 +78,9 @@ enum DurationNotation
      *
      * @throws InvalidDuration
      */
-    private function fromChrono(string $duration): Duration
+    private function fromTimer(string $duration): Duration
     {
-        1 === preg_match(self::REGEXP_CHRONO, $duration, $parts) || throw new InvalidDuration('Unknown or bad format `'.$duration.'`.');
+        1 === preg_match(self::REGEXP_TIMER, $duration, $parts) || throw new InvalidDuration('Unknown or bad format `'.$duration.'`.');
 
         $minutes = (int) $parts['minutes'];
         $seconds = (int) $parts['seconds'];
@@ -109,11 +109,11 @@ enum DurationNotation
      *
      * @throws InvalidDuration
      */
-    private function fromCompact(string $notation): Duration
+    private function fromCompact(string $data): Duration
     {
-        $notation = trim($notation);
+        $data = trim($data);
 
-        ('' !== $notation && 1 === preg_match(self::REGEXP_COMPACT, $notation, $parts)) || throw new InvalidDuration('Unknown or bad format `'.$notation.'`.');
+        ('' !== $data && 1 === preg_match(self::REGEXP_COMPACT, $data, $parts)) || throw new InvalidDuration('Unknown or bad format `'.$data.'`.');
 
         /** @var non-negative-int $microseconds */
         $microseconds = self::toMicroseconds(
@@ -143,9 +143,9 @@ enum DurationNotation
      *
      * @throws InvalidDuration
      */
-    private function fromIso8601(string $notation): Duration
+    private function fromIso8601(string $data): Duration
     {
-        1 === preg_match(self::REGEXP_ISO8601, $notation, $parts) || throw InvalidDuration::dueToMalformedIso8601($notation);
+        1 === preg_match(self::REGEXP_ISO8601, $data, $parts) || throw InvalidDuration::dueToMalformedIso8601($data);
 
         /** @var non-negative-int $microseconds */
         $microseconds = self::toMicroseconds(
@@ -185,7 +185,7 @@ enum DurationNotation
      *
      * @return non-empty-string
      */
-    private static function toChrono(Duration $duration): string
+    private static function toTimer(Duration $duration): string
     {
         $pad = static fn (int $value, int $length): string => str_pad((string) $value, $length, '0', STR_PAD_LEFT);
         $formatted = $pad($duration->hours, 2).':'.$pad($duration->minutes, 2).':'.$pad($duration->seconds, 2);
@@ -264,6 +264,6 @@ enum DurationNotation
             $time[] = $duration->microseconds.'µs';
         }
 
-        return [] === $time ? '0s' : (-1 === $duration->sign ? '-' : '').implode(' ', $time);
+        return [] === $time ? '0s' : (-1 === $duration->sign ? '-' : '').implode('', $time);
     }
 }

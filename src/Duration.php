@@ -118,9 +118,9 @@ final readonly class Duration implements JsonSerializable
     /**
      * @throws InvalidDuration
      */
-    public static function fromNotation(string $value, DurationNotation $notation): self
+    public static function fromFormat(string $value, DurationFormat $format): self
     {
-        return $notation->decode($value);
+        return $format->decode($value);
     }
 
     /**
@@ -172,9 +172,9 @@ final readonly class Duration implements JsonSerializable
     /**
      * @return non-empty-string
      */
-    public function toNotation(DurationNotation $notation = DurationNotation::Iso8601): string
+    public function format(DurationFormat $format = DurationFormat::Iso8601): string
     {
-        return $notation->encode($this);
+        return $format->encode($this);
     }
 
     public function toDateInterval(?DateTimeInterface $relativeTo = null): DateInterval
@@ -209,13 +209,13 @@ final readonly class Duration implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->toNotation();
+        return $this->format();
     }
 
     /**
      * Returns true when the duration is zero, false otherwise.
      */
-    public function isEmpty(): bool
+    public function isZero(): bool
     {
         return 0 === $this->value;
     }
@@ -270,7 +270,7 @@ final readonly class Duration implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public function increment(
+    public function increase(
         int $weeks = 0,
         int $days = 0,
         int $hours = 0,
@@ -301,7 +301,7 @@ final readonly class Duration implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public function decrement(
+    public function decrease(
         int $weeks = 0,
         int $days = 0,
         int $hours = 0,

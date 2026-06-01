@@ -12,7 +12,7 @@ use function trim;
 
 use const STR_PAD_LEFT;
 
-enum TimeNotation
+enum TimeFormat
 {
     case Compact;
     case Iso8601;
@@ -34,15 +34,15 @@ enum TimeNotation
     /**
      * @throws InvalidTime
      */
-    public function decode(string $notation): Time
+    public function decode(string $data): Time
     {
         $regexp = match ($this) {
             self::Iso8601 => self::REGEXP_ISO8601,
             self::Compact => self::REGEXP_COMPACT,
         };
 
-        $notation = trim($notation);
-        1 === preg_match($regexp, $notation, $parts) || throw new InvalidTime('Unknown or bad format `'.$notation.'`.');
+        $data = trim($data);
+        1 === preg_match($regexp, $data, $parts) || throw new InvalidTime('Unknown or bad format `'.$data.'`.');
 
         return Time::at(
             hour: (int) $parts['hour'],

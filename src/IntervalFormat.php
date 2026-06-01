@@ -14,7 +14,7 @@ use function trim;
 use const FILTER_VALIDATE_FLOAT;
 use const FILTER_VALIDATE_INT;
 
-enum IntervalNotation
+enum IntervalFormat
 {
     case Bourbaki;
     case Iso80000;
@@ -42,8 +42,8 @@ enum IntervalNotation
 
         return match ($this) {
             self::Iso8601,
-            self::Iso8601StartDuration => $start.'/'.$interval->duration->toNotation(),
-            self::Iso8601DurationEnd => $interval->duration->toNotation().'/'.$end,
+            self::Iso8601StartDuration => $start.'/'.$interval->duration->format(),
+            self::Iso8601DurationEnd => $interval->duration->format().'/'.$end,
             self::Iso8601StartEnd => $start.'/'.$end,
             self::Iso80000 => '['.$start.','.$end.')',
             self::Bourbaki => '['.$start.','.$end.'[',
@@ -53,33 +53,33 @@ enum IntervalNotation
     /**
      * @throws InvalidInterval|InvalidDuration|InvalidTime
      */
-    public function decode(string $notation, ?Unit $unitOfDay = null): Interval
+    public function decode(string $data, ?Unit $unit = null): Interval
     {
-        $trimmedNotation = trim($notation);
+        $trimmedData = trim($data);
         $pattern = match ($this) {
             self::Bourbaki => self::REGEXP_BOURBAKI,
             self::Iso80000 => self::REGEXP_ISO80000,
             default => self::REGEXP_ISO8601,
         };
 
-        1 === preg_match($pattern, $trimmedNotation, $found) || throw InvalidInterval::dueToMalformedNotation($notation, $this);
+        1 === preg_match($pattern, $trimmedData, $found) || throw InvalidInterval::dueToMalformedFormat($data, $this);
 
         $start = trim($found['start']);
         $end = trim($found['end']);
 
-        '' !== $start || '' !== $end || throw InvalidInterval::dueToMalformedNotation($notation, $this);
+        '' !== $start || '' !== $end || throw InvalidInterval::dueToMalformedFormat($data, $this);
 
         return match ($this) {
             self::Bourbaki,
-            self::Iso80000 => $this->parseMathInterval($start, $end, $notation, $unitOfDay),
-            default => $this->parseIso8601Interval($start, $end, $notation),
+            self::Iso80000 => $this->parseMathInterval($start, $end, $data, $unit),
+            default => $this->parseIso8601Interval($start, $end, $data),
         };
     }
 
     private function formatTime(Time $time, ?Unit $unit): string
     {
         if (null === $unit || !$this->supportsUnit()) {
-            return $time->toNotation();
+            return $time->format();
         }
 
         $value = $time->toOffset($unit);
@@ -92,7 +92,7 @@ enum IntervalNotation
     /**
      * @throws InvalidInterval|InvalidTime|InvalidDuration
      */
-    private function parseMathInterval(string $start, string $end, string $notation, ?Unit $unitOfDay): Interval
+    private function parseMathInterval(string $start, string $end, string $data, ?Unit $unit): Interval
     {
         $start = $this->normalizeMathIntervalValue($start);
         $end = $this->normalizeMathIntervalValue($end);
@@ -102,12 +102,12 @@ enum IntervalNotation
 
         (get_debug_type($start) === get_debug_type($end))
             || is_string($start)
-            || null !== $unitOfDay
-            || throw InvalidInterval::dueToMalformedNotation($notation, $this);
+            || null !== $unit
+            || throw InvalidInterval::dueToMalformedFormat($data, $this);
 
         return Interval::between(
-            $this->createTime($start, $unitOfDay, $notation),
-            $this->createTime($end, $unitOfDay, $notation),
+            $this->createTime($start, $unit, $data),
+            $this->createTime($end, $unit, $data),
         );
     }
 
@@ -133,36 +133,36 @@ enum IntervalNotation
     /**
      * @throws InvalidInterval|InvalidTime
      */
-    private function createTime(int|string|float $value, ?Unit $unitOfDay, string $notation): Time
+    private function createTime(int|string|float $value, ?Unit $unit, string $data): Time
     {
         return match (true) {
-            null !== $unitOfDay && !is_string($value) => Time::fromOffset($value, $unitOfDay),
-            is_string($value) => TimeNotation::Iso8601->decode($value),
-            default => throw InvalidInterval::dueToMalformedNotation($notation, $this),
+            null !== $unit && !is_string($value) => Time::fromOffset($value, $unit),
+            is_string($value) => TimeFormat::Iso8601->decode($value),
+            default => throw InvalidInterval::dueToMalformedFormat($data, $this),
         };
     }
 
     /**
      * @throws InvalidInterval|InvalidTime|InvalidDuration
      */
-    private function parseIso8601Interval(string $start, string $end, string $notation): Interval
+    private function parseIso8601Interval(string $start, string $end, string $format): Interval
     {
-        $isDurationNotation = static fn (string $notation): bool => str_starts_with($notation, 'P') || str_starts_with($notation, '-P');
+        $isDurationFormat = static fn (string $format): bool => str_starts_with($format, 'P') || str_starts_with($format, '-P');
 
         return match (true) {
-            $this->supportsDurationEnd() && $isDurationNotation($start) => Interval::until(
-                end: TimeNotation::Iso8601->decode($end),
-                duration: DurationNotation::Iso8601->decode($start)
+            $this->supportsDurationEnd() && $isDurationFormat($start) => Interval::until(
+                end: TimeFormat::Iso8601->decode($end),
+                duration: DurationFormat::Iso8601->decode($start)
             ),
-            $this->supportsStartDuration() && $isDurationNotation($end) => Interval::since(
-                start: TimeNotation::Iso8601->decode($start),
-                duration: DurationNotation::Iso8601->decode($end),
+            $this->supportsStartDuration() && $isDurationFormat($end) => Interval::since(
+                start: TimeFormat::Iso8601->decode($start),
+                duration: DurationFormat::Iso8601->decode($end),
             ),
             $this->supportsStartEnd() => Interval::between(
-                start: TimeNotation::Iso8601->decode($start),
-                end: TimeNotation::Iso8601->decode($end),
+                start: TimeFormat::Iso8601->decode($start),
+                end: TimeFormat::Iso8601->decode($end),
             ),
-            default => throw InvalidInterval::dueToMalformedNotation($notation, $this),
+            default => throw InvalidInterval::dueToMalformedFormat($format, $this),
         };
     }
 

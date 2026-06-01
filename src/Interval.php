@@ -85,9 +85,9 @@ final readonly class Interval implements JsonSerializable
     /**
      * @throws InvalidDuration|InvalidTime|InvalidInterval
      */
-    public static function fromNotation(string $value, IntervalNotation $notation = IntervalNotation::Iso8601StartDuration, ?Unit $unitOfDay = null): self
+    public static function fromFormat(string $value, IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): self
     {
-        return $notation->decode($value, $unitOfDay);
+        return $format->decode($value, $unit);
     }
 
     /**
@@ -140,9 +140,9 @@ final readonly class Interval implements JsonSerializable
      *
      * @return non-empty-string
      */
-    public function toNotation(IntervalNotation $notation = IntervalNotation::Iso8601StartDuration, ?Unit $unitOfDay = null): string
+    public function format(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): string
     {
-        return $notation->encode($this, $unitOfDay);
+        return $format->encode($this, $unit);
     }
 
     /**
@@ -163,7 +163,7 @@ final readonly class Interval implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->toNotation();
+        return $this->format();
     }
 
     /**
@@ -187,25 +187,25 @@ final readonly class Interval implements JsonSerializable
      */
     public function shift(Duration $duration): self
     {
-        return $duration->isEmpty() ? $this : self::between($this->start->shift($duration), $this->end->shift($duration));
+        return $duration->isZero() ? $this : self::between($this->start->shift($duration), $this->end->shift($duration));
     }
 
     /**
      * @throws InvalidDuration
      */
-    public function shiftBound(Bound $bound, Duration $duration): self
+    public function shiftBound(Duration $duration, Bound $bound): self
     {
         return match (true) {
-            $duration->isEmpty() => $this,
-            Bound::Start === $bound =>  self::between($this->start->shift($duration), $this->end),
-            Bound::End === $bound =>  self::between($this->start, $this->end->shift($duration)),
+            $duration->isZero() => $this,
+            Bound::Start === $bound => self::between($this->start->shift($duration), $this->end),
+            Bound::End === $bound => self::between($this->start, $this->end->shift($duration)),
         };
     }
 
     /**
      * @throws InvalidDuration
      */
-    public function lasting(Bound $from, Duration $duration): self
+    public function lasting(Duration $duration, Bound $from): self
     {
         return match ($from) {
             Bound::Start => self::between($this->start, $this->start->shift($duration)),

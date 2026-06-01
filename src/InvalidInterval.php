@@ -8,8 +8,8 @@ use Throwable;
 
 class InvalidInterval extends TimeException
 {
-    public static function dueToMalformedNotation(string $notation, IntervalNotation $source, ?Throwable $previous = null): self
+    public static function dueToMalformedFormat(string $format, IntervalFormat $source, ?Throwable $previous = null): self
     {
-        return new self('"'.$notation.'" is an invalid or unsupported '.$source->name.' notation.', previous: $previous);
+        return new self('"'.$format.'" is an invalid or unsupported '.$source->name.' format.', previous: $previous);
     }
 }

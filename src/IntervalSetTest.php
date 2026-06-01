@@ -19,8 +19,8 @@ use function unserialize;
 
 use const JSON_UNESCAPED_SLASHES;
 
-#[CoversClass(IntervalNotation::class)]
-#[CoversClass(DurationNotation::class)]
+#[CoversClass(IntervalFormat::class)]
+#[CoversClass(DurationFormat::class)]
 #[CoversClass(IntervalSet::class)]
 #[CoversClass(Interval::class)]
 final class IntervalSetTest extends TestCase
@@ -513,9 +513,9 @@ final class IntervalSetTest extends TestCase
     {
         $set = new IntervalSet($this->i(1, 2), $this->i(3, 4));
 
-        self::assertSame([$this->i(1, 2)->toNotation(IntervalNotation::Iso80000), $this->i(3, 4)->toNotation(IntervalNotation::Iso80000)], $set->allFormatted(IntervalNotation::Iso80000));
-        self::assertSame([$this->i(1, 2)->toNotation(), $this->i(3, 4)->toNotation()], $set->allFormatted());
-        self::assertSame([$this->i(1, 2)->toNotation(IntervalNotation::Bourbaki), $this->i(3, 4)->toNotation(IntervalNotation::Bourbaki)], $set->allFormatted(IntervalNotation::Bourbaki));
+        self::assertSame([$this->i(1, 2)->format(IntervalFormat::Iso80000), $this->i(3, 4)->format(IntervalFormat::Iso80000)], $set->allFormatted(IntervalFormat::Iso80000));
+        self::assertSame([$this->i(1, 2)->format(), $this->i(3, 4)->format()], $set->allFormatted());
+        self::assertSame([$this->i(1, 2)->format(IntervalFormat::Bourbaki), $this->i(3, 4)->format(IntervalFormat::Bourbaki)], $set->allFormatted(IntervalFormat::Bourbaki));
     }
 
     public function test_json_encoded_set(): void
@@ -626,7 +626,7 @@ final class IntervalSetTest extends TestCase
             Interval::between(Time::at(hour: 10), Time::at(hour: 13)),
             Interval::between(Time::noon(), Time::at(hour: 13)),
         );
-        $res = $set->transform(fn (Interval $interval) => $interval->lasting(Bound::End, $duration));
+        $res = $set->transform(fn (Interval $interval) => $interval->lasting($duration, Bound::End));
 
         self::assertNotEquals($set, $res);
         self::assertCount(2, $res);

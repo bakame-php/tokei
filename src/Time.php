@@ -90,9 +90,14 @@ final readonly class Time implements JsonSerializable
     /**
      * @throws InvalidTime
      */
-    public static function fromNotation(string $value, TimeNotation $notation = TimeNotation::Iso8601): self
+    public static function fromFormat(string $value, TimeFormat $format = TimeFormat::Iso8601): self
     {
-        return $notation->decode($value);
+        return $format->decode($value);
+    }
+
+    public static function fromOffset(int|float $value, Unit $unit): self
+    {
+        return new self($unit->toMicroseconds($value));
     }
 
     public static function midnight(): self
@@ -116,11 +121,6 @@ final readonly class Time implements JsonSerializable
     public static function now(DateTimeZone|string|null $timezone = null): self
     {
         return self::fromDate(new DateTimeImmutable(timezone: self::filterTimezone($timezone)));
-    }
-
-    public static function fromOffset(int|float $value, Unit $unit): self
-    {
-        return new self($unit->toMicroseconds($value));
     }
 
     /**
@@ -154,9 +154,9 @@ final readonly class Time implements JsonSerializable
     /**
      * @return non-empty-string
      */
-    public function toNotation(TimeNotation $notation = TimeNotation::Iso8601): string
+    public function format(TimeFormat $format = TimeFormat::Iso8601): string
     {
-        return $notation->encode($this);
+        return $format->encode($this);
     }
 
     /**
@@ -201,7 +201,7 @@ final readonly class Time implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->toNotation();
+        return $this->format();
     }
 
     /**
@@ -256,7 +256,7 @@ final readonly class Time implements JsonSerializable
      */
     public function shift(Duration $duration): self
     {
-        if ($duration->isEmpty()) {
+        if ($duration->isZero()) {
             return $this;
         }
 
