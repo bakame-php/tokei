@@ -50,18 +50,22 @@ enum DurationFormat
     $@x';
 
     /**
+     * Returns a new Duration instance from a string notation representation.
+     *
      * @throws InvalidDuration
      */
-    public function decode(string $data): Duration
+    public function decode(string $notation): Duration
     {
         return match ($this) {
-            self::Iso8601 => self::fromIso8601($data),
-            self::Timer => self::fromTimer($data),
-            self::Compact => self::fromCompact($data),
+            self::Iso8601 => self::fromIso8601($notation),
+            self::Timer => self::fromTimer($notation),
+            self::Compact => self::fromCompact($notation),
         };
     }
 
     /**
+     * Encodes a Duration into a specified string notation representation.
+     *
      * @return non-empty-string
      */
     public function encode(Duration $duration): string

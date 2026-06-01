@@ -14,6 +14,10 @@ use function trim;
 use const FILTER_VALIDATE_FLOAT;
 use const FILTER_VALIDATE_INT;
 
+/**
+ * @see https://en.wikipedia.org/wiki/Interval_(mathematics)#Notations_for_intervals
+ * @see https://en.wikipedia.org/wiki/ISO_31-11
+ */
 enum IntervalFormat
 {
     case Bourbaki;
@@ -28,11 +32,6 @@ enum IntervalFormat
     private const string REGEXP_ISO8601 = '/^(?<start>[^\/]+)\/(?<end>[^\/]+)$/';
 
     /**
-     * @see https://en.wikipedia.org/wiki/Interval_(mathematics)#Notations_for_intervals
-     * @see https://en.wikipedia.org/wiki/ISO_31-11
-     *
-     * @throws InvalidTime
-     *
      * @return non-empty-string
      */
     public function encode(Interval $interval, ?Unit $unit = null): string
@@ -51,7 +50,7 @@ enum IntervalFormat
     }
 
     /**
-     * @throws InvalidInterval|InvalidDuration|InvalidTime
+     * @throws InvalidInterval
      */
     public function decode(string $data, ?Unit $unit = null): Interval
     {
@@ -69,11 +68,17 @@ enum IntervalFormat
 
         '' !== $start || '' !== $end || throw InvalidInterval::dueToMalformedFormat($data, $this);
 
-        return match ($this) {
-            self::Bourbaki,
-            self::Iso80000 => $this->parseMathInterval($start, $end, $data, $unit),
-            default => $this->parseIso8601Interval($start, $end, $data),
-        };
+        try {
+            return match ($this) {
+                self::Bourbaki,
+                self::Iso80000 => $this->parseMathInterval($start, $end, $data, $unit),
+                default => $this->parseIso8601Interval($start, $end, $data),
+            };
+        } catch (TimeException $exception) {
+            $exception instanceof InvalidInterval
+                ? throw $exception
+                : throw InvalidInterval::dueToMalformedFormat($data, $this, $exception);
+        }
     }
 
     private function formatTime(Time $time, ?Unit $unit): string

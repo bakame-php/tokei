@@ -9,8 +9,6 @@ use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
-use TypeError;
-use ValueError;
 
 use function array_map;
 use function iterator_to_array;
@@ -602,7 +600,7 @@ final class IntervalSetTest extends TestCase
             Interval::between(Time::at(hour: 10), Time::at(hour: 13)),
             Interval::between(Time::noon(), Time::at(hour: 13)),
         );
-        $sorted = $set->sorted(sortDirection: 'descending');
+        $sorted = $set->sorted(direction: Order::Descending);
 
         self::assertNotSame($set, $sorted);
         self::assertSame($set->last(), $sorted->first());
@@ -614,7 +612,7 @@ final class IntervalSetTest extends TestCase
             Interval::between(Time::at(hour: 10), Time::at(hour: 13)),
             Interval::between(Time::noon(), Time::at(hour: 13)),
         );
-        $sorted = $set->sorted(sortDirection: 'descending', sortBound: Bound::End);
+        $sorted = $set->sorted(by: Bound::End, direction: Order::Descending);
 
         self::assertNotSame($set, $sorted);
         self::assertSame($set->last(), $sorted->first());
@@ -632,13 +630,6 @@ final class IntervalSetTest extends TestCase
         self::assertNotEquals($set, $res);
         self::assertCount(2, $res);
         self::assertTrue($res->every(fn (Interval $interval) => $interval->duration->equals($duration)));
-    }
-
-    public function test_sorting_with_an_invalid_sorting_direction(): void
-    {
-        $this->expectException(ValueError::class);
-
-        (new IntervalSet())->sorted(Bound::Start, 'foo');
     }
 
     /**
@@ -851,14 +842,6 @@ final class IntervalSetTest extends TestCase
         $intervals = new IntervalSet();
 
         self::assertSame($intervals, $intervals->gaps());
-    }
-
-    public function test_sorting_fails_with_wrong_enum(): void
-    {
-        $intervals = new IntervalSet();
-        $this->expectException(TypeError::class);
-
-        $intervals->sorted(sortDirection: Business::Afternoon);
     }
 }
 

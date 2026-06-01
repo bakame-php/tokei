@@ -14,14 +14,14 @@ use function round;
  */
 final class UnitTransformer
 {
-    public static function round(int $valueInMicro, Unit $unit, RoundingStrategy $strategy = RoundingStrategy::Nearest): int
+    public static function round(int $valueInMicro, Unit $unit, Rounding $mode = Rounding::Nearest): int
     {
         $unit = $unit->inMicroseconds();
         $factor = $valueInMicro / $unit;
-        $roundedFactor = match ($strategy) {
-            RoundingStrategy::Floor => floor($factor),
-            RoundingStrategy::Ceil => ceil($factor),
-            RoundingStrategy::Nearest => round($factor),
+        $roundedFactor = match ($mode) {
+            Rounding::Floor => floor($factor),
+            Rounding::Ceil => ceil($factor),
+            Rounding::Nearest => round($factor),
         };
 
         return (int) ($roundedFactor * $unit);

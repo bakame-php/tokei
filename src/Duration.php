@@ -8,10 +8,9 @@ use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
 use JsonSerializable;
+use ValueError;
 
 use function array_column;
-use function array_reduce;
-use function array_shift;
 use function array_sum;
 use function intdiv;
 use function is_int;
@@ -97,6 +96,13 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
+     * Returns a new instance from a DateInterval object.
+     *
+     * if the DateInterval days property is false
+     * and one of the y or m properties is set
+     * an exception will be thrown as the object
+     * will contain non-deterministic values
+     *
      * @throws InvalidDuration
      */
     public static function fromDateInterval(DateInterval $interval): self
@@ -116,6 +122,8 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
+     * @see DurationFormat::decode()
+     *
      * @throws InvalidDuration
      */
     public static function fromFormat(string $value, DurationFormat $format = DurationFormat::Iso8601): self
@@ -124,52 +132,75 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @throws InvalidDuration
+     * Returns an instance with 0s duration.
      */
     public static function zero(): self
     {
-        return new self(0);
+        /** @var ?self $duration */
+        static $duration = null;
+
+        return $duration ??= new self(0);
     }
 
     /**
-     * @throws InvalidDuration
+     * Returns an instance with the highest duration value supported by the package.
      */
     public static function max(): self
     {
-        return new self(PHP_INT_MAX - 1);
+        /** @var ?self $duration */
+        static $duration = null;
+
+        return $duration ??= new self(PHP_INT_MAX - 1);
     }
 
     /**
-     * @throws InvalidDuration
+     * Returns an instance with the lowest duration value supported by the package.
      */
     public static function min(): self
     {
-        return new self(PHP_INT_MIN + 2);
+        /** @var ?self $duration */
+        static $duration = null;
+
+        return $duration ??= new self(PHP_INT_MIN + 2);
     }
 
     /**
-     * @throws InvalidDuration
+     * Returns the shortest instance from a collection of instances.
+     *
+     * @throws ValueError if no argument is given
      */
     public static function minOf(self ...$durations): self
     {
-        [] !== $durations || throw new InvalidDuration('minOf() expects at least one duration');
-        $min = array_shift($durations);
+        $value = null;
+        foreach ($durations as $duration) {
+            if (null === $value || $duration->isShorterThan($value)) {
+                $value = $duration;
+            }
+        }
 
-        return array_reduce($durations, fn (self $min, self $item): self => $item->isShorterThan($min) ? $item : $min, $min);
+        return null !== $value ? $value : throw new ValueError('minOf() expects at least one duration');
     }
 
     /**
-     * @throws InvalidDuration
+     * Returns the longest instance from a collection of instances.
+     *
+     * @throws ValueError if no argument is given
      */
     public static function maxOf(self ...$durations): self
     {
-        [] !== $durations || throw new InvalidDuration('maxOf() expects at least one duration');
-        $max = array_shift($durations);
+        $value = null;
+        foreach ($durations as $duration) {
+            if (null === $value || $duration->isLongerThan($value)) {
+                $value = $duration;
+            }
+        }
 
-        return array_reduce($durations, fn (self $max, self $item): self => $item->isLongerThan($max) ? $item : $max, $max);
+        return null !== $value ? $value : throw new ValueError('maxOf() expects at least one duration');
     }
 
     /**
+     * @see DurationFormat::encode()
+     *
      * @return non-empty-string
      */
     public function format(DurationFormat $format = DurationFormat::Iso8601): string
@@ -177,6 +208,11 @@ final readonly class Duration implements JsonSerializable
         return $format->encode($this);
     }
 
+    /**
+     * Converts the instance to an DateInterval object.
+     *
+     *
+     */
     public function toDateInterval(?DateTimeInterface $relativeTo = null): DateInterval
     {
         $interval = new DateInterval('PT0S');
@@ -199,12 +235,17 @@ final readonly class Duration implements JsonSerializable
         return $relativeTo->diff($relativeTo->add($interval));
     }
 
+    /**
+     * Returns the Duration as expressed in the specified Unit of time.
+     */
     public function total(Unit $unit): int|float
     {
         return UnitTransformer::fromMicroseconds($this->value, $unit);
     }
 
     /**
+     * @see self::format()
+     *
      * @return non-empty-string
      */
     public function jsonSerialize(): string
@@ -221,6 +262,8 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
+     * Invert the duration sign.
+     *
      * @throws InvalidDuration
      */
     public function negated(): self
@@ -237,11 +280,11 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @throws InvalidDuration
+     * Returns a new instance rounded to the specified unit using a rounding mode.
      */
-    public function roundTo(Unit $unit, RoundingStrategy $strategy = RoundingStrategy::Nearest): self
+    public function roundTo(Unit $unit, Rounding $mode = Rounding::Nearest): self
     {
-        $rounded = UnitTransformer::round($this->value, $unit, $strategy);
+        $rounded = UnitTransformer::round($this->value, $unit, $mode);
 
         return $this->value === $rounded ? $this : new self($rounded);
     }
@@ -321,13 +364,18 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @return int<-1, 1>
+     *  Compare this instance with another.
+     *
+     * @return int<-1, 1> If this duration is shorter, equal, or longer than the given duration.
      */
     public function compareTo(self $other): int
     {
         return $this->value <=> $other->value;
     }
 
+    /**
+     * Tells whether this instance is equal to the specified duration.
+     */
     public function equals(self $other): bool
     {
         return 0 === $this->compareTo($other);
@@ -353,6 +401,10 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
+     * Checks if this instance is within a certain bound.
+     *
+     * If the value is in range it returns the value, if the value is not in range it returns the nearest bound.
+     *
      * @throws InvalidDuration
      */
     public function clamp(self $min, self $max): self

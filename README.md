@@ -56,7 +56,7 @@ $time = Time::fromFormat("10h30m15s123456µs", TimeFormat::Compact);
 $time = Time::fromOffset(123_456_789, Unit::Microsecond);
 $time = Time::fromOffset(123_456, Unit::Millisecond);
 $time = Time::fromOffset(123, Unit::Second);
-$time = Time::fromOffset(456, Unit::Minute);
+$time = Time::fromOffset(-1, Unit::Minute); // returns "23:59:00"
 ```
 
 To ease instantiation, predefined instances can be obtained with the following methods:
@@ -65,14 +65,16 @@ To ease instantiation, predefined instances can be obtained with the following m
 Time::midnight(); // 00:00:00
 Time::noon();     // 12:00:00
 Time::endOfDay(); // 23:59:59.999999
-Time::now();      // the current time
+Time::utc();      // the UTC current time
 Time::now('Africa/Nairobi'); // the current time in Nairobi, Kenya
+Time::fromDateTime(new DateTimeImmutable()); // returns the extracted time from any DateTimeInterface instance
 ```
 
 > [!NOTE]
-> If the `Time::now()` takes an optional timezone to
-> return the current time in a specific timezome. The timezone
-> information is not kept.
+> The timezone is required when using `Time::now()` to
+> return the current time in a specific timezone. The method
+> accepts a `DateTimeZone` instance or a timezone string identifier.
+> Once instantiated, the timezone information is lost.
 
 #### Accessors
 
@@ -92,6 +94,7 @@ $time->microsecond;  // returns 123456
 Time::format(TimeFormat $format = TimeFormat::Iso8601): string
 Time::toOffset(Unit $unit): float; // returns the time value according to the provided
 Time::toLocaleString(string $locale, ?DateTimeZone $timezone = null, LocaleVerbosity $verbosity = LocaleVerbosity::Medium): string
+Time::toDateTime(DateTimeZone|string $timezone): DateTimeImmutable
 ```
 
 To work as expected the `Time::toLocaleString` requires the presence of the Intl extension or
@@ -215,13 +218,15 @@ $a->distance($b)->format(DurationFormat::Iso8601); // returns "PT2H"
 #### Interacting with PHP's native Date API
 
 ```php
-Time::fromDate(DateTimeInterface $datetime): Time
+Time::fromDateTime(DateTimeInterface $datetime): Time
+Time::toDateTime(DateTimeZone|string $timezone): DateTimeImmutable;
 Time::applyTo(DateTimeInterface $datetime): DateTimeImmutable;
 ```
 
 In one hand, it is possible to extract the time part of any `DateTimeInterface`
-implementing class using the `fromDate` method. On the other hand, you
-can apply the time to an `DateTimeInterface` object using the `applyTo` method
+implementing class using the `fromDateTime` method. On the other hand, you
+can apply the time to an `DateTimeInterface` object using the `applyTo` method or get
+the time attached to current day in a specific timezone using the `toDateTime` method.
 
 > [!NOTE]
 > If the `DateTimeInterface` instance submitted extends the
@@ -233,16 +238,24 @@ use Bakame\Tokei\Time;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 
-$time = Time::fromDate(new DateTime('2025-12-27 23:00', new DateTimeZone('Africa/Nairobi'))); // 23:00
+$time = Time::fromDateTime(new DateTime('2025-12-27 23:00', new DateTimeZone('Africa/Nairobi'))); // 23:00
 
 $newDate = $time->applyTo(CarbonImmutable::parse('2025-02-23'));
-$newDate->format('Y-m-d H:i'); // returns '2025-02-23 23:00'
-$newDate->toDateTimeString(); // returns '2025-02-23 23:00'
-$newDate::class; // returns Carbon\CarbonImmutable
+$newDate->format('Y-m-d H:i');
+// '2025-02-23 23:00'
+$newDate->toDateTimeString();
+// '2025-02-23 23:00'
+$newDate::class;
+// Carbon\CarbonImmutable
 
 $altDate = $time->applyTo(Carbon::parse('2025-02-23'));
-$altDate->format('Y-m-d H:i'); // returns '2025-02-23 23:00'
-$altDate::class; // returns DateTimeImmutable
+$altDate->format('Y-m-d H:i');
+// '2025-02-23 23:00'
+$altDate::class;
+// DateTimeImmutable
+$date2 = $time->toDateTime('Asia/Tokyo');
+// DateTimeImmutable
+// an instance from the current date at 23:00 Tokyo time.
 ```
 
 ### Duration
@@ -552,7 +565,6 @@ Interval::splitAt(Time ...$steps): IntervalSet
 ```php
 Interval::startingOn(Time $time): self
 Interval::endingOn(Time $time): self
-Interval::roundTo(Unit $unit, RoundingStrategy $strategy): self
 Interval::expand(Duration $duration): self
 Interval::shift(Duration $duration): self
 Interval::shiftBound(Duration $duration, Bound $from): self

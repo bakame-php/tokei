@@ -9,11 +9,7 @@ use Countable;
 use DateTimeInterface;
 use IteratorAggregate;
 use JsonSerializable;
-use SortDirection;
 use Traversable;
-use TypeError;
-use UnitEnum;
-use ValueError;
 
 use function array_column;
 use function array_key_last;
@@ -24,7 +20,6 @@ use function count;
 use function in_array;
 use function max;
 use function min;
-use function strtolower;
 use function usort;
 
 /**
@@ -85,10 +80,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      */
     public function allFormatted(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): array
     {
-        return array_map(
-            static fn (Interval $interval): string => $interval->format($format, $unit),
-            $this->intervals
-        );
+        return array_map(static fn (Interval $interval): string => $interval->format($format, $unit), $this->intervals);
     }
 
     /**
@@ -105,20 +97,30 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     }
 
     /**
-     * @throws TimeException
+     * Returns the interval at the given position.
+     *
+     * Supports negative offsets, where -1 refers to the last interval.
+     *
+     * @throws TimeException If the offset is out of range.
      */
     public function get(int $offset): Interval
     {
         return $this->nth($offset) ?? throw new TimeException('Invalid offset ('.$offset.') given to '.self::class.'.');
     }
 
+    /**
+     * Returns the interval at the given position, or null if it does not exist.
+     *
+     * Supports negative offsets, where -1 refers to the last interval.
+     */
     public function nth(int $offset): ?Interval
     {
+        $count = count($this->intervals);
         if ($offset < 0) {
-            $offset += count($this->intervals);
+            $offset = $count + $offset;
         }
 
-        return $this->intervals[$offset] ?? null;
+        return ($offset < 0 || $offset >= $count) ? null : $this->intervals[$offset];
     }
 
     /**
@@ -382,7 +384,14 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     }
 
     /**
+     * Iterates over all intervals in this set.
+     *
+     * The callback receives the current Interval and its index.
+     * If the callback returns false, iteration stops immediately.
+     *
      * @param callable(Interval, int=): mixed $callback
+     *
+     * @return bool True if iteration completed, false if it was stopped early by the callback.
      */
     public function each(callable $callback): bool
     {
@@ -398,7 +407,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     /**
      * @throws InvalidDuration|InvalidInterval
      */
-    public function gaps(): IntervalSet
+    public function gaps(): self
     {
         if ($this->isEmpty()) {
             return $this;
@@ -414,7 +423,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
             $previous = $interval;
         }
 
-        return new IntervalSet(...$result);
+        return new self(...$result);
     }
 
     /**
@@ -516,7 +525,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      */
     public function complement(): self
     {
-        return (new IntervalSet(Interval::fullDay()))->difference($this)->union();
+        return (new self(Interval::fullDay()))->difference($this)->union();
     }
 
     /**
@@ -575,58 +584,32 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     }
 
     /**
-     * Sorts the set on each Interval starting time.
-     *
-     * @see https://wiki.php.net/rfc/sort_direction_enum
-     *
-     * The only Enum supported is the PHP8.6+ SortDirection Enum and its polyfill,
-     * otherwise, the strings "asc", "ascending", "desc" and "descending" are
-     * supported in a case-insensitive way.
+     * Sorts the set using each Interval startg or ending time.
      *
      * @throws InvalidDuration
      */
-    public function sorted(Bound $sortBound = Bound::Start, UnitEnum|string $sortDirection = 'ascending'): self
+    public function sorted(Bound $by = Bound::Start, Order $direction = Order::Ascending): self
     {
-        return $this->sortedUsing(self::filterCompare($sortBound, self::filterSortDirection($sortDirection)));
+        return $this->sortedUsing(self::filterCompare($by, $direction));
     }
 
     /**
-     * @param 'ascending'|'descending' $sortDirection
-     *
      * @return Closure(Interval, Interval): int
      */
-    private static function filterCompare(Bound $bound, string $sortDirection): Closure
+    private static function filterCompare(Bound $bound, Order $sortDirection): Closure
     {
         $primary = match ($bound) {
-            Bound::Start => static fn (Interval $x, Interval $y) => $x->linearStart <=> $y->linearStart,
-            Bound::End => static fn (Interval $x, Interval $y) => $x->linearEnd <=> $y->linearEnd,
+            Bound::Start => static fn (Interval $x, Interval $y): int => $x->linearStart <=> $y->linearStart,
+            Bound::End => static fn (Interval $x, Interval $y): int => $x->linearEnd <=> $y->linearEnd,
         };
 
-        $primary = 'ascending' === $sortDirection ? $primary : static fn (Interval $x, Interval $y) => $primary($y, $x);
+        $primary = Order::Ascending === $sortDirection ? $primary : static fn (Interval $x, Interval $y): int => $primary($y, $x);
         $secondary = static fn (Interval $x, Interval $y): int => $x->duration->compareTo($y->duration);
 
         return static function (Interval $x, Interval $y) use ($primary, $secondary): int {
             $result = $primary($x, $y);
 
             return 0 !== $result ? $result : $secondary($x, $y);
-        };
-    }
-
-    /**
-     * @return 'ascending'|'descending'
-     */
-    private static function filterSortDirection(UnitEnum|string $sortDirection): string
-    {
-        if ($sortDirection instanceof UnitEnum) {
-            'SortDirection' === $sortDirection::class || throw new TypeError('Argument ($sortDirection) must be of type SortDirection, '.$sortDirection::class.' given,');
-
-            $sortDirection = $sortDirection->name;
-        }
-
-        return match (strtolower($sortDirection)) {
-            'asc', 'ascending' => 'ascending',
-            'desc', 'descending' => 'descending',
-            default => throw new ValueError("Unknown sort direction '$sortDirection'")
         };
     }
 

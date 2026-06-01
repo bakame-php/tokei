@@ -17,32 +17,34 @@ enum TimeFormat
     case Compact;
     case Iso8601;
 
-    private const string REGEXP_ISO8601 = '/^
+    private const string REGEXP_ISO8601 = '@^
         (?<hour>\d{1,2}):
         (?<minute>\d{1,2})
         (:(?<second>\d{1,2}))?
         (?:\.(?<microsecond>\d{1,6}))?
-    $/x';
+    $@x';
 
     private const string REGEXP_COMPACT = '@^
-        (?<hour>\d+)\s*h\s*
-        (?<minute>\d+)\s*m\s*
-        (?:(?<second>\d+)\s*s\s*)?
-        (?:(?<microsecond>\d+)\s*(µs|us)\s*)?
+        (?<hour>\d{1,2})\s*h\s*
+        (?<minute>\d{1,2})\s*m\s*
+        (?:(?<second>\d{1,2})\s*s\s*)?
+        (?:(?<microsecond>\d{1,6})\s*(µs|us)\s*)?
     $@x';
 
     /**
+     * Returns a new Time instance from a string notation representation.
+     *
      * @throws InvalidTime
      */
-    public function decode(string $data): Time
+    public function decode(string $notation): Time
     {
         $regexp = match ($this) {
             self::Iso8601 => self::REGEXP_ISO8601,
             self::Compact => self::REGEXP_COMPACT,
         };
 
-        $data = trim($data);
-        1 === preg_match($regexp, $data, $parts) || throw new InvalidTime('Unknown or bad format `'.$data.'`.');
+        $notation = trim($notation);
+        1 === preg_match($regexp, $notation, $parts) || throw new InvalidTime('Unknown or bad format `'.$notation.'`.');
 
         return Time::at(
             hour: (int) $parts['hour'],
@@ -53,6 +55,8 @@ enum TimeFormat
     }
 
     /**
+     * Encodes a Time into a specified string notation representation.
+     *
      * @return non-empty-string
      */
     public function encode(Time $time): string

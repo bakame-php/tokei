@@ -21,6 +21,7 @@ use function unserialize;
 #[CoversClass(TimeFormat::class)]
 #[CoversClass(Unit::class)]
 #[CoversClass(UnitTransformer::class)]
+#[CoversClass(LocaleTimeFormatter::class)]
 final class TimeTest extends TestCase
 {
     /* -------------------------------------------------
@@ -132,7 +133,7 @@ final class TimeTest extends TestCase
     public function testParseDateTime(): void
     {
         $dt = new DateTimeImmutable('2024-01-01 10:20:30.123456');
-        $time = Time::fromDate($dt);
+        $time = Time::fromDateTime($dt);
 
         self::assertSame(10, $time->hour);
         self::assertSame(20, $time->minute);
@@ -462,9 +463,9 @@ final class TimeTest extends TestCase
     ): void {
         $time = Time::fromOffset($input, Unit::Microsecond);
 
-        self::assertSame($expectedTruncate, $time->roundTo($precision, RoundingStrategy::Floor)->toOffset(Unit::Microsecond));
+        self::assertSame($expectedTruncate, $time->roundTo($precision, Rounding::Floor)->toOffset(Unit::Microsecond));
         self::assertSame($expectedRound, $time->roundTo($precision)->toOffset(Unit::Microsecond));
-        self::assertSame($expectedCeil, $time->roundTo($precision, RoundingStrategy::Ceil)->toOffset(Unit::Microsecond));
+        self::assertSame($expectedCeil, $time->roundTo($precision, Rounding::Ceil)->toOffset(Unit::Microsecond));
     }
 
     /**
@@ -640,7 +641,18 @@ final class TimeTest extends TestCase
 
     public function test_time_now(): void
     {
-        self::assertFalse(Time::now()->equals(Time::now('Asia/Tokyo')));
+        // Time value are rounded to minute
+        // to reduce the delta during instantiation.
+
+        $timeInNairobi = Time::now('Africa/Nairobi')->roundTo(Unit::Minute);
+        $timeInTokyo = Time::now('Asia/Tokyo')->roundTo(Unit::Minute);
+
+        self::assertFalse($timeInNairobi->equals($timeInTokyo));
+
+        $timeUtc = Time::utc()->roundTo(Unit::Minute);
+        $timeUtcBis = Time::now('UTC')->roundTo(Unit::Minute);
+
+        self::assertTrue($timeUtc->equals($timeUtcBis));
     }
 
     public function test_invalid_timezone_identifier(): void

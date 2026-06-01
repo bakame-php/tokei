@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
-enum RoundingStrategy
+enum Rounding
 {
     case Floor;
     case Nearest;

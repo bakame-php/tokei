@@ -231,7 +231,7 @@ final class DurationTest extends TestCase
     #[DataProvider('truncateProvider')]
     public function test_truncate_to_precision(
         int $microseconds,
-        Unit $precision,
+        Unit $unit,
         int $expectedMicroseconds,
     ): void {
 
@@ -242,7 +242,7 @@ final class DurationTest extends TestCase
         self::assertSame(
             $expectedMicroseconds,
             $duration
-                ->roundTo($precision, RoundingStrategy::Floor)
+                ->roundTo($unit, Rounding::Floor)
                 ->total(Unit::Microsecond),
         );
     }
@@ -296,13 +296,13 @@ final class DurationTest extends TestCase
     #[DataProvider('truncateImmutabilityProvider')]
     public function test_truncate_is_immutable(
         int $microseconds,
-        Unit $precision,
+        Unit $unit,
     ): void {
         $duration = 0 > $microseconds
             ? Duration::of(microseconds: -$microseconds)->negated()
             : Duration::of(microseconds:$microseconds);
 
-        $result = $duration->roundTo($precision, RoundingStrategy::Floor);
+        $result = $duration->roundTo($unit, Rounding::Floor);
 
         self::assertNotSame($duration, $result);
     }
@@ -322,8 +322,8 @@ final class DurationTest extends TestCase
         $positive = Duration::of(microseconds:3_661_500_000);
         $negative = Duration::of(microseconds:3_661_500_000)->negated();
 
-        self::assertTrue($positive->roundTo(Unit::Minute, RoundingStrategy::Floor)->total(Unit::Microsecond) > 0);
-        self::assertTrue($negative->roundTo(Unit::Minute, RoundingStrategy::Floor)->total(Unit::Microsecond) < 0);
+        self::assertTrue($positive->roundTo(Unit::Minute, Rounding::Floor)->total(Unit::Microsecond) > 0);
+        self::assertTrue($negative->roundTo(Unit::Minute, Rounding::Floor)->total(Unit::Microsecond) < 0);
     }
 
     public function test_it_can_not_invert_php_int_max(): void

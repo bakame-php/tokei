@@ -485,7 +485,7 @@ final class IntervalTest extends TestCase
     {
         $range = Interval::between(Time::at(10), Time::at(12));
 
-        $updated = $range->shiftBound(duration: Duration::of(hours: 1), bound: Bound::Start);
+        $updated = $range->shiftBound(duration: Duration::of(hours: 1), to: Bound::Start);
 
         self::assertSame('[11:00:00,12:00:00)', $updated->format(IntervalFormat::Iso80000));
     }
@@ -494,7 +494,7 @@ final class IntervalTest extends TestCase
     {
         $range = Interval::between(Time::at(10), Time::at(12));
 
-        $updated = $range->shiftBound(duration: Duration::of(hours: 2), bound: Bound::End);
+        $updated = $range->shiftBound(duration: Duration::of(hours: 2), to: Bound::End);
 
         self::assertSame('[10:00:00,14:00:00)', $updated->format(IntervalFormat::Iso80000));
     }
@@ -938,10 +938,6 @@ final class IntervalTest extends TestCase
             $interval->format(IntervalFormat::Iso8601StartEnd),
             $interval->format(IntervalFormat::Iso8601StartEnd, Unit::Minute)
         );
-        self::assertSame('10:00:00/12:00:00', $interval->roundTo(Unit::Second, RoundingStrategy::Floor)->format(IntervalFormat::Iso8601StartEnd));
-        self::assertSame('10:00:01/12:00:00', $interval->roundTo(Unit::Second, RoundingStrategy::Nearest)->format(IntervalFormat::Iso8601StartEnd));
-        self::assertSame('[600,720[', $interval->roundTo(Unit::Second, RoundingStrategy::Floor)->format(IntervalFormat::Bourbaki, Unit::Minute));
-        self::assertSame('[600.016667,720[', $interval->roundTo(Unit::Second, RoundingStrategy::Nearest)->format(IntervalFormat::Bourbaki, Unit::Minute));
         self::assertSame('[600.016667,720[', Interval::fromFormat(
             '[600.016667,720[',
             IntervalFormat::Bourbaki,
