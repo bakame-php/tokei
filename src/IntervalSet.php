@@ -42,6 +42,16 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
         $this->duration = Duration::zero()->sum(...array_column($this->intervals, 'duration'));
     }
 
+    /**
+     * Returns a new instance with its intervals ordered by ascending start time.
+     *
+     * @throws InvalidDuration
+     */
+    public static function chronological(Interval|self ...$intervals): self
+    {
+        return (new self(...$intervals))->sorted();
+    }
+
     public function count(): int
     {
         return count($this->intervals);
@@ -435,13 +445,13 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
             return $this;
         }
 
-        $other = new self(...$others);
+        $other = self::chronological(...$others)->union();
         if ($other->isEmpty()) {
             return $this;
         }
 
         $differences = [];
-        $otherIntervals = $other->union()->intervals;
+        $otherIntervals = $other->intervals;
         foreach ($this->union()->intervals as $interval) {
             if (IntervalType::Collapsed === $interval->type) {
                 continue;
@@ -500,13 +510,13 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
             return $this;
         }
 
-        $other = new self(...$others);
+        $other = self::chronological(...$others)->union();
         if ($other->isEmpty()) {
             return $this;
         }
 
         $intersections = [];
-        $bSpans = $other->union()->intervals;
+        $bSpans = $other->intervals;
         foreach ($this->union()->intervals as $aInterval) {
             foreach ($bSpans as $bInterval) {
                 $start = max($aInterval->linearStart, $bInterval->linearStart);
@@ -598,18 +608,18 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      */
     private static function filterCompare(Bound $bound, Order $sortDirection): Closure
     {
-        $primary = match ($bound) {
-            Bound::Start => static fn (Interval $x, Interval $y): int => $x->linearStart <=> $y->linearStart,
-            Bound::End => static fn (Interval $x, Interval $y): int => $x->linearEnd <=> $y->linearEnd,
+        $directionFactor = Order::Ascending === $sortDirection ? 1 : -1;
+        $keyExtractor = match ($bound) {
+            Bound::Start => static fn (Interval $i): int => $i->linearStart,
+            Bound::End => static fn (Interval $i): int => $i->linearEnd,
         };
 
-        $primary = Order::Ascending === $sortDirection ? $primary : static fn (Interval $x, Interval $y): int => $primary($y, $x);
-        $secondary = static fn (Interval $x, Interval $y): int => $x->duration->compareTo($y->duration);
+        $durationComparator = static fn (Interval $a, Interval $b): int => $a->duration->compareTo($b->duration);
 
-        return static function (Interval $x, Interval $y) use ($primary, $secondary): int {
-            $result = $primary($x, $y);
+        return static function (Interval $a, Interval $b) use ($keyExtractor, $directionFactor, $durationComparator): int {
+            $result = ($keyExtractor($a) <=> $keyExtractor($b)) * $directionFactor;
 
-            return 0 !== $result ? $result : $secondary($x, $y);
+            return 0 !== $result ? $result : $durationComparator($a, $b);
         };
     }
 

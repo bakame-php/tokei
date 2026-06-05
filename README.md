@@ -637,8 +637,11 @@ An `IntervalSet` may contain zero, one, or multiple non-overlapping intervals, i
 ```php
 use Bakame\Tokei\IntervalSet;
 
-IntervalSet::__constrcut(Interval|IntervalSet ....$interval)
+IntervalSet::__construct(Interval|IntervalSet ....$intervals)
+IntervalSet::chrolological(Interval|IntervalSet ....$intervals): self
 ```
+
+The `chronological` named constructor returns a new `IntervalSet` with its intervals ordered by ascending start time.
 
 #### Accessors
 

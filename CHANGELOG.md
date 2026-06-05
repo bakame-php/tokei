@@ -8,6 +8,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 - `IntervalSet::each`
 - `IntervalSet::transform`
+- `IntervalSet::chronological`
 - `Interval::fromFormat`
 - `Duration::fromDateInterval`
 - `Duration::fromFormat`
