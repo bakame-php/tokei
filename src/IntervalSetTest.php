@@ -519,7 +519,7 @@ final class IntervalSetTest extends TestCase
 
     public function test_json_encoded_set(): void
     {
-        self::assertStringContainsString('"12:00:00/PT6H"', (string) json_encode(Business::shifts(), JSON_UNESCAPED_SLASHES));
+        self::assertStringContainsString('"12:00:00/PT6H[)"', (string) json_encode(Business::shifts(), JSON_UNESCAPED_SLASHES));
     }
 
     public function test_native_conversion(): void

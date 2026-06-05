@@ -513,6 +513,7 @@ using the following Enum:
 ```php
 enum IntervalFormat
 {
+    case Canonical;
     case Iso8601StartDuration;
     case Iso8601DurationEnd;
     case Iso8601StartEnd;
@@ -530,6 +531,7 @@ Out of the box, to following formatting algorithm are possible:
 - `Iso8601` returns the same representation as `Iso8601StartDuration`;
 - `Iso80000` returns a string representation based on the interval starting and ending times and the half-open bound;
 - `Bourbaki` returns a string representation based on the interval starting and ending times and the half-open bound, with different boundary markers;
+- `Canonical` same as `Iso8601StartDuration` but extends the notation with the HalfOpen boundaries of `Iso80000`;
 
 ```php
 $interval = Interval::between(Time::midnight(), Time::noon());
@@ -538,7 +540,12 @@ $interval->format(IntervalFormat::Iso8601StartEnd);      // returns 00:00:00/12:
 $interval->format(IntervalFormat::Iso8601DurationEnd);   // returns PT12H?00:00:00
 $interval->format(IntervalFormat::Iso80000);             // returns [00:00:00,12:00:00)
 $interval->format(IntervalFormat::Bourbaki);             // returns [00:00:00,12:00:00[
+$interval->format(IntervalFormat::Canonical);            // returns 00:00:00/PT12H[)
 ```
+
+> [!NOTE]
+> The canonical version is the one used for json string representation via `JsonSerialize` so
+> that the start, duration and boundaries information can be transferred without loss of information
 
 > [!IMPORTANT]
 > The same Enum is used when using `Duration::fromFormat`, the only difference is on instantiation,

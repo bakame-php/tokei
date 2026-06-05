@@ -43,6 +43,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC BREAK:** `Duration::of` no longer accepts negative integer use `negated()` of `fromFormat`.
 - **BC BREAK:** `Interval::lasting` signature parameter order.
 - **BC BREAK:** `Interval::shiftBound` signature parameter order.
+- **BC BREAK:** `Interval` json string representation is updated by suffixing the boundaries as expressed by `ISO-80000`.
 - **BC BREAK:** `Unit` enum now only exposes the `inMicroseconds` method all other methods are moved to an internal `UnitTransformer` class.
 - **BC BREAK:** `Time::now` has a new timezone argument which is mandatory.
 

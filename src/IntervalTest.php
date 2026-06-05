@@ -785,7 +785,7 @@ final class IntervalTest extends TestCase
     {
         $interval = Interval::between(Time::at(22), Time::at(2));
 
-        self::assertSame('"22:00:00/PT4H"', json_encode($interval, JSON_UNESCAPED_SLASHES));
+        self::assertSame('"22:00:00/PT4H[)"', json_encode($interval, JSON_UNESCAPED_SLASHES));
     }
 
     /**
@@ -943,5 +943,26 @@ final class IntervalTest extends TestCase
             IntervalFormat::Bourbaki,
             Unit::Minute
         )->format(IntervalFormat::Bourbaki, Unit::Minute));
+    }
+
+    /**
+     * @param non-empty-string $notation
+     */
+    #[DataProvider('invalidCanonicalNotation')]
+    public function test_it_can_not_decode_an_invalid_canonical_string(string $notation): void
+    {
+        $this->expectException(TimeException::class);
+
+        Interval::fromFormat('11:00:00/PT3M0.5S[]', IntervalFormat::Canonical);
+    }
+
+    /**
+     * @return iterable<non-empty-string, array{notation: non-empty-string}>
+     */
+    public static function invalidCanonicalNotation(): iterable
+    {
+        yield 'unsupported boundaries' => ['notation' => '11:00:00/PT3M0.5S[]'];
+        yield 'missing boundaries' => ['notation' => '11:00:00/PT3M0.5S'];
+        yield 'wrong notation' => ['notation' => '[11:00:00,12:00:00)'];
     }
 }

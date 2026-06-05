@@ -26,10 +26,12 @@ enum IntervalFormat
     case Iso8601DurationEnd;
     case Iso8601StartEnd;
     case Iso8601;
+    case Canonical;
 
     private const string REGEXP_ISO80000 = '/^\[(?<start>[^,)]*),(?<end>[^,)]*)\)$/';
     private const string REGEXP_BOURBAKI = '/^\[(?<start>[^,\[]*),(?<end>[^,\[]*)\[$/';
     private const string REGEXP_ISO8601 = '/^(?<start>[^\/]+)\/(?<end>[^\/]+)$/';
+    private const string REGEXP_CANONICAL = '/^(?<start>[^\/]+)\/(?<end>.+)\[\)$/';
 
     /**
      * @return non-empty-string
@@ -46,6 +48,7 @@ enum IntervalFormat
             self::Iso8601StartEnd => $start.'/'.$end,
             self::Iso80000 => '['.$start.','.$end.')',
             self::Bourbaki => '['.$start.','.$end.'[',
+            self::Canonical => $start.'/'.$interval->duration->format().'[)',
         };
     }
 
@@ -58,6 +61,7 @@ enum IntervalFormat
         $pattern = match ($this) {
             self::Bourbaki => self::REGEXP_BOURBAKI,
             self::Iso80000 => self::REGEXP_ISO80000,
+            self::Canonical => self::REGEXP_CANONICAL,
             default => self::REGEXP_ISO8601,
         };
 
@@ -75,9 +79,7 @@ enum IntervalFormat
                 default => $this->parseIso8601Interval($start, $end, $data),
             };
         } catch (TimeException $exception) {
-            $exception instanceof InvalidInterval
-                ? throw $exception
-                : throw InvalidInterval::dueToMalformedFormat($data, $this, $exception);
+            $exception instanceof InvalidInterval ? throw $exception : throw InvalidInterval::dueToMalformedFormat($data, $this, $exception);
         }
     }
 
@@ -174,6 +176,7 @@ enum IntervalFormat
     private function supportsStartDuration(): bool
     {
         return match ($this) {
+            self::Canonical,
             self::Iso8601,
             self::Iso8601StartDuration => true,
             default => false,

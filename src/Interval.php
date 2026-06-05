@@ -178,7 +178,7 @@ final readonly class Interval implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->format();
+        return $this->format(IntervalFormat::Canonical);
     }
 
     /**
@@ -246,7 +246,7 @@ final readonly class Interval implements JsonSerializable
     /**
      * Expands or shrinks the interval duration.
      *
-     * The resulti is based on the specified duration sign.
+     * The result is based on the specified duration sign.
      *
      * @throws InvalidDuration
      */
