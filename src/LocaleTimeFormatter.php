@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use IntlDateFormatter;
 use Throwable;
+use ValueError;
 
 use function class_exists;
 
@@ -58,7 +59,7 @@ final readonly class LocaleTimeFormatter
                 $formatter->format(new DateTimeImmutable());
             }
         } catch (Throwable $exception) {
-            throw new TimeException('Unable to instantiate '.self::class.'; verify the locale.', previous: $exception);
+            throw new ValueError('Unable to instantiate '.self::class.'; verify the locale.', previous: $exception);
         }
 
         return $formatter;
@@ -112,7 +113,7 @@ final readonly class LocaleTimeFormatter
         try {
             return new DateTimeZone($timezone);
         } catch (Throwable $exception) {
-            throw TimeException::invalidTimezone(timezone: $timezone, previous: $exception);
+            throw TimeException::dueToInvalidTimezone(timezone: $timezone, previous: $exception);
         }
     }
 

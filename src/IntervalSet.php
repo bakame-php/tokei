@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace Bakame\Tokei;
 
 use Closure;
-use Countable;
 use DateTimeInterface;
-use IteratorAggregate;
-use JsonSerializable;
 use Traversable;
 
 use function array_column;
@@ -25,21 +22,40 @@ use function usort;
 /**
  * @phpstan-import-type NativeInterval from Interval
  *
- * @implements IteratorAggregate<Interval>
+ * @implements TemporalSet<Interval>
  */
-final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSerializable
+final class IntervalSet implements TemporalSet
 {
     /** @var list<Interval> */
-    private array $intervals;
-    private Duration $duration;
+    private readonly array $items;
+    private readonly Duration $duration;
+    /** @var array<non-empty-string, TemporalSearch<Interval>> */
+    private array $engine;
 
     /**
+     * @param Interval|IntervalSet<Interval>|Task|TaskSet<Task> ...$items
+     *
      * @throws InvalidDuration
      */
-    public function __construct(Interval|self ...$intervals)
+    public function __construct(Interval|IntervalSet|Task|TaskSet ...$items)
     {
-        $this->intervals = self::flatten(...$intervals);
-        $this->duration = Duration::zero()->sum(...array_column($this->intervals, 'duration'));
+        $this->items = self::flatten(...$items);
+        $this->duration = Duration::zero()->sum(...array_column($this->items, 'duration'));
+    }
+
+    /**
+     * @return TemporalSearch<Interval>
+     */
+    private function engine(Bound $using = Bound::Start): TemporalSearch
+    {
+        if (!isset($this->engine[$using->name])) {
+            /** @var TemporalSearch<Interval> $engine */
+            $engine = TemporalSearch::forIntervals($this, $using);
+
+            $this->engine[$using->name] = $engine;
+        }
+
+        return $this->engine[$using->name];
     }
 
     /**
@@ -47,19 +63,19 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      *
      * @throws InvalidDuration
      */
-    public static function chronological(Interval|self ...$intervals): self
+    public static function chronological(Interval|IntervalSet|Task|TaskSet ...$items): self
     {
-        return (new self(...$intervals))->sorted();
+        return (new self(...$items))->sorted();
     }
 
     public function count(): int
     {
-        return count($this->intervals);
+        return count($this->items);
     }
 
     public function getIterator(): Traversable
     {
-        yield from $this->intervals;
+        yield from $this->items;
     }
 
     /**
@@ -75,7 +91,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      */
     public function all(): array
     {
-        return $this->intervals;
+        return $this->items;
     }
 
     public function duration(): Duration
@@ -90,7 +106,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      */
     public function allFormatted(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): array
     {
-        return array_map(static fn (Interval $interval): string => $interval->format($format, $unit), $this->intervals);
+        return array_map(static fn (Interval $item): string => $item->format($format, $unit), $this->items);
     }
 
     /**
@@ -98,12 +114,12 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      */
     public function allNative(DateTimeInterface $reference): array
     {
-        return array_map(static fn (Interval $interval): array => $interval->toNative($reference), $this->intervals);
+        return array_map(static fn (Interval $item): array => $item->toNative($reference), $this->items);
     }
 
     public function isEmpty(): bool
     {
-        return [] === $this->intervals;
+        return [] === $this->items;
     }
 
     /**
@@ -111,11 +127,11 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      *
      * Supports negative offsets, where -1 refers to the last interval.
      *
-     * @throws TimeException If the offset is out of range.
+     * @throws TokeiException If the offset is out of range.
      */
     public function get(int $offset): Interval
     {
-        return $this->nth($offset) ?? throw new TimeException('Invalid offset ('.$offset.') given to '.self::class.'.');
+        return $this->nth($offset) ?? throw TokeiException::dueToInvalidOffset($offset, self::class);
     }
 
     /**
@@ -125,31 +141,28 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      */
     public function nth(int $offset): ?Interval
     {
-        $count = count($this->intervals);
+        $count = count($this->items);
         if ($offset < 0) {
             $offset = $count + $offset;
         }
 
-        return ($offset < 0 || $offset >= $count) ? null : $this->intervals[$offset];
+        return ($offset < 0 || $offset >= $count) ? null : $this->items[$offset];
     }
 
     /**
      * Tells whether the given interval is present in the set.
      */
-    public function has(Interval ...$intervals): bool
+    public function has(Interval|Task ...$items): bool
     {
-        foreach ($intervals as $interval) {
-            if (null === $this->indexOf($interval)) {
-                return false;
-            }
-        }
+        $check = new self(...$items);
 
-        return [] !== $intervals;
+        return !$check->isEmpty()
+            && $check->every(fn (Interval $item): bool => null !== $this->indexOf($item));
     }
 
     public function indexOf(Interval $interval): ?int
     {
-        foreach ($this->intervals as $offset => $item) {
+        foreach ($this->items as $offset => $item) {
             if ($item->equals($interval)) {
                 return $offset;
             }
@@ -160,8 +173,8 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
 
     public function lastIndexOf(Interval $interval): ?int
     {
-        for ($offset = count($this->intervals) - 1; $offset >= 0; --$offset) {
-            if ($interval->equals($this->intervals[$offset])) {
+        for ($offset = count($this->items) - 1; $offset >= 0; --$offset) {
+            if ($interval->equals($this->items[$offset])) {
                 return $offset;
             }
         }
@@ -180,50 +193,21 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     }
 
     /**
-     * @param callable(Interval, int=): bool $predicate
+     * @throws InvalidDuration
      */
-    public function firstMatching(callable $predicate): ?Interval
+    public function push(Interval|IntervalSet|Task|TaskSet ...$items): self
     {
-        foreach ($this->intervals as $offset => $interval) {
-            if (true === $predicate($interval, $offset)) {
-                return $interval;
-            }
-        }
+        $items = self::flatten(...$items);
 
-        return null;
-    }
-
-    /**
-     * @param callable(Interval, int=): bool $predicate
-     */
-    public function lastMatching(callable $predicate): ?Interval
-    {
-        for ($offset = count($this->intervals) - 1; $offset >= 0; --$offset) {
-            $interval = $this->intervals[$offset];
-            if (true === $predicate($interval, $offset)) {
-                return $interval;
-            }
-        }
-
-        return null;
+        return [] === $items ? $this : new self(...$this->items, ...$items);
     }
 
     /**
      * @throws InvalidDuration
      */
-    public function push(Interval|self ...$interval): self
+    public function unshift(Interval|IntervalSet|Task|TaskSet ...$items): self
     {
-        $res = self::flatten(...$interval);
-
-        return [] === $res ? $this : new self(...$this->intervals, ...$res);
-    }
-
-    /**
-     * @throws InvalidDuration
-     */
-    public function unshift(Interval|self ...$interval): self
-    {
-        $set = new self(...$interval);
+        $set = new self(...$items);
 
         return $set->isEmpty() ? $this : $set->push($this);
     }
@@ -232,16 +216,16 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      * @throws InvalidDuration
      * @throws TimeException
      */
-    public function replace(int $offset, Interval $interval): self
+    public function replace(int $offset, Interval|Task $item): self
     {
         if ($offset < 0) {
-            $offset += count($this->intervals);
+            $offset += count($this->items);
         }
 
-        isset($this->intervals[$offset]) || throw new TimeException('Invalid offset ('.$offset.') given to '.self::class.'.');
+        isset($this->items[$offset]) || throw TimeException::dueToInvalidOffset($offset, self::class);
 
-        $intervals = $this->intervals;
-        $intervals[$offset] = $interval;
+        $intervals = $this->items;
+        $intervals[$offset] = $item instanceof Task ? $item->period : $item;
 
         return new self(...$intervals);
     }
@@ -255,7 +239,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
             return $this;
         }
 
-        $nbIntervals = count($this->intervals);
+        $nbIntervals = count($this->items);
         $normalized = [];
         foreach ($offsets as $offset) {
             if ($offset < 0) {
@@ -273,51 +257,72 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
             return $this;
         }
 
-        return $this->filter(static fn (Interval $interval, int $index): bool => !in_array($index, $normalized, true)); /* @phpstan-ignore-line */
+        return $this->filter(static fn (Interval $item, int $index): bool => !in_array($index, $normalized, true)); /* @phpstan-ignore-line */
     }
 
     /**
      * @return list<Interval>
      */
-    private static function flatten(Interval|self ...$intervals): array
+    private static function flatten(Interval|IntervalSet|Task|TaskSet ...$items): array
     {
         $res = [];
-        foreach ($intervals as $item) {
-            $found = $item instanceof Interval ? [$item] : $item->intervals;
-            foreach ($found as $interval) {
-                $res[] = $interval;
-            }
+        foreach ($items as $item) {
+            $res = [...$res, ...match (true) {
+                $item instanceof Interval => [$item],
+                $item instanceof TaskSet => $item->toIntervalSet()->items,
+                $item instanceof Task => [$item->period],
+                default => $item->items,
+            }];
         }
 
         return $res;
     }
 
     /**
-     * @param callable(Interval, int=): bool $callback
+     * @param callable(Interval, int=): bool $predicate
      */
-    public function any(callable $callback): bool
+    public function firstMatching(callable $predicate): ?Interval
     {
-        foreach ($this->intervals as $key => $interval) {
-            if (true === $callback($interval, $key)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->engine()->firstMatching($predicate);
     }
 
     /**
-     * @param callable(Interval, int=): bool $callback
+     * @param callable(Interval, int=): bool $predicate
      */
-    public function every(callable $callback): bool
+    public function lastMatching(callable $predicate): ?Interval
     {
-        foreach ($this->intervals as $key => $interval) {
-            if (true !== $callback($interval, $key)) {
-                return false;
-            }
-        }
+        return $this->engine()->lastMatching($predicate);
+    }
 
-        return [] !== $this->intervals;
+    /**
+     * @param callable(Interval, int=): bool $predicate
+     */
+    public function any(callable $predicate): bool
+    {
+        return $this->engine()->any($predicate);
+    }
+
+    /**
+     * @param callable(Interval, int=): bool $predicate
+     */
+    public function every(callable $predicate): bool
+    {
+        return $this->engine()->every($predicate);
+    }
+
+    public function next(Time|Event $atOrAfter, SearchMode $mode, Bound $using = Bound::Start): self
+    {
+        return new self(...$this->engine($using)->next($atOrAfter, $mode));
+    }
+
+    public function previous(Time|Event $before, SearchMode $mode, Bound $using = Bound::Start): self
+    {
+        return new self(...$this->engine($using)->previous($before, $mode));
+    }
+
+    public function nearest(Time|Event $around, Bound $using = Bound::Start): self
+    {
+        return new self(...$this->engine($using)->nearest($around));
     }
 
     /**
@@ -329,8 +334,8 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      */
     public function map(callable $callback): iterable
     {
-        foreach ($this->intervals as $offset => $interval) {
-            yield $callback($interval, $offset);
+        foreach ($this->items as $offset => $item) {
+            yield $callback($item, $offset);
         }
     }
 
@@ -364,13 +369,13 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     public function filter(callable $callback): self
     {
         $data = [];
-        foreach ($this->intervals as $key => $interval) {
-            if (true === $callback($interval, $key)) {
-                $data[] = $interval;
+        foreach ($this->items as $offset => $item) {
+            if (true === $callback($item, $offset)) {
+                $data[] = $item;
             }
         }
 
-        return $data === $this->intervals ? $this : new self(...$data);
+        return $data === $this->items ? $this : new self(...$data);
     }
 
     /**
@@ -386,8 +391,8 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     {
         $result = $initial;
 
-        foreach ($this->intervals as $key => $interval) {
-            $result = $callback($result, $interval, $key);
+        foreach ($this->items as $offset => $item) {
+            $result = $callback($result, $item, $offset);
         }
 
         return $result;
@@ -405,8 +410,8 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      */
     public function each(callable $callback): bool
     {
-        foreach ($this->intervals as $key => $interval) {
-            if (false === $callback($interval, $key)) {
+        foreach ($this->items as $offset => $item) {
+            if (false === $callback($item, $offset)) {
                 return false;
             }
         }
@@ -439,7 +444,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     /**
      * @throws InvalidDuration|InvalidInterval
      */
-    public function difference(self|Interval ...$others): self
+    public function difference(Interval|IntervalSet|Task|TaskSet ...$others): self
     {
         if ($this->isEmpty()) {
             return $this;
@@ -451,14 +456,14 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
         }
 
         $differences = [];
-        $otherIntervals = $other->intervals;
-        foreach ($this->union()->intervals as $interval) {
-            if (IntervalType::Collapsed === $interval->type) {
+        $otherIntervals = $other->items;
+        foreach ($this->union()->items as $item) {
+            if (IntervalType::Collapsed === $item->type) {
                 continue;
             }
 
-            $current = IntervalType::Circular !== $interval->type
-                ? [[$interval->linearStart, $interval->linearEnd]]
+            $current = IntervalType::Circular !== $item->type
+                ? [[$item->linearStart, $item->linearEnd]]
                 : [[0, UnitTransformer::toMicroseconds(1, Unit::Day)]];
 
             foreach ($otherIntervals as $otherInterval) {
@@ -504,23 +509,19 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     /**
      * @throws InvalidInterval|InvalidDuration
      */
-    public function intersect(self|Interval ...$others): self
+    public function intersect(Interval|IntervalSet|Task|TaskSet ...$others): self
     {
-        if ($this->isEmpty()) {
-            return $this;
-        }
-
         $other = self::chronological(...$others)->union();
         if ($other->isEmpty()) {
             return $this;
         }
 
         $intersections = [];
-        $bSpans = $other->intervals;
-        foreach ($this->union()->intervals as $aInterval) {
-            foreach ($bSpans as $bInterval) {
-                $start = max($aInterval->linearStart, $bInterval->linearStart);
-                $end = min($aInterval->linearEnd, $bInterval->linearEnd);
+        $bSpans = $other->items;
+        foreach ($this->union()->items as $aItem) {
+            foreach ($bSpans as $bItem) {
+                $start = max($aItem->linearStart, $bItem->linearStart);
+                $end = min($aItem->linearEnd, $bItem->linearEnd);
                 if ($start < $end) {
                     $intersections[] = Interval::fromLinearSpan($start, $end);
                 }
@@ -541,7 +542,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     /**
      * @throws InvalidInterval|InvalidDuration
      */
-    public function union(Interval|self ...$others): self
+    public function union(Interval|IntervalSet|Task|TaskSet ...$others): self
     {
         $set = $this->push(...$others)->sorted();
         if (1 >= count($set)) {
@@ -549,17 +550,17 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
         }
 
         $merged = [];
-        foreach ($set->intervals as $span) {
+        foreach ($set->items as $item) {
             if ([] !== $merged) {
                 $lastIndex = array_key_last($merged);
                 $prevSpan = $merged[$lastIndex];
-                if ($span->linearStart <= $prevSpan->linearEnd) {
-                    $merged[$lastIndex] = Interval::fromLinearSpan($prevSpan->linearStart, max($prevSpan->linearEnd, $span->linearEnd));
+                if ($item->linearStart <= $prevSpan->linearEnd) {
+                    $merged[$lastIndex] = Interval::fromLinearSpan($prevSpan->linearStart, max($prevSpan->linearEnd, $item->linearEnd));
                     continue;
                 }
             }
 
-            $merged[] = $span;
+            $merged[] = $item;
         }
 
         if (count($merged) >= 2) {
@@ -583,32 +584,67 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      */
     public function sortedUsing(callable $callback): self
     {
-        if (1 >= count($this->intervals)) {
+        if (1 >= count($this->items)) {
             return $this;
         }
 
-        $intervals = $this->intervals;
+        $intervals = $this->items;
         usort($intervals, $callback);
 
-        return $intervals === $this->intervals ? $this : new self(...$intervals);
+        return $intervals === $this->items ? $this : new self(...$intervals);
     }
 
     /**
-     * Sorts the set using each Interval startg or ending time.
+     * Sorts the set using each Interval starting or ending time.
      *
      * @throws InvalidDuration
      */
-    public function sorted(Bound $by = Bound::Start, Order $direction = Order::Ascending): self
+    public function sorted(Bound $by = Bound::Start, Direction $direction = Direction::Ascending): self
     {
         return $this->sortedUsing(self::filterCompare($by, $direction));
     }
 
     /**
+     * Split the interval set into its smallest non-overlapping intervals.
+     *
+     * @throws InvalidDuration|InvalidInterval
+     */
+    public function atomic(): self
+    {
+        return $this
+            ->union()
+            ->transform(
+                fn (Interval $interval): IntervalSet => $interval->splitAt(...$this->atomicBoundaries())
+            );
+    }
+
+    /**
+     * Returns all unique interval start/end boundaries sorted chronologically.
+     *
+     * @throws InvalidDuration
+     *
+     * @return list<Time>
+     */
+    public function atomicBoundaries(): array
+    {
+        $boundaries = [];
+
+        foreach ($this->sorted() as $interval) {
+            $boundaries[(int) $interval->start->toOffset(Unit::Microsecond)] = $interval->start;
+            $boundaries[(int) $interval->end->toOffset(Unit::Microsecond)] = $interval->end;
+        }
+
+        ksort($boundaries);
+
+        return array_values($boundaries);
+    }
+
+    /**
      * @return Closure(Interval, Interval): int
      */
-    private static function filterCompare(Bound $bound, Order $sortDirection): Closure
+    private static function filterCompare(Bound $bound, Direction $direction): Closure
     {
-        $directionFactor = Order::Ascending === $sortDirection ? 1 : -1;
+        $directionFactor = Direction::Ascending === $direction ? 1 : -1;
         $keyExtractor = match ($bound) {
             Bound::Start => static fn (Interval $i): int => $i->linearStart,
             Bound::End => static fn (Interval $i): int => $i->linearEnd,
@@ -628,7 +664,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
      */
     public function __serialize(): array
     {
-        return [['intervals' => $this->intervals], []];
+        return [['intervals' => $this->items], []];
     }
 
     /**
@@ -639,7 +675,7 @@ final readonly class IntervalSet implements Countable, IteratorAggregate, JsonSe
     public function __unserialize(array $data): void
     {
         [$properties] = $data;
-        $this->intervals = $properties['intervals'];
-        $this->duration = Duration::zero()->sum(...array_column($this->intervals, 'duration'));
+        $this->items = $properties['intervals'];
+        $this->duration = Duration::zero()->sum(...array_column($this->items, 'duration'));
     }
 }

@@ -697,7 +697,7 @@ IntervalSet::complement(): IntervalSet
 IntervalSet::intersect(IntervalSet|Interval ...$others): IntervalSet
 IntervalSet::difference(IntervalSet|Interval ...$others): IntervalSet
 IntervalSet::gaps(): IntervalSet
-IntervalSet::sorted(Bound $sortBound = Bound::Start, SortDirection|string $sortDirection = 'asc'): IntervalSet;
+IntervalSet::sorted(Bound $by = Bound::Start, Direction $direction = Direction::Ascending): IntervalSet;
 ```
 
 #### Collection methods

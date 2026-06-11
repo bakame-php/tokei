@@ -18,10 +18,12 @@ use function unserialize;
 
 use const JSON_UNESCAPED_SLASHES;
 
-#[CoversClass(IntervalFormat::class)]
 #[CoversClass(DurationFormat::class)]
-#[CoversClass(IntervalSet::class)]
 #[CoversClass(Interval::class)]
+#[CoversClass(IntervalFormat::class)]
+#[CoversClass(IntervalSet::class)]
+#[CoversClass(TemporalSearch::class)]
+#[CoversClass(TokeiException::class)]
 final class IntervalSetTest extends TestCase
 {
     public function test_it_can_be_empty(): void
@@ -63,7 +65,7 @@ final class IntervalSetTest extends TestCase
         self::assertSame($a, $set->get(-2));
         self::assertNull($set->nth(-3));
 
-        $this->expectExceptionObject(new TimeException('Invalid offset (-3) given to '.IntervalSet::class.'.'));
+        $this->expectExceptionObject(TokeiException::dueToInvalidOffset(-3, IntervalSet::class));
         $set->get(-3);
     }
 
@@ -519,7 +521,7 @@ final class IntervalSetTest extends TestCase
 
     public function test_json_encoded_set(): void
     {
-        self::assertStringContainsString('"12:00:00/PT6H[)"', (string) json_encode(Business::shifts(), JSON_UNESCAPED_SLASHES));
+        self::assertStringContainsString('"12:00:00/PT6H"', (string) json_encode(Business::shifts(), JSON_UNESCAPED_SLASHES));
     }
 
     public function test_native_conversion(): void
@@ -600,7 +602,7 @@ final class IntervalSetTest extends TestCase
             Interval::between(Time::at(hour: 10), Time::at(hour: 13)),
             Interval::between(Time::noon(), Time::at(hour: 13)),
         );
-        $sorted = $set->sorted(direction: Order::Descending);
+        $sorted = $set->sorted(direction: Direction::Descending);
 
         self::assertNotSame($set, $sorted);
         self::assertSame($set->last(), $sorted->first());
@@ -612,7 +614,7 @@ final class IntervalSetTest extends TestCase
             Interval::between(Time::at(hour: 10), Time::at(hour: 13)),
             Interval::between(Time::noon(), Time::at(hour: 13)),
         );
-        $sorted = $set->sorted(by: Bound::End, direction: Order::Descending);
+        $sorted = $set->sorted(by: Bound::End, direction: Direction::Descending);
 
         self::assertNotSame($set, $sorted);
         self::assertSame($set->last(), $sorted->first());

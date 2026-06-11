@@ -6,9 +6,13 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Added
 
+- Temporal API to work with identified `Time` and `Interval`.
 - `IntervalSet::each`
 - `IntervalSet::transform`
 - `IntervalSet::chronological`
+- `IntervalSet::next`
+- `IntervalSet::previous`
+- `IntervalSet::nearest`
 - `Interval::fromFormat`
 - `Duration::fromDateInterval`
 - `Duration::fromFormat`
@@ -26,26 +30,28 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Time::utc`
 - `LocaleTimeFormatter`to improve time string localization using `ext-intl`
 - `IntervalFormat::encode` and `IntervalFormat::decode` to improve `Interval` encoding and decoding from and to string representation.
+- `IntervalFormat::Canonical` format added.
 - `DurationFormat::encode` and `DurationFormat::decode` to improve `Duration` encoding and decoding from and to string representation.
 - `TimeFormat` added to improve `Time` encoding and decoding from and to string representation.
-- `Order` to unify sorting across the package
-- `Rounding` to unify rounding across the package
+- `Direction` to unify sorting across the package
+- `SnapMode` to unify rounding across the package
 - `LocaleVerbosity` to allow fine-grained locale string representation using by `LocaleTimeFormatter`
 
 ### Fixed
 
+- `IntervalSet::every` now returns `true` for empty collection
+- `Interval::splitAt` now correctly works on a circular range.
 - `IntervalSet::union` now accepts `Interval` and/or `IntervalSet` as arguments to compute the union between sets/intervals
 - `IntervalSet::difference` edge cases when dealing with collapsed or circular Intervals.
 - `Time::toLocaleString` accepts timezone string identifier as well as fully instantiated `DateTimeZone` instances.
 - `Time::toLocaleString` improves timezone handling, the time is no longer affected by the timezone shift.
 - **BC BREAK:** `Duration::format` using Timer format will always output the hours parts with at least two digits previously for hours below 10 one digit was used.
 - **BC BREAK:** Renamed method suffixe "Clock" to "Timer" which is a better description for `Duration`
-- **BC BREAK:** `Duration::of` no longer accepts negative integer use `negated()` of `fromFormat`.
+- **BC BREAK:** `Duration::of` no longer accepts negative integer use `negated()` or `fromFormat`.
 - **BC BREAK:** `Interval::lasting` signature parameter order.
 - **BC BREAK:** `Interval::shiftBound` signature parameter order.
-- **BC BREAK:** `Interval` json string representation is updated by suffixing the boundaries as expressed by `ISO-80000`.
 - **BC BREAK:** `Unit` enum now only exposes the `inMicroseconds` method all other methods are moved to an internal `UnitTransformer` class.
-- **BC BREAK:** `Time::now` has a new timezone argument which is mandatory.
+- **BC BREAK:** `Time::now` has a new mandatory timezone argument.
 
 ### Deprecated
 
@@ -66,7 +72,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC BREAK:** `Time::fromUnitOfDay` is removed use `Time::fromOffset` instead
 - **BC BREAK:** `Time::toUnitOfDay` is removed use `Time::toOffset` instead
 - **BC BREAK:** `Time::toString` is removed use `Time::format` instead
-- **BC BREAK:** `IntervalSet::sorted` argument was a string or PHP8.6 `SorDirection` enum is changed to using the `Order` 
+- **BC BREAK:** `IntervalSet::sorted` argument was a string or PHP8.6 `SorDirection` enum is changed to using the `Order` enum instead.
 
 ## [0.1.0 - asagao](https://github.com/bakame-php/tokei/releases/tag/0.1.0) - 2026-05-27
 

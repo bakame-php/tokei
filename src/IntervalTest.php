@@ -116,6 +116,7 @@ final class IntervalTest extends TestCase
         $b = Interval::between(Time::at(11), Time::at(13));
 
         self::assertTrue($a->overlaps($b));
+        self::assertTrue($a->overlaps(Task::for($b)));
     }
 
     public function test_overlaps_false(): void
@@ -124,6 +125,7 @@ final class IntervalTest extends TestCase
         $b = Interval::between(Time::at(12), Time::at(13));
 
         self::assertFalse($a->overlaps($b));
+        self::assertFalse($a->overlaps(Task::for($b)));
     }
 
     /* -------------------------------------------------
@@ -136,6 +138,7 @@ final class IntervalTest extends TestCase
         $b = Interval::between(Time::at(11), Time::at(12));
 
         self::assertTrue($a->abuts($b));
+        self::assertTrue($a->abuts(Task::for($b)));
     }
 
     public function test_abuts_false(): void
@@ -155,7 +158,7 @@ final class IntervalTest extends TestCase
         $a = Interval::between(Time::at(10), Time::at(12));
         $b = Interval::between(Time::at(11), Time::at(13));
 
-        $i = $a->intersect($b);
+        $i = $a->intersect(Task::for($b));
 
         self::assertNotNull($i);
         self::assertEquals('[11:00:00,12:00:00)', $i->format(IntervalFormat::Iso80000));
@@ -189,7 +192,7 @@ final class IntervalTest extends TestCase
         $a = Interval::between(Time::at(10), Time::at(12));
         $b = Interval::between(Time::at(11), Time::at(13));
 
-        self::assertNull($a->gap($b));
+        self::assertNull($a->gap(Task::for($b)));
     }
 
     /* -------------------------------------------------
@@ -248,6 +251,8 @@ final class IntervalTest extends TestCase
 
         self::assertTrue($a->contains($b));
         self::assertFalse($b->contains($a));
+        self::assertTrue($a->contains(Task::for($b)));
+        self::assertFalse($b->contains(Task::for($a)));
     }
 
     public function test_contains_time_range_boundary_excluded(): void
@@ -372,6 +377,7 @@ final class IntervalTest extends TestCase
         $expanded = $range->expand(Duration::of(hours: 24));
 
         self::assertTrue($range->equals($expanded));
+        self::assertTrue($range->equals(Task::for($expanded)));
     }
 
     public function test_expand_by_multiple_of_24_hours_returns_same_range(): void
@@ -785,7 +791,7 @@ final class IntervalTest extends TestCase
     {
         $interval = Interval::between(Time::at(22), Time::at(2));
 
-        self::assertSame('"22:00:00/PT4H[)"', json_encode($interval, JSON_UNESCAPED_SLASHES));
+        self::assertSame('"22:00:00/PT4H"', json_encode($interval, JSON_UNESCAPED_SLASHES));
     }
 
     /**
@@ -964,5 +970,21 @@ final class IntervalTest extends TestCase
         yield 'unsupported boundaries' => ['notation' => '11:00:00/PT3M0.5S[]'];
         yield 'missing boundaries' => ['notation' => '11:00:00/PT3M0.5S'];
         yield 'wrong notation' => ['notation' => '[11:00:00,12:00:00)'];
+    }
+
+    public function test_fixing_split_at_overflow(): void
+    {
+        $interval = Interval::between(Time::at(22), Time::at(3));
+        $splits = $interval->splitAt(Time::at(23), Time::at(1), Time::at(1));
+
+        self::assertCount(3, $splits);
+        self::assertSame(
+            [
+                '[22:00:00,23:00:00)',
+                '[23:00:00,01:00:00)',
+                '[01:00:00,03:00:00)',
+            ],
+            $splits->allFormatted(IntervalFormat::Iso80000)
+        );
     }
 }

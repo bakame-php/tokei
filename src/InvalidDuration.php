@@ -36,19 +36,4 @@ class InvalidDuration extends TimeException
 
         return false === $timePosition || $monthPosition < $timePosition;
     }
-
-    public static function dueToMalformedMinute(int $minute): self
-    {
-        return new self("Minute must be between 0 and 59, got $minute.");
-    }
-
-    public static function dueToMalformedSecond(int $second): self
-    {
-        return new self("Second must be between 0 and 59, got $second.");
-    }
-
-    public static function dueToMalformedMicrosecond(int $microsecond): self
-    {
-        return new self("Microsecond must be between 0 and 999999, got $microsecond.");
-    }
 }

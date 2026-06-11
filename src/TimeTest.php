@@ -11,6 +11,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
+use ValueError;
 
 use function json_encode;
 use function serialize;
@@ -381,7 +382,7 @@ final class TimeTest extends TestCase
         );
         self::assertSame($updated->toLocaleString('en_US', 'Africa/Nairobi'), $updated->toLocaleString('en_US'));
 
-        $this->expectException(TimeException::class);
+        $this->expectException(ValueError::class);
         $updated->toLocaleString('foo-bar');
     }
 
@@ -463,9 +464,9 @@ final class TimeTest extends TestCase
     ): void {
         $time = Time::fromOffset($input, Unit::Microsecond);
 
-        self::assertSame($expectedTruncate, $time->roundTo($precision, Rounding::Floor)->toOffset(Unit::Microsecond));
+        self::assertSame($expectedTruncate, $time->roundTo($precision, SnapMode::Floor)->toOffset(Unit::Microsecond));
         self::assertSame($expectedRound, $time->roundTo($precision)->toOffset(Unit::Microsecond));
-        self::assertSame($expectedCeil, $time->roundTo($precision, Rounding::Ceil)->toOffset(Unit::Microsecond));
+        self::assertSame($expectedCeil, $time->roundTo($precision, SnapMode::Ceil)->toOffset(Unit::Microsecond));
     }
 
     /**

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
-class InvalidTime extends TimeException
+enum SearchMode
 {
+    case Linear;
+    case Circular;
 }

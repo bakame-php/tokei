@@ -72,8 +72,13 @@ final readonly class Time implements JsonSerializable
         try {
             return new DateTimeZone($timezone);
         } catch (Throwable $exception) {
-            throw TimeException::invalidTimezone(timezone: $timezone, previous: $exception);
+            throw TimeException::dueToInvalidTimezone(timezone: $timezone, previous: $exception);
         }
+    }
+
+    private static function extractTime(Time|Event $time): self
+    {
+        return $time instanceof Event ? $time->at : $time;
     }
 
     /**
@@ -248,15 +253,17 @@ final readonly class Time implements JsonSerializable
      *
      * @return int<-1, 1> If this time is before, on, or after the given time.
      */
-    public function compareTo(self $other): int
+    public function compareTo(Time|Event $other): int
     {
+        $other = self::extractTime($other);
+
         return $this->value <=> $other->value;
     }
 
     /**
      * Tells whether this instance is less than the specified time.
      */
-    public function isBefore(self $other): bool
+    public function isBefore(Time|Event $other): bool
     {
         return 0 > $this->compareTo($other);
     }
@@ -264,22 +271,22 @@ final readonly class Time implements JsonSerializable
     /**
      * Tells whether this instance is less than or equal the specified time.
      */
-    public function isBeforeOrEqual(self $other): bool
+    public function isBeforeOrEqual(Time|Event $other): bool
     {
         return 0 >= $this->compareTo($other);
     }
 
-    public function isAfter(self $other): bool
+    public function isAfter(Time|Event $other): bool
     {
         return 0 < $this->compareTo($other);
     }
 
-    public function isAfterOrEqual(self $other): bool
+    public function isAfterOrEqual(Time|Event $other): bool
     {
         return 0 <= $this->compareTo($other);
     }
 
-    public function equals(self $other): bool
+    public function equals(Time|Event $other): bool
     {
         return 0 === $this->compareTo($other);
     }
@@ -291,8 +298,10 @@ final readonly class Time implements JsonSerializable
      *
      * @throws InvalidTime
      */
-    public function clamp(self $min, self $max): self
+    public function clamp(Time|Event $min, Time|Event $max): self
     {
+        $min = self::extractTime($min);
+        $max = self::extractTime($max);
         $max->isAfterOrEqual($min) || throw new InvalidTime('The maximum time must be after or equal to the minimum time.');
 
         return match (true) {
@@ -347,7 +356,7 @@ final readonly class Time implements JsonSerializable
     /**
      * Returns a new instance rounded to the specified unit using a rounding mode.
      */
-    public function roundTo(Unit $unit, Rounding $mode = Rounding::Nearest): self
+    public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
         $rounded = UnitTransformer::round($this->value, $unit, $mode);
 
@@ -371,9 +380,9 @@ final readonly class Time implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public function diff(self $other): Duration
+    public function diff(Time|Event $other): Duration
     {
-        $duration = $other->value - $this->value;
+        $duration = self::extractTime($other)->value - $this->value;
 
         return 0 > $duration
             ? Duration::of(microseconds: -$duration)->negated()
@@ -385,10 +394,10 @@ final readonly class Time implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public function distance(self $other): Duration
+    public function distance(Time|Event $other): Duration
     {
         /** @var non-negative-int $duration */
-        $duration = UnitTransformer::wrap($other->value - $this->value, Unit::Day);
+        $duration = UnitTransformer::wrap(self::extractTime($other)->value - $this->value, Unit::Day);
 
         return Duration::of(microseconds: $duration);
     }

@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Bakame\Tokei;
 
-enum Order
+enum Direction
 {
     case Ascending;
     case Descending;

@@ -7,6 +7,7 @@ namespace Bakame\Tokei;
 use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use ValueError;
 
 #[CoversClass(LocaleTimeFormatter::class)]
 #[CoversClass(TimeException::class)]
@@ -45,7 +46,7 @@ final class LocaleTimeFormatterTest extends TestCase
 
     public function testRejectsInvalidLocale(): void
     {
-        $this->expectException(TimeException::class);
+        $this->expectException(ValueError::class);
 
         new LocaleTimeFormatter('this-is-not-a-locale');
     }

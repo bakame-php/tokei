@@ -9,8 +9,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use JsonSerializable;
 
-use function array_filter;
-use function usort;
+use function array_map;
 
 /**
  * Represents a start-inclusive, end-exclusive interval between two times on a 24-hour circular clock.
@@ -27,14 +26,24 @@ final readonly class Interval implements JsonSerializable
     /** @var int the linearized end expressed in microseconds */
     public int $linearEnd;
 
-    private function __construct(Time $start, Duration $duration)
+    private function __construct(Time|Event $start, Duration $duration)
     {
-        $this->start = $start;
+        $this->start = self::extractTime($start);
         $this->duration = $duration;
         $this->linearStart = (int) $this->start->toOffset(Unit::Microsecond);
         $this->linearEnd = $this->linearStart + (int) $duration->total(Unit::Microsecond);
         $this->end = Time::fromOffset($this->linearEnd, Unit::Microsecond);
         $this->type = $this->setType();
+    }
+
+    private static function extractTime(Time|Event $time): Time
+    {
+        return $time instanceof Event ? $time->at : $time;
+    }
+
+    private static function extractInterval(Interval|Task $interval): Interval
+    {
+        return $interval instanceof Task ? $interval->period : $interval;
     }
 
     private function setType(): IntervalType
@@ -51,8 +60,10 @@ final readonly class Interval implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public static function since(Time $start, Duration $duration): self
+    public static function since(Time|Event $start, Duration $duration): self
     {
+        $start = self::extractTime($start);
+
         return new self($start, $start->distance($start->shift($duration)));
     }
 
@@ -63,8 +74,9 @@ final readonly class Interval implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public static function until(Time $end, Duration $duration): self
+    public static function until(Time|Event $end, Duration $duration): self
     {
+        $end = self::extractTime($end);
         $start = $end->shift($duration->negated());
 
         return new self($start, $start->distance($end));
@@ -75,8 +87,9 @@ final readonly class Interval implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public static function around(Time $midRange, Duration $duration): self
+    public static function around(Time|Event $midRange, Duration $duration): self
     {
+        $midRange = self::extractTime($midRange);
         $start = $midRange->shift($duration->dividedBy(2)->negated());
 
         return self::between($start, $start->shift($duration));
@@ -89,9 +102,11 @@ final readonly class Interval implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public static function between(Time $start, Time $end): self
+    public static function between(Time|Event $start, Time|Event $end): self
     {
-        return new self($start, $start->distance($end));
+        $start = self::extractTime($start);
+        $end = self::extractTime($end);
+        return new self($start, $start->distance(self::extractTime($end)));
     }
 
     /**
@@ -110,7 +125,7 @@ final readonly class Interval implements JsonSerializable
      * @param int $linearStart the starting time represented on a linear span in microseconds
      * @param int $linearEnd the ending time represented on a linear span in microseconds
      *
-     * @throws InvalidInterval
+     * @throws InvalidInterval|InvalidDuration
      */
     public static function fromLinearSpan(int $linearStart, int $linearEnd): self
     {
@@ -134,7 +149,7 @@ final readonly class Interval implements JsonSerializable
 
     public static function circular(Time $at): self
     {
-        return new self($at, Duration::of(hours: 24));
+        return new self($at, Duration::of(days: 1));
     }
 
     public static function collapsed(Time $at): self
@@ -178,7 +193,7 @@ final readonly class Interval implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->format(IntervalFormat::Canonical);
+        return $this->format();
     }
 
     /**
@@ -186,8 +201,10 @@ final readonly class Interval implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public function startingOn(Time $time): self
+    public function startingOn(Time|Event $time): self
     {
+        $time = self::extractTime($time);
+
         return $time->equals($this->start) ? $this : self::between($time, $this->end);
     }
 
@@ -196,8 +213,10 @@ final readonly class Interval implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public function endingOn(Time $time): self
+    public function endingOn(Time|Event $time): self
     {
+        $time = self::extractTime($time);
+
         return $time->equals($this->end) ? $this : self::between($this->start, $time);
     }
 
@@ -328,19 +347,20 @@ final readonly class Interval implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public function splitAt(Time ...$steps): IntervalSet
+    public function splitAt(Time|Event ...$steps): IntervalSet
     {
-        $steps = array_filter($steps, fn (Time $time): bool => $time->isAfter($this->start) && $time->isBefore($this->end));
-        usort($steps, static fn (Time $a, Time $b): int => $a->compareTo($b));
+        $res = array_map(self::extractTime(...), $steps);
+        $res = array_filter($res, fn ($step): bool => $this->includes($step));
+        usort($res, fn (Time $a, Time $b): int => $this->start->distance($a)->compareTo($this->start->distance($b)));
 
         $result = [];
         $cursor = $this->start;
-        foreach ($steps as $time) {
-            $it = self::between($cursor, $time);
-            if (IntervalType::Collapsed !== $it->type) {
-                $result[] = $it;
+        foreach ($res as $time) {
+            $interval = self::since($cursor, $cursor->distance($time));
+            if (IntervalType::Collapsed !== $interval->type) {
+                $result[] = $interval;
             }
-            $cursor = $time;
+            $cursor = $interval->end;
         }
 
         if (!$cursor->equals($this->end)) {
@@ -380,13 +400,15 @@ final readonly class Interval implements JsonSerializable
         return 0 >= $this->compareDurationTo($other);
     }
 
-    public function equals(self $other): bool
+    public function equals(Interval|Task $other): bool
     {
+        $other = self::extractInterval($other);
+
         return $this->start->equals($other->start)
             && $this->duration->equals($other->duration);
     }
 
-    public function includes(Time $time): bool
+    public function includes(Time|Event $time): bool
     {
         if (IntervalType::Circular === $this->type) {
             return true;
@@ -395,6 +417,8 @@ final readonly class Interval implements JsonSerializable
         if (IntervalType::Collapsed === $this->type) {
             return false;
         }
+
+        $time = self::extractTime($time);
 
         $timeInMicro = $time->toOffset(Unit::Microsecond);
         if ($this->linearEnd > $this->linearStart && $timeInMicro < $this->linearStart) {
@@ -405,20 +429,26 @@ final readonly class Interval implements JsonSerializable
             && $timeInMicro < $this->linearEnd;
     }
 
-    public function contains(self $other): bool
+    public function contains(Interval|Task $other): bool
     {
+        $other = self::extractInterval($other);
+
         return $this->includes($other->start)
             && ($this->includes($other->end) || $this->end->equals($other->end));
     }
 
-    public function overlaps(self $other): bool
+    public function overlaps(Interval|Task $other): bool
     {
+        $other = self::extractInterval($other);
+
         return $this->includes($other->start)
             || $other->includes($this->start);
     }
 
-    public function abuts(self $other): bool
+    public function abuts(Interval|Task $other): bool
     {
+        $other = self::extractInterval($other);
+
         return $this->start->equals($other->end)
             || $this->end->equals($other->start);
     }
@@ -426,33 +456,37 @@ final readonly class Interval implements JsonSerializable
     /**
      * @throws InvalidInterval|InvalidDuration
      */
-    public function intersect(self $other): ?self
+    public function intersect(Interval|Task $other): ?self
     {
-        return (new IntervalSet($this))->intersect($other)->first();
+        return (new IntervalSet($this))
+            ->intersect(self::extractInterval($other))
+            ->first();
     }
 
     /**
      * @throws InvalidDuration|InvalidInterval
      */
-    public function gap(self $other): ?self
+    public function gap(Interval|Task $other): ?self
     {
-        return (new IntervalSet($this, $other))->gaps()->first();
+        return (new IntervalSet($this, self::extractInterval($other)))
+            ->gaps()
+            ->first();
     }
 
     /**
      * @throws InvalidDuration|InvalidInterval
      */
-    public function union(self $other): IntervalSet
+    public function union(Interval|Task $other): IntervalSet
     {
-        return (new IntervalSet($this))->union($other);
+        return (new IntervalSet($this))->union(self::extractInterval($other));
     }
 
     /**
      * @throws InvalidDuration|InvalidInterval
      */
-    public function difference(self $other): IntervalSet
+    public function difference(Interval|Task $other): IntervalSet
     {
-        return (new IntervalSet($this))->difference($other);
+        return (new IntervalSet($this))->difference(self::extractInterval($other));
     }
 
     /**

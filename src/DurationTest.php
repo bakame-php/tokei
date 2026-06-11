@@ -242,7 +242,7 @@ final class DurationTest extends TestCase
         self::assertSame(
             $expectedMicroseconds,
             $duration
-                ->roundTo($unit, Rounding::Floor)
+                ->roundTo($unit, SnapMode::Floor)
                 ->total(Unit::Microsecond),
         );
     }
@@ -302,7 +302,7 @@ final class DurationTest extends TestCase
             ? Duration::of(microseconds: -$microseconds)->negated()
             : Duration::of(microseconds:$microseconds);
 
-        $result = $duration->roundTo($unit, Rounding::Floor);
+        $result = $duration->roundTo($unit, SnapMode::Floor);
 
         self::assertNotSame($duration, $result);
     }
@@ -322,8 +322,8 @@ final class DurationTest extends TestCase
         $positive = Duration::of(microseconds:3_661_500_000);
         $negative = Duration::of(microseconds:3_661_500_000)->negated();
 
-        self::assertTrue($positive->roundTo(Unit::Minute, Rounding::Floor)->total(Unit::Microsecond) > 0);
-        self::assertTrue($negative->roundTo(Unit::Minute, Rounding::Floor)->total(Unit::Microsecond) < 0);
+        self::assertTrue($positive->roundTo(Unit::Minute, SnapMode::Floor)->total(Unit::Microsecond) > 0);
+        self::assertTrue($negative->roundTo(Unit::Minute, SnapMode::Floor)->total(Unit::Microsecond) < 0);
     }
 
     public function test_it_can_not_invert_php_int_max(): void

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
-enum Rounding
+enum SnapMode
 {
     case Floor;
     case Nearest;

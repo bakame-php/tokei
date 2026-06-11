@@ -282,7 +282,7 @@ final readonly class Duration implements JsonSerializable
     /**
      * Returns a new instance rounded to the specified unit using a rounding mode.
      */
-    public function roundTo(Unit $unit, Rounding $mode = Rounding::Nearest): self
+    public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
         $rounded = UnitTransformer::round($this->value, $unit, $mode);
 
