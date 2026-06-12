@@ -42,11 +42,11 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
      *
      * @return non-empty-string
      */
-    public static function sanitize(string $value): string
+    private static function sanitize(mixed $value): string
     {
+        is_string($value) || throw TemporalException::dueToInvalidIdentifier($value);
         $value = trim($value);
-
-        ('' !== $value && 1 === preg_match(self::REGEXP_IDENTIFIER, $value)) || throw TemporalException::dueToInvalidIdentifier($value);
+        1 === preg_match(self::REGEXP_IDENTIFIER, $value) || throw TemporalException::dueToInvalidIdentifier($value);
 
         return $value;
     }
@@ -87,8 +87,6 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
 
         $filteredData = [];
         foreach ($data as $value) {
-            is_string($value) || throw TemporalException::dueToInvalidIdentifier($value); /* @phpstan-ignore-line */
-
             $filteredData[] = self::sanitize($value);
         }
 
@@ -103,23 +101,6 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
         $value = trim($value);
 
         return '' === $value ? new self() : new self(explode(',', $value)); /* @phpstan-ignore-line  */
-    }
-
-    /**
-     * @param InputIdentifiers ...$others
-     *
-     * @throws TemporalException
-     */
-    public function merge(Identifiers|HasIdentifiers|iterable|string ...$others): self
-    {
-        $found = array_fill_keys($this->items, 1);
-        foreach ($others as $other) {
-            foreach (self::filterIdentifiers($other) as $value) {
-                $found[$value] = 1;
-            }
-        }
-
-        return new self(array_keys($found));
     }
 
     public function count(): int
@@ -238,6 +219,23 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
     public function formatted(): string
     {
         return implode(',', $this->items);
+    }
+
+    /**
+     * @param InputIdentifiers ...$others
+     *
+     * @throws TemporalException
+     */
+    public function merge(Identifiers|HasIdentifiers|iterable|string ...$others): self
+    {
+        $found = array_fill_keys($this->items, 1);
+        foreach ($others as $other) {
+            foreach (self::filterIdentifiers($other) as $value) {
+                $found[$value] = 1;
+            }
+        }
+
+        return new self(array_keys($found));
     }
 
     /**
