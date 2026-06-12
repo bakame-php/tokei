@@ -987,4 +987,20 @@ final class IntervalTest extends TestCase
             $splits->allFormatted(IntervalFormat::Iso80000)
         );
     }
+
+    public function test_roundto_interval(): void
+    {
+        $interval = Interval::between(
+            Time::at(22, 13, 35),
+            Time::at(3, 42, 27)
+        );
+
+        self::assertSame($interval->roundTo(Unit::Second), $interval);
+
+        $updated = $interval->roundTo(Unit::Minute);
+        self::assertNotEquals($updated, $interval);
+
+        self::assertTrue($updated->start->equals(Time::at(22, 14)));
+        self::assertTrue($updated->end->equals(Time::at(3, 42)));
+    }
 }

@@ -274,6 +274,13 @@ final readonly class Interval implements JsonSerializable
         return self::between($this->start->shift($duration->negated()), $this->end->shift($duration));
     }
 
+    public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
+    {
+        $rounded = self::between($this->start->roundTo($unit, $mode), $this->end->roundTo($unit, $mode));
+
+        return $rounded->equals($this) ? $this : $rounded;
+    }
+
     /**
      * @throws InvalidDuration
      */
