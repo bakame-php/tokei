@@ -13,9 +13,11 @@ use function array_fill_keys;
 use function array_filter;
 use function array_keys;
 use function count;
+use function explode;
 use function implode;
 use function in_array;
 use function is_string;
+use function preg_match;
 use function sort;
 use function trim;
 
@@ -91,6 +93,16 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
         }
 
         return $filteredData;
+    }
+
+    /**
+     * @throws TemporalException
+     */
+    public static function fromFormat(string $value): self
+    {
+        $value = trim($value);
+
+        return '' === $value ? new self() : new self(explode(',', $value)); /* @phpstan-ignore-line  */
     }
 
     /**
@@ -238,6 +250,8 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
 
     /**
      * @param array{0: array{identifiers: list<non-empty-string>}, 1: array{}} $data
+     *
+     * @throws TemporalException
      */
     public function __unserialize(array $data): void
     {

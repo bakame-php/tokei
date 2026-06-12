@@ -6,6 +6,8 @@ namespace Bakame\Tokei;
 
 use JsonSerializable;
 
+use function explode;
+
 final class Event implements HasIdentifiers, JsonSerializable
 {
     private function __construct(
@@ -25,24 +27,33 @@ final class Event implements HasIdentifiers, JsonSerializable
     }
 
     /**
+     * @see TimeFormat::decode()
+     *
+     * @throws InvalidTime|TemporalException
+     */
+    public static function fromFormat(string $value, TimeFormat $format = TimeFormat::Iso8601): self
+    {
+        [$time, $identifiers] = explode(';', $value, 2) + [1 => ''];
+
+        return new self(Time::fromFormat($time, $format), Identifiers::fromFormat($identifiers));
+    }
+
+    /**
      * @see IntervalFormat::encode()
      *
      * @return non-empty-string
      */
     public function format(TimeFormat $format = TimeFormat::Iso8601): string
     {
-        return $format->encode($this->at).' -> '.$this->identifier->formatted();
+        return $format->encode($this->at).';'.$this->identifier->formatted();
     }
 
     /**
-     * @return array{at: Time, identifiers: Identifiers}
+     * @return non-empty-string
      */
-    public function jsonSerialize(): mixed
+    public function jsonSerialize(): string
     {
-        return [
-            'at' => $this->at,
-            'identifiers' => $this->identifier,
-       ];
+        return $this->format();
     }
 
     public function identifiers(): Identifiers

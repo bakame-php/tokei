@@ -39,9 +39,9 @@ final class TaskSetTest extends TestCase
         $result = $set->union([$this->task('B', Interval::between(Time::at(11), Time::at(14)))]);
 
         self::assertEquals([
-            '[09:00:00,11:00:00) => A',
-            '[11:00:00,12:00:00) => A,B',
-            '[12:00:00,14:00:00) => B',
+            '[09:00:00,11:00:00);A',
+            '[11:00:00,12:00:00);A,B',
+            '[12:00:00,14:00:00);B',
         ], $this->format($result));
     }
 
@@ -59,8 +59,8 @@ final class TaskSetTest extends TestCase
         $result = $a->intersect([$b]);
 
         self::assertEquals([
-            '[10:00:00,12:00:00) => A',
-            '[13:00:00,14:00:00) => B,A',
+            '[10:00:00,12:00:00);A',
+            '[13:00:00,14:00:00);B,A',
         ], $this->format($result));
     }
 
@@ -83,7 +83,7 @@ final class TaskSetTest extends TestCase
 
         $gaps = $set->gaps();
 
-        self::assertEquals(['[11:00:00,13:00:00) => '], $this->format($gaps));
+        self::assertEquals(['[11:00:00,13:00:00);'], $this->format($gaps));
     }
 
     public function test_difference_returns_the_source_set_if_there_is_no_intersection(): void
@@ -103,8 +103,8 @@ final class TaskSetTest extends TestCase
         $result = $a->difference($b);
 
         self::assertEquals([
-            '[09:00:00,10:00:00) => A',
-            '[11:00:00,12:00:00) => A',
+            '[09:00:00,10:00:00);A',
+            '[11:00:00,12:00:00);A',
         ], $this->format($result));
     }
 
@@ -115,7 +115,7 @@ final class TaskSetTest extends TestCase
         $result = $a->difference($b);
 
         self::assertEquals([
-            '[09:00:00,12:00:00) => A',
+            '[09:00:00,12:00:00);A',
         ], $this->format($result));
     }
 
@@ -140,8 +140,8 @@ final class TaskSetTest extends TestCase
         $result = $a->difference($b);
 
         self::assertEquals([
-            '[09:00:00,10:00:00) => A',
-            '[12:00:00,13:00:00) => A2',
+            '[09:00:00,10:00:00);A',
+            '[12:00:00,13:00:00);A2',
         ], $this->format($result));
     }
 
@@ -164,7 +164,7 @@ final class TaskSetTest extends TestCase
         $result = $a->difference($b);
 
         self::assertEquals([
-            '[09:00:00,12:00:00) => A',
+            '[09:00:00,12:00:00);A',
         ], $this->format($result));
     }
 

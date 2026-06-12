@@ -6,6 +6,8 @@ namespace Bakame\Tokei;
 
 use JsonSerializable;
 
+use function explode;
+
 final readonly class Task implements HasIdentifiers, JsonSerializable
 {
     private function __construct(
@@ -30,14 +32,23 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     }
 
     /**
-     * @return array{period: Interval, identifiers: Identifiers}
+     * @return non-empty-string
      */
-    public function jsonSerialize(): array
+    public function jsonSerialize(): string
     {
-        return [
-            'period' => $this->period,
-            'identifiers' => $this->identifier,
-        ];
+        return $this->format();
+    }
+
+    /**
+     * @see IntervalFormat::decode()
+     *
+     * @throws InvalidInterval|TemporalException
+     */
+    public static function fromFormat(string $value, IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): self
+    {
+        [$period, $identifiers] = explode(';', $value, 2) + [1 => ''];
+
+        return new self(Interval::fromFormat($period, $format, $unit), Identifiers::fromFormat($identifiers));
     }
 
     /**
@@ -47,7 +58,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
      */
     public function format(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): string
     {
-        return $format->encode($this->period, $unit).' => '.$this->identifier->formatted();
+        return $format->encode($this->period, $unit).';'.$this->identifier->formatted();
     }
 
     public function equals(Task $other): bool
