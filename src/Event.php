@@ -12,7 +12,7 @@ final class Event implements HasIdentifiers, JsonSerializable
 {
     private function __construct(
         public Time $at,
-        public Identifiers $identifier,
+        public Identifiers $identifiers,
     ) {
     }
 
@@ -45,7 +45,7 @@ final class Event implements HasIdentifiers, JsonSerializable
      */
     public function format(TimeFormat $format = TimeFormat::Iso8601): string
     {
-        return $format->encode($this->at).';'.$this->identifier->formatted();
+        return $format->encode($this->at).';'.$this->identifiers->formatted();
     }
 
     /**
@@ -56,22 +56,17 @@ final class Event implements HasIdentifiers, JsonSerializable
         return $this->format();
     }
 
-    public function identifiers(): Identifiers
-    {
-        return $this->identifier;
-    }
-
     public function equals(Event $other): bool
     {
         return $this->at->equals($other)
-            && $this->identifier->equals($other);
+            && $this->identifiers->equals($other);
     }
 
     public function occursOn(Event|Time $at): self
     {
         $at = $at instanceof self ? $at->at : $at;
 
-        return $at->equals($this->at) ? $this : new self($at, $this->identifier);
+        return $at->equals($this->at) ? $this : new self($at, $this->identifiers);
     }
 
     /**
@@ -83,12 +78,12 @@ final class Event implements HasIdentifiers, JsonSerializable
     {
         $identifier = $identifier instanceof Identifiers ? $identifier : new Identifiers($identifier);
 
-        return $identifier->equals($this->identifier) ? $this : new self($this->at, $identifier);
+        return $identifier->equals($this->identifiers) ? $this : new self($this->at, $identifier);
     }
 
     public function toTask(Interval $period): Task
     {
-        return Task::for($period, $this->identifier);
+        return Task::for($period, $this->identifiers);
     }
 
     /**
@@ -96,7 +91,7 @@ final class Event implements HasIdentifiers, JsonSerializable
      */
     public function __serialize(): array
     {
-        return [['at' => $this->at, 'identifiers' => $this->identifier], []];
+        return [['at' => $this->at, 'identifiers' => $this->identifiers], []];
     }
 
     /**
@@ -106,6 +101,6 @@ final class Event implements HasIdentifiers, JsonSerializable
     {
         [$properties] = $data;
         $this->at = $properties['at'];
-        $this->identifier = $properties['identifiers'];
+        $this->identifiers = $properties['identifiers'];
     }
 }

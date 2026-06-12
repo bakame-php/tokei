@@ -458,7 +458,7 @@ final readonly class Interval implements JsonSerializable
      */
     public function intersect(Interval|Task $other): ?self
     {
-        return (new IntervalSet($this))
+        return new IntervalSet($this)
             ->intersect(self::extractInterval($other))
             ->first();
     }
@@ -468,7 +468,7 @@ final readonly class Interval implements JsonSerializable
      */
     public function gap(Interval|Task $other): ?self
     {
-        return (new IntervalSet($this, self::extractInterval($other)))
+        return new IntervalSet($this, self::extractInterval($other))
             ->gaps()
             ->first();
     }
@@ -478,7 +478,7 @@ final readonly class Interval implements JsonSerializable
      */
     public function union(Interval|Task $other): IntervalSet
     {
-        return (new IntervalSet($this))->union(self::extractInterval($other));
+        return new IntervalSet($this)->union(self::extractInterval($other));
     }
 
     /**
@@ -486,7 +486,7 @@ final readonly class Interval implements JsonSerializable
      */
     public function difference(Interval|Task $other): IntervalSet
     {
-        return (new IntervalSet($this))->difference(self::extractInterval($other));
+        return new IntervalSet($this)->difference(self::extractInterval($other));
     }
 
     /**

@@ -50,16 +50,16 @@
         }
     ],
     "require": {
-        "php": "^8.3.0"
+        "php": "^8.4.0"
     },
     "require-dev": {
-        "phpstan/phpstan-phpunit": "^2.0",
-        "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^12.5 || ^13.1.8",
-        "friendsofphp/php-cs-fixer": "^3.95",
-        "phpstan/phpstan-deprecation-rules": "^2.0",
-        "phpstan/phpstan-strict-rules": "^2.0",
-        "symfony/var-dumper": "^7.4 || ^8.0"
+        "phpstan/phpstan-phpunit": "^2.0.16",
+        "phpstan/phpstan": "^2.2.2",
+        "phpunit/phpunit": "^13.2.0",
+        "friendsofphp/php-cs-fixer": "^3.95.5",
+        "phpstan/phpstan-deprecation-rules": "^2.0.4",
+        "phpstan/phpstan-strict-rules": "^2.0.11",
+        "symfony/var-dumper": "^7.4 || ^8.1"
     },
     "autoload": {
         "psr-4": {

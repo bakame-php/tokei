@@ -74,7 +74,7 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
     private static function filterIdentifiers(Identifiers|HasIdentifiers|iterable|string $data): array
     {
         if ($data instanceof HasIdentifiers) {
-            return $data->identifiers()->all();
+            return $data->identifiers->all();
         }
 
         if ($data instanceof self) {
@@ -159,7 +159,7 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
     public function equals(HasIdentifiers|Identifiers $other): bool
     {
         $currentLabels = $this->items;
-        $otherLabels = $other instanceof HasIdentifiers ? $other->identifiers()->items : $other->items;
+        $otherLabels = $other instanceof HasIdentifiers ? $other->identifiers->items : $other->items;
 
         sort($currentLabels, SORT_STRING);
         sort($otherLabels, SORT_STRING);

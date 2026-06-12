@@ -12,7 +12,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
 {
     private function __construct(
         public Interval $period,
-        public Identifiers $identifier,
+        public Identifiers $identifiers,
     ) {
     }
 
@@ -24,11 +24,6 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     public static function for(Interval $period, Identifiers|string $identifier = new Identifiers()): self
     {
         return new self($period, !$identifier instanceof Identifiers ? new Identifiers($identifier) : $identifier);
-    }
-
-    public function identifiers(): Identifiers
-    {
-        return $this->identifier;
     }
 
     /**
@@ -58,20 +53,20 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
      */
     public function format(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): string
     {
-        return $format->encode($this->period, $unit).';'.$this->identifier->formatted();
+        return $format->encode($this->period, $unit).';'.$this->identifiers->formatted();
     }
 
     public function equals(Task $other): bool
     {
         return $this->period->equals($other)
-            && $this->identifier->equals($other);
+            && $this->identifiers->equals($other);
     }
 
     public function during(Task|Interval $period): self
     {
         $period = $period instanceof Task ? $period->period : $period;
 
-        return $period->equals($this->period) ? $this : new self($period, $this->identifier);
+        return $period->equals($this->period) ? $this : new self($period, $this->identifiers);
     }
 
     /**
@@ -83,12 +78,12 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     {
         $identifier = $identifier instanceof Identifiers ? $identifier : new Identifiers($identifier);
 
-        return $identifier->equals($this->identifier) ? $this : new self($this->period, $identifier);
+        return $identifier->equals($this->identifiers) ? $this : new self($this->period, $identifier);
     }
 
     public function toEvent(Time $at): Event
     {
-        return Event::at($at, $this->identifier);
+        return Event::at($at, $this->identifiers);
     }
 
     /**
@@ -96,7 +91,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
      */
     public function __serialize(): array
     {
-        return [['period' => $this->period, 'identifiers' => $this->identifier], []];
+        return [['period' => $this->period, 'identifiers' => $this->identifiers], []];
     }
 
     /**
@@ -106,6 +101,6 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     {
         [$properties] = $data;
         $this->period = $properties['period'];
-        $this->identifier = $properties['identifiers'];
+        $this->identifiers = $properties['identifiers'];
     }
 }

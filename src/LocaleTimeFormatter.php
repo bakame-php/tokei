@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
-use DateTimeImmutable;
 use DateTimeZone;
 use IntlDateFormatter;
 use Throwable;
 use ValueError;
 
 use function class_exists;
-
-use const PHP_VERSION_ID;
 
 final readonly class LocaleTimeFormatter
 {
@@ -50,14 +47,6 @@ final readonly class LocaleTimeFormatter
                 },
                 timezone: $timezone,
             );
-
-            // For PHP83 only we are required to test the instantiated instance to
-            // validate that it is in a valid state. An error is only thrown with
-            // the following message "Found unconstructed IntlDateFormatter"
-            // when format is called,
-            if (PHP_VERSION_ID < 80400) {
-                $formatter->format(new DateTimeImmutable());
-            }
         } catch (Throwable $exception) {
             throw new ValueError('Unable to instantiate '.self::class.'; verify the locale.', previous: $exception);
         }

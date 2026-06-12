@@ -339,7 +339,7 @@ final class TaskSet implements TemporalSet
                             foreach ($others->overlaps($interval) as $bTask) {
                                 $intersection = $aTask->period->intersect($bTask->period)?->intersect($interval);
                                 if (null !== $intersection) {
-                                    $results[] = Task::for($intersection, $aTask->identifier->merge($bTask));
+                                    $results[] = Task::for($intersection, $aTask->identifiers->merge($bTask));
                                 }
                             }
                         }
@@ -347,7 +347,7 @@ final class TaskSet implements TemporalSet
                         return new self(...$results);
                     }
                 )
-        ))->filter(fn (Task $task): bool => !$task->identifier->isEmpty());
+        ))->filter(fn (Task $task): bool => !$task->identifiers->isEmpty());
     }
 
     /**

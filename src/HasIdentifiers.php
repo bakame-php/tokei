@@ -6,7 +6,7 @@ namespace Bakame\Tokei;
 
 interface HasIdentifiers
 {
-    public function identifiers(): Identifiers;
+    public Identifiers $identifiers { get; }
 
     /**
      * @param Identifiers|non-empty-string $identifier

@@ -65,7 +65,7 @@ final class IntervalSet implements TemporalSet
      */
     public static function chronological(Interval|IntervalSet|Task|TaskSet ...$items): self
     {
-        return (new self(...$items))->sorted();
+        return new self(...$items)->sorted();
     }
 
     public function count(): int
@@ -528,7 +528,7 @@ final class IntervalSet implements TemporalSet
             }
         }
 
-        return (new self(...$intersections))->union();
+        return new self(...$intersections)->union();
     }
 
     /**
@@ -536,7 +536,7 @@ final class IntervalSet implements TemporalSet
      */
     public function complement(): self
     {
-        return (new self(Interval::fullDay()))->difference($this)->union();
+        return new self(Interval::fullDay())->difference($this)->union();
     }
 
     /**

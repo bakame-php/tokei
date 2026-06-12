@@ -82,13 +82,13 @@ final class IntervalSetTest extends TestCase
         $a = Interval::between(Time::at(10), Time::at(11));
         $b = Interval::between(Time::at(12), Time::at(13));
 
-        $setP = (new IntervalSet($a))->push($b);
+        $setP = new IntervalSet($a)->push($b);
 
         self::assertCount(2, $setP);
         self::assertSame($a, $setP->first());
         self::assertSame($b, $setP->last());
 
-        $setU = (new IntervalSet($a))->unshift($b);
+        $setU = new IntervalSet($a)->unshift($b);
         self::assertCount(2, $setU);
         self::assertSame($a, $setU->last());
         self::assertSame($b, $setU->first());
@@ -165,7 +165,7 @@ final class IntervalSetTest extends TestCase
         $a = Interval::between(Time::at(12), Time::at(14));
         $b = Interval::between(Time::at(10), Time::at(11));
 
-        $normalized = (new IntervalSet($a, $b))->union();
+        $normalized = new IntervalSet($a, $b)->union();
         $normalizedBis = $a->union($b);
 
         self::assertTrue($normalized->first()?->equals($b));
@@ -191,7 +191,7 @@ final class IntervalSetTest extends TestCase
         $a = Interval::between(Time::at(10), Time::at(12));
         $b = Interval::between(Time::at(11), Time::at(14));
 
-        $normalized = (new IntervalSet($a, $b))->union();
+        $normalized = new IntervalSet($a, $b)->union();
 
         self::assertCount(1, $normalized);
 
@@ -206,7 +206,7 @@ final class IntervalSetTest extends TestCase
         $a = Interval::between(Time::at(10), Time::at(12));
         $b = Interval::between(Time::at(12), Time::at(14));
 
-        $normalized = (new IntervalSet($a, $b))->union();
+        $normalized = new IntervalSet($a, $b)->union();
 
         self::assertCount(1, $normalized);
 
@@ -222,7 +222,7 @@ final class IntervalSetTest extends TestCase
         $a = Interval::between(Time::at(10), Time::at(11));
         $b = Interval::between(Time::at(13), Time::at(14));
 
-        $normalized = (new IntervalSet($a, $b))->union();
+        $normalized = new IntervalSet($a, $b)->union();
 
         self::assertCount(2, $normalized);
     }
@@ -232,7 +232,7 @@ final class IntervalSetTest extends TestCase
         $a = Interval::between(Time::at(22), Time::at(2));
         $b = Interval::between(Time::at(1), Time::at(3));
 
-        $normalized = (new IntervalSet($a, $b))->union();
+        $normalized = new IntervalSet($a, $b)->union();
 
         self::assertCount(1, $normalized);
 
@@ -248,7 +248,7 @@ final class IntervalSetTest extends TestCase
         $a = Interval::between(Time::at(10), Time::at(20));
         $b = Interval::between(Time::at(10)->shift(Duration::of(hours: 10)), Time::at(20)->shift(Duration::of(hours: 10)));
 
-        $result = (new IntervalSet($a))->difference(new IntervalSet($b));
+        $result = new IntervalSet($a)->difference(new IntervalSet($b));
 
         self::assertCount(1, $result);
         self::assertInstanceOf(Interval::class, $result->first());
@@ -260,7 +260,7 @@ final class IntervalSetTest extends TestCase
         $a = Interval::between(Time::at(10), Time::at(20));
         $b = Interval::between(Time::at(13), Time::at(17));
 
-        $result = (new IntervalSet($a))->difference(new IntervalSet($b));
+        $result = new IntervalSet($a)->difference(new IntervalSet($b));
 
         self::assertCount(2, $result);
 
