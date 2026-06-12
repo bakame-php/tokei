@@ -4,17 +4,14 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
-/**
- * @phpstan-type InputIdentifiers Identifiers|HasIdentifiers|(iterable<non-empty-string>)|non-empty-string
- */
 interface HasIdentifiers
 {
     public function identifiers(): Identifiers;
 
     /**
-     * @param InputIdentifiers $identifiers
+     * @param Identifiers|non-empty-string $identifier
      *
      * @throws TemporalException
      */
-    public function named(Identifiers|HasIdentifiers|iterable|string $identifiers): static;
+    public function named(Identifiers|string $identifier): static;
 }

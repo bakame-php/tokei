@@ -6,14 +6,11 @@ namespace Bakame\Tokei;
 
 use JsonSerializable;
 
-/**
- * @phpstan-import-type InputIdentifiers from HasIdentifiers
- */
 final readonly class Task implements HasIdentifiers, JsonSerializable
 {
     private function __construct(
         public Interval $period,
-        public Identifiers $identifiers,
+        public Identifiers $identifier,
     ) {
     }
 
@@ -29,7 +26,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
 
     public function identifiers(): Identifiers
     {
-        return $this->identifiers;
+        return $this->identifier;
     }
 
     /**
@@ -39,38 +36,48 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     {
         return [
             'period' => $this->period,
-            'identifiers' => $this->identifiers,
+            'identifiers' => $this->identifier,
         ];
+    }
+
+    /**
+     * @see IntervalFormat::encode()
+     *
+     * @return non-empty-string
+     */
+    public function format(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): string
+    {
+        return $format->encode($this->period, $unit).' => '.$this->identifier->formatted();
     }
 
     public function equals(Task $other): bool
     {
         return $this->period->equals($other)
-            && $this->identifiers->equals($other);
+            && $this->identifier->equals($other);
     }
 
     public function during(Task|Interval $period): self
     {
         $period = $period instanceof Task ? $period->period : $period;
 
-        return $period->equals($this->period) ? $this : new self($period, $this->identifiers);
+        return $period->equals($this->period) ? $this : new self($period, $this->identifier);
     }
 
     /**
-     * @param InputIdentifiers $identifiers
+     * @param Identifiers|non-empty-string $identifier
      *
      * @throws TemporalException
      */
-    public function named(Identifiers|HasIdentifiers|iterable|string $identifiers): static
+    public function named(Identifiers|string $identifier): static
     {
-        $identifiers = $identifiers instanceof Identifiers ? $identifiers : new Identifiers($identifiers);
+        $identifier = $identifier instanceof Identifiers ? $identifier : new Identifiers($identifier);
 
-        return $identifiers->equals($this->identifiers) ? $this : new self($this->period, $identifiers);
+        return $identifier->equals($this->identifier) ? $this : new self($this->period, $identifier);
     }
 
     public function toEvent(Time $at): Event
     {
-        return Event::at($at, $this->identifiers);
+        return Event::at($at, $this->identifier);
     }
 
     /**
@@ -78,7 +85,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
      */
     public function __serialize(): array
     {
-        return [['period' => $this->period, 'identifiers' => $this->identifiers], []];
+        return [['period' => $this->period, 'identifiers' => $this->identifier], []];
     }
 
     /**
@@ -88,6 +95,6 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     {
         [$properties] = $data;
         $this->period = $properties['period'];
-        $this->identifiers = $properties['identifiers'];
+        $this->identifier = $properties['identifiers'];
     }
 }

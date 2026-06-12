@@ -20,7 +20,7 @@ final class TaskTest extends TestCase
         $task = Task::for($interval);
 
         self::assertSame($interval, $task->period);
-        self::assertTrue($task->identifiers->isEmpty());
+        self::assertTrue($task->identifier->isEmpty());
     }
 
     public function testConstructsTaskWithAttributes(): void
@@ -30,7 +30,7 @@ final class TaskTest extends TestCase
             $attributes = new Identifiers(['John'])
         );
 
-        self::assertSame($attributes, $task->identifiers);
+        self::assertSame($attributes, $task->identifier);
     }
 
     public function testShiftReturnsSameInstanceWhenIntervalIsEqual(): void
@@ -48,7 +48,7 @@ final class TaskTest extends TestCase
 
         self::assertNotSame($task, $shifted);
         self::assertEquals($other, $shifted->period);
-        self::assertSame($task->identifiers, $shifted->identifiers);
+        self::assertSame($task->identifier, $shifted->identifier);
     }
 
     public function testWithAttributesReturnsSameInstanceWhenEqual(): void
@@ -64,11 +64,10 @@ final class TaskTest extends TestCase
     public function testWithAttributesReturnsNewTask(): void
     {
         $task = Task::for(Interval::between(Time::at(10), Time::at(12)));
-        $attributes = ['John'];
-        $updated = $task->named($attributes);
+        $updated = $task->named('John');
 
         self::assertNotSame($task, $updated);
-        self::assertSame(['John'], $updated->identifiers->all());
+        self::assertSame(['John'], $updated->identifier->all());
         self::assertEquals($task->period, $updated->period);
     }
 

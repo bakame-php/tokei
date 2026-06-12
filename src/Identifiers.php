@@ -9,9 +9,11 @@ use Iterator;
 use IteratorAggregate;
 use JsonSerializable;
 
+use function array_fill_keys;
 use function array_filter;
 use function array_keys;
 use function count;
+use function implode;
 use function in_array;
 use function is_string;
 use function sort;
@@ -20,13 +22,33 @@ use function trim;
 use const SORT_STRING;
 
 /**
- * List of ordered non-empty string used as labels.
- *
- * @phpstan-import-type InputIdentifiers from HasIdentifiers
+ * @phpstan-type InputIdentifiers Identifiers|HasIdentifiers|(iterable<non-empty-string>)|non-empty-string
  * @implements IteratorAggregate<non-empty-string>
  */
 final readonly class Identifiers implements Countable, IteratorAggregate, JsonSerializable
 {
+    private const string REGEXP_IDENTIFIER = '/^
+        (?!.*[._-]{2})             # disallow consecutive dots or underscore anywhere
+        (?!.*[._-]$)               # disallow ending with a dot or underscore
+        (?!^[._-])                 # disallow starting with a dot or underscore
+        [a-z0-9]                   # first character must be a letter or a digit
+        (?:[a-z0-9._-]*[a-z0-9])?  # middle optional, ending with letter or digit
+    $/ix';
+
+    /**
+     * @throws TemporalException
+     *
+     * @return non-empty-string
+     */
+    public static function sanitize(string $value): string
+    {
+        $value = trim($value);
+
+        ('' !== $value && 1 === preg_match(self::REGEXP_IDENTIFIER, $value)) || throw TemporalException::dueToInvalidIdentifier($value);
+
+        return $value;
+    }
+
     /** @var list<non-empty-string> */
     private array $items;
 
@@ -64,23 +86,21 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
         $filteredData = [];
         foreach ($data as $value) {
             is_string($value) || throw TemporalException::dueToInvalidIdentifier($value); /* @phpstan-ignore-line */
-            $value = trim($value);
-            '' !== $value || throw TemporalException::dueToInvalidIdentifier($value);
 
-            $filteredData[] = $value;
+            $filteredData[] = self::sanitize($value);
         }
 
         return $filteredData;
     }
 
     /**
-     * @param iterable<InputIdentifiers> $others
+     * @param InputIdentifiers ...$others
      *
      * @throws TemporalException
      */
-    public static function merge(iterable $others): self
+    public function merge(Identifiers|HasIdentifiers|iterable|string ...$others): self
     {
-        $found = [];
+        $found = array_fill_keys($this->items, 1);
         foreach ($others as $other) {
             foreach (self::filterIdentifiers($other) as $value) {
                 $found[$value] = 1;
@@ -201,6 +221,11 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
         $data = array_filter($this->items, fn (string $label): bool => !in_array($label, $labels, true));
 
         return $data === $this->items ? $this : new self($data);
+    }
+
+    public function formatted(): string
+    {
+        return implode(',', $this->items);
     }
 
     /**

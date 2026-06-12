@@ -10,9 +10,9 @@ class TemporalException extends TokeiException
 {
     public static function dueToInvalidIdentifier(mixed $value): self
     {
-        $message = 'string' !== ($type = get_debug_type($value))
-            ? 'Identifier values must be non-empty strings; '.$type.' given.'
-            : 'Identifier values must be non-empty strings.';
+        $message = !is_string($value)
+            ? 'The Identifier value must be a non-empty string; '.get_debug_type($value).' given.'
+            : 'The identifier value must start with a letter or a digit and only contain letters, digits, point or underscores; '.$value.' given.';
 
         return new self($message);
     }

@@ -65,7 +65,7 @@ final class IdentifiersTest extends TestCase
     {
         $attributes = new Identifiers(['John']);
 
-        self::assertTrue($attributes->equals(Identifiers::merge([$attributes])));
+        self::assertTrue($attributes->equals($attributes->merge($attributes)));
     }
 
     public function testOnlyAndExceptMethods(): void
@@ -123,11 +123,18 @@ final class IdentifiersTest extends TestCase
         new Identifiers([new stdClass()]); /* @phpstan-ignore-line */
     }
 
-    public function test_using_emy_identifier_type(): void
+    public function test_using_empty_identifier_type(): void
     {
         $this->expectException(TemporalException::class);
 
         new Identifiers('   ');
+    }
+
+    public function test_using_invalud_identifier(): void
+    {
+        $this->expectException(TemporalException::class);
+
+        new Identifiers('identifier_with_comma,');
     }
 
     public function test_duration_can_be_serialized_and_unserialized(): void

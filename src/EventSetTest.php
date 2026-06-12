@@ -263,7 +263,7 @@ final class EventSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Event::class, $result);
-        self::assertSame('B', $result->identifiers->first());
+        self::assertSame('B', $result->identifier->first());
     }
 
     public function test_next_includes_exact_time(): void
@@ -274,7 +274,7 @@ final class EventSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Event::class, $result);
-        self::assertSame('B', $result->identifiers->first());
+        self::assertSame('B', $result->identifier->first());
     }
 
     public function test_next_returns_null_if_none(): void
@@ -294,7 +294,7 @@ final class EventSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Event::class, $result);
-        self::assertSame('B', $result->identifiers->first());
+        self::assertSame('B', $result->identifier->first());
     }
 
     public function test_previous_excludes_exact_time(): void
@@ -305,7 +305,7 @@ final class EventSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Event::class, $result);
-        self::assertSame('B', $result->identifiers->first());
+        self::assertSame('B', $result->identifier->first());
     }
 
     public function test_previous_returns_null_when_none(): void
@@ -325,7 +325,7 @@ final class EventSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Event::class, $result);
-        self::assertSame('B', $result->identifiers->first());
+        self::assertSame('B', $result->identifier->first());
     }
 
     public function test_nearest_prefers_forward_when_tie(): void
@@ -337,7 +337,7 @@ final class EventSetTest extends TestCase
 
         $firstResult = $results->first();
         self::assertInstanceOf(Event::class, $firstResult);
-        self::assertSame('A', $firstResult->identifiers->first());
+        self::assertSame('A', $firstResult->identifier->first());
     }
 
     public function test_nearest_exact_match(): void
@@ -348,7 +348,7 @@ final class EventSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Event::class, $result);
-        self::assertSame('B', $result->identifiers->first());
+        self::assertSame('B', $result->identifier->first());
     }
 
     public function test_next_and_previous_do_not_overlap(): void
@@ -360,8 +360,8 @@ final class EventSetTest extends TestCase
         $next = $events->next($t, SearchMode::Linear);
 
         self::assertNotSame(
-            $prev->first()?->identifiers->first(),
-            $next->first()?->identifiers->first(),
+            $prev->first()?->identifier->first(),
+            $next->first()?->identifier->first(),
         );
     }
 

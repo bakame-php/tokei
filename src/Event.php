@@ -6,14 +6,11 @@ namespace Bakame\Tokei;
 
 use JsonSerializable;
 
-/**
- * @phpstan-import-type InputIdentifiers from HasIdentifiers
- */
 final class Event implements HasIdentifiers, JsonSerializable
 {
     private function __construct(
         public Time $at,
-        public Identifiers $identifiers,
+        public Identifiers $identifier,
     ) {
     }
 
@@ -28,49 +25,59 @@ final class Event implements HasIdentifiers, JsonSerializable
     }
 
     /**
+     * @see IntervalFormat::encode()
+     *
+     * @return non-empty-string
+     */
+    public function format(TimeFormat $format = TimeFormat::Iso8601): string
+    {
+        return $format->encode($this->at).' -> '.$this->identifier->formatted();
+    }
+
+    /**
      * @return array{at: Time, identifiers: Identifiers}
      */
     public function jsonSerialize(): mixed
     {
         return [
             'at' => $this->at,
-            'identifiers' => $this->identifiers,
+            'identifiers' => $this->identifier,
        ];
     }
 
     public function identifiers(): Identifiers
     {
-        return $this->identifiers;
+        return $this->identifier;
     }
 
     public function equals(Event $other): bool
     {
         return $this->at->equals($other)
-            && $this->identifiers->equals($other);
+            && $this->identifier->equals($other);
     }
 
     public function occursOn(Event|Time $at): self
     {
         $at = $at instanceof self ? $at->at : $at;
 
-        return $at->equals($this->at) ? $this : new self($at, $this->identifiers);
+        return $at->equals($this->at) ? $this : new self($at, $this->identifier);
     }
 
     /**
-     * @param InputIdentifiers $identifiers
+     * @param Identifiers|non-empty-string $identifier
      *
      * @throws TemporalException
      */
-    public function named(Identifiers|HasIdentifiers|iterable|string $identifiers): static
+    public function named(Identifiers|string $identifier): static
     {
-        $identifiers = $identifiers instanceof Identifiers ? $identifiers : new Identifiers($identifiers);
+        $identifier = $identifier instanceof Identifiers ? $identifier : new Identifiers($identifier);
 
-        return $identifiers->equals($this->identifiers) ? $this : new self($this->at, $identifiers);
+        return $identifier->equals($this->identifier) ? $this : new self($this->at, $identifier);
     }
 
     public function toTask(Interval $period): Task
     {
-        return Task::for($period, $this->identifiers);
+        return Task::for($period, $this->identifier);
     }
 
     /**
@@ -78,7 +85,7 @@ final class Event implements HasIdentifiers, JsonSerializable
      */
     public function __serialize(): array
     {
-        return [['at' => $this->at, 'identifiers' => $this->identifiers], []];
+        return [['at' => $this->at, 'identifiers' => $this->identifier], []];
     }
 
     /**
@@ -88,6 +95,6 @@ final class Event implements HasIdentifiers, JsonSerializable
     {
         [$properties] = $data;
         $this->at = $properties['at'];
-        $this->identifiers = $properties['identifiers'];
+        $this->identifier = $properties['identifiers'];
     }
 }

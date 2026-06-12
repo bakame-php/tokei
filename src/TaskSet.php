@@ -7,6 +7,7 @@ namespace Bakame\Tokei;
 use Traversable;
 
 use function array_column;
+use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
@@ -68,6 +69,16 @@ final class TaskSet implements TemporalSet
         );
 
         return $res;
+    }
+
+    /**
+     * @throws InvalidTime
+     *
+     * @return list<non-empty-string>
+     */
+    public function allFormatted(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): array
+    {
+        return array_map(static fn (Task $item): string => $item->format($format, $unit), $this->items);
     }
 
     public function duration(): Duration
@@ -328,7 +339,7 @@ final class TaskSet implements TemporalSet
                             foreach ($others->overlaps($interval) as $bTask) {
                                 $intersection = $aTask->period->intersect($bTask->period)?->intersect($interval);
                                 if (null !== $intersection) {
-                                    $results[] = Task::for($intersection, Identifiers::merge([$aTask, $bTask]));
+                                    $results[] = Task::for($intersection, $aTask->identifier->merge($bTask));
                                 }
                             }
                         }
@@ -336,7 +347,7 @@ final class TaskSet implements TemporalSet
                         return new self(...$results);
                     }
                 )
-        ))->filter(fn (Task $task): bool => !$task->identifiers->isEmpty());
+        ))->filter(fn (Task $task): bool => !$task->identifier->isEmpty());
     }
 
     /**
@@ -379,7 +390,7 @@ final class TaskSet implements TemporalSet
         return $source
             ->overlaps($interval)
             ->reduce(
-                static fn (Identifiers $carry, Task $task): Identifiers => Identifiers::merge([$carry, $task]),
+                static fn (Identifiers $carry, Task $task): Identifiers => $carry->merge($task),
                 new Identifiers()
             );
     }

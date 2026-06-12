@@ -6,6 +6,7 @@ namespace Bakame\Tokei;
 
 use Traversable;
 
+use function array_map;
 use function array_merge;
 use function count;
 use function usort;
@@ -60,6 +61,16 @@ final class EventSet implements TemporalSet
         usort($res, static fn (Event $a, Event $b): int => $a->at->compareTo($b->at));
 
         return $res;
+    }
+
+    /**
+     * @throws InvalidTime
+     *
+     * @return list<non-empty-string>
+     */
+    public function allFormatted(TimeFormat $format = TimeFormat::Iso8601): array
+    {
+        return array_map(static fn (Event $item): string => $item->format($format), $this->items);
     }
 
     public function count(): int

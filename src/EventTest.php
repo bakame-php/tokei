@@ -17,7 +17,7 @@ final class EventTest extends TestCase
         $event = Event::at($at);
 
         self::assertSame($at, $event->at);
-        self::assertTrue($event->identifiers->isEmpty());
+        self::assertTrue($event->identifier->isEmpty());
     }
 
     public function testConstructsTaskWithAttributes(): void
@@ -27,7 +27,7 @@ final class EventTest extends TestCase
             $identifiers = new Identifiers(['John'])
         );
 
-        self::assertSame($identifiers, $task->identifiers);
+        self::assertSame($identifiers, $task->identifier);
     }
 
     public function testShiftReturnsSameInstanceWhenIntervalIsEqual(): void
@@ -45,7 +45,7 @@ final class EventTest extends TestCase
 
         self::assertNotSame($event, $shifted);
         self::assertEquals($other, $shifted->at);
-        self::assertSame($event->identifiers, $shifted->identifiers);
+        self::assertSame($event->identifier, $shifted->identifier);
     }
 
     public function testWithAttributesReturnsSameInstanceWhenEqual(): void
@@ -58,11 +58,10 @@ final class EventTest extends TestCase
     public function testWithAttributesReturnsNewTask(): void
     {
         $event = Event::at(Time::at(10));
-        $identifiers = ['John'];
-        $updated = $event->named($identifiers);
+        $updated = $event->named('John');
 
         self::assertNotSame($event, $updated);
-        self::assertSame(['John'], $updated->identifiers->all());
+        self::assertSame(['John'], $updated->identifier->all());
         self::assertEquals($event->at, $updated->at);
     }
 }
