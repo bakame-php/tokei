@@ -17,13 +17,17 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     }
 
     /**
-     * @param Identifiers|non-empty-string $identifier
+     * @param Identifiers|HasIdentifiers|non-empty-string $identifier
      *
      * @throws TemporalException
      */
-    public static function for(Interval $period, Identifiers|string $identifier = new Identifiers()): self
+    public static function for(Interval $period, Identifiers|HasIdentifiers|string $identifier = new Identifiers()): self
     {
-        return new self($period, !$identifier instanceof Identifiers ? new Identifiers($identifier) : $identifier);
+        return new self($period, match (true) {
+            $identifier instanceof HasIdentifiers => $identifier->identifiers,
+            $identifier instanceof Identifiers => $identifier,
+            default => new Identifiers($identifier),
+        });
     }
 
     /**

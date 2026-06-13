@@ -17,13 +17,17 @@ final class Event implements HasIdentifiers, JsonSerializable
     }
 
     /**
-     * @param Identifiers|non-empty-string $identifier
+     * @param Identifiers|HasIdentifiers|non-empty-string $identifier
      *
      * @throws TemporalException
      */
-    public static function at(Time $time, Identifiers|string $identifier = new Identifiers()): self
+    public static function at(Time $time, Identifiers|HasIdentifiers|string $identifier = new Identifiers()): self
     {
-        return new self($time, !$identifier instanceof Identifiers ? new Identifiers($identifier) : $identifier);
+        return new self($time, match (true) {
+            $identifier instanceof HasIdentifiers => $identifier->identifiers,
+            $identifier instanceof Identifiers => $identifier,
+            default => new Identifiers($identifier),
+        });
     }
 
     /**
