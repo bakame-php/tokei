@@ -212,7 +212,7 @@ final class TaskSet implements TemporalSet
     }
 
     /**
-     * @param callable(Task, int): Task $callback
+     * @param callable(Task, int): (Task|TaskSet) $callback
      */
     public function transform(callable $callback): self
     {
@@ -316,38 +316,94 @@ final class TaskSet implements TemporalSet
      */
     public function intersect(iterable $sets): self
     {
+        $splitTasks = static fn (TaskSet $set): TaskSet => $set
+            ->transform(
+                static fn (Task $task, int $offset): TaskSet|Task =>
+                IntervalType::Overflow !== $task->period->type
+                    ? $task
+                    : new TaskSet(
+                        ...$task->period
+                            ->splitAt(Time::midnight())
+                            ->map(
+                                static fn (Interval $interval): Task => Task::for($interval, $task->identifiers)
+                            )
+                    )
+            );
+
+        /**
+         * @param non-empty-string $source
+         *
+         * @return list<array{event: Event, type: Bound, source: non-empty-string}>
+         */
+        $addEvents = static fn (TaskSet $set, string $source): array => $splitTasks($set)
+            ->reduce(
+                function (array $events, Task $task) use ($source): array {
+                    $events[] = ['event' => $task->toEvent($task->period->start), 'type' => Bound::Start, 'source' => $source];
+                    $events[] = ['event' => $task->toEvent($task->period->end), 'type' => Bound::End, 'source' => $source];
+
+                    return $events;
+                },
+                []
+            );
+
+        /**
+         * @param array{event:Event, type:Bound, source:non-empty-string} $a
+         * @param array{event:Event, type:Bound, source:non-empty-string} $b
+         */
+        $sortEvents = static function (array $a, array $b): int {
+            /* @phpstan-ignore-next-line */
+            $cmp = $a['event']->at->compareTo($b['event']);
+
+            /* @phpstan-ignore-next-line */
+            return 0 !== $cmp ? $cmp : (Bound::End === $a['type'] ? -1 : 1);
+        };
+
+        /**
+         * @throws InvalidDuration|TemporalException
+         */
+        $flush = static fn (?Time $from, Time $to, Identifiers $labelsA, Identifiers $labelsB): ?Task =>
+            (null === $from || $from->equals($to) || $labelsA->isEmpty() || $labelsB->isEmpty())
+                ? null
+                : Task::for(Interval::between($from, $to), $labelsA->merge($labelsB));
+
         $others = new self(...$sets);
+        if ($this->isEmpty() || $others->isEmpty()) {
+            return new self();
+        }
 
-        return $others->isEmpty() ? new self() : (new self(
-            ...$this
-                ->toIntervalSet()
-                ->intersect($others)
-                ->union()
-                ->transform(
-                    fn (Interval $interval): IntervalSet => $interval
-                        ->splitAt(
-                            ...$this
-                                ->toIntervalSet()
-                                ->push($others)
-                                ->atomicBoundaries()
-                        )
-                )
-                ->map(
-                    function (Interval $interval) use ($others): self {
-                        $results = [];
-                        foreach ($this->overlaps($interval) as $aTask) {
-                            foreach ($others->overlaps($interval) as $bTask) {
-                                $intersection = $aTask->period->intersect($bTask->period)?->intersect($interval);
-                                if (null !== $intersection) {
-                                    $results[] = Task::for($intersection, $aTask->identifiers->merge($bTask));
-                                }
-                            }
-                        }
+        /** @var list<array{event: Event, type: Bound, source: non-empty-string}> $events */
+        $events = array_merge($addEvents($this, 'A'), $addEvents($others, 'B'));
+        usort($events, $sortEvents);
 
-                        return new self(...$results);
-                    }
-                )
-        ))->filter(fn (Task $task): bool => !$task->identifiers->isEmpty());
+        $activeA = new Identifiers();
+        $activeB = new Identifiers();
+        $lastTime = null;
+        $result = [];
+        foreach ($events as $event) {
+            $currentTime = $event['event']->at;
+            $task = $flush($lastTime, $currentTime, $activeA, $activeB);
+            if (null !== $task) {
+                $result[] = $task;
+            }
+
+            if ('A' === $event['source']) {
+                if (Bound::Start === $event['type']) {
+                    $activeA = $activeA->merge($event['event']->identifiers);
+                } else {
+                    $activeA = new Identifiers();
+                }
+            } else {
+                if (Bound::Start === $event['type']) {
+                    $activeB = $activeB->merge($event['event']->identifiers);
+                } else {
+                    $activeB = new Identifiers();
+                }
+            }
+
+            $lastTime = $currentTime;
+        }
+
+        return new self(...$result);
     }
 
     /**

@@ -401,4 +401,26 @@ final class TaskSetTest extends TestCase
         self::assertInstanceOf(TaskSet::class, $restored);
         self::assertEquals($tasks, $restored);
     }
+
+    public function test_interesect_with_task_overflow(): void
+    {
+        $taskSet1 = new TaskSet(
+            Task::for(Interval::since(Time::at(1, 00), Duration::of(hours: 2)), 'early-morning'),
+            Task::for(Interval::since(Time::at(15, 00), Duration::of(hours: 3)), 'power'),
+            Task::for(Interval::between(Time::at(9, 0), Time::at(12, 30)), 'morning'),
+            Task::for(Interval::between(Time::at(19, 0), Time::at(23, 30)), 'sneaky-sneaky'),
+        );
+
+        $taskSet2 = new TaskSet(
+            Task::for(Interval::between(Time::at(22, 30), Time::at(2)), 'evening'),
+            Task::for(Interval::since(Time::at(13, 30), Duration::of(hours: 6)), 'afternoon'),
+            Task::for(Interval::since(Time::at(15, 00), Duration::of(hours: 3)), 'power'),
+        );
+
+        $intersect = $taskSet1->intersect($taskSet2);
+        self::assertCount(3, $intersect);
+        $first = $intersect->first();
+        self::assertInstanceOf(Task::class, $first);
+        self::assertSame('[01:00:00,02:00:00);early-morning,evening', $first->format(IntervalFormat::Iso80000));
+    }
 }

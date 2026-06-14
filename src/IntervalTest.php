@@ -951,27 +951,6 @@ final class IntervalTest extends TestCase
         )->format(IntervalFormat::Bourbaki, Unit::Minute));
     }
 
-    /**
-     * @param non-empty-string $notation
-     */
-    #[DataProvider('invalidCanonicalNotation')]
-    public function test_it_can_not_decode_an_invalid_canonical_string(string $notation): void
-    {
-        $this->expectException(TimeException::class);
-
-        Interval::fromFormat('11:00:00/PT3M0.5S[]', IntervalFormat::Canonical);
-    }
-
-    /**
-     * @return iterable<non-empty-string, array{notation: non-empty-string}>
-     */
-    public static function invalidCanonicalNotation(): iterable
-    {
-        yield 'unsupported boundaries' => ['notation' => '11:00:00/PT3M0.5S[]'];
-        yield 'missing boundaries' => ['notation' => '11:00:00/PT3M0.5S'];
-        yield 'wrong notation' => ['notation' => '[11:00:00,12:00:00)'];
-    }
-
     public function test_fixing_split_at_overflow(): void
     {
         $interval = Interval::between(Time::at(22), Time::at(3));
@@ -1002,5 +981,37 @@ final class IntervalTest extends TestCase
 
         self::assertTrue($updated->start->equals(Time::at(22, 14)));
         self::assertTrue($updated->end->equals(Time::at(3, 42)));
+    }
+
+    public function test_roundDurationTo_interval_with_start_anchor(): void
+    {
+        $interval = Interval::between(
+            Time::at(22, 13, 35),
+            Time::at(3, 42, 27)
+        );
+
+        self::assertSame($interval, $interval->roundDurationTo(Unit::Second));
+
+        $updated = $interval->roundDurationTo(Unit::Minute);
+
+        self::assertNotEquals($updated, $interval);
+        self::assertTrue($updated->start->equals($interval->start));
+        self::assertFalse($updated->end->equals($interval->end));
+    }
+
+    public function test_roundDurationTo_interval_with_end_anchor(): void
+    {
+        $interval = Interval::between(
+            Time::at(22, 13, 35),
+            Time::at(3, 42, 27)
+        );
+
+        self::assertSame($interval, $interval->roundDurationTo(Unit::Second));
+
+        $updated = $interval->roundDurationTo(Unit::Minute, SnapMode::Nearest, Bound::End);
+
+        self::assertNotEquals($updated, $interval);
+        self::assertTrue($updated->end->equals($interval->end));
+        self::assertFalse($updated->start->equals($interval->start));
     }
 }

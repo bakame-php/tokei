@@ -15,6 +15,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `IntervalSet::nearest`
 - `Interval::fromFormat`
 - `Interval::roundTo`
+- `Interval::roundDurationTo`
 - `Duration::fromDateInterval`
 - `Duration::fromFormat`
 - `Duration::format`

@@ -55,13 +55,20 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
     private array $items;
 
     /**
-     * @param InputIdentifiers $items
+     * @param InputIdentifiers ...$items
      *
      * @throws TemporalException
      */
-    public function __construct(Identifiers|HasIdentifiers|iterable|string $items = [])
+    public function __construct(Identifiers|HasIdentifiers|iterable|string ...$items)
     {
-        $this->items = self::filterIdentifiers($items);
+        $found = [];
+        foreach ($items as $item) {
+            foreach (self::filterIdentifiers($item) as $value) {
+                $found[] = $value;
+            }
+        }
+
+        $this->items = array_values(array_unique($found));
     }
 
     /**

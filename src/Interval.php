@@ -271,14 +271,24 @@ final readonly class Interval implements JsonSerializable
      */
     public function expand(Duration $duration): self
     {
-        return self::between($this->start->shift($duration->negated()), $this->end->shift($duration));
+        $new = self::between($this->start->shift($duration->negated()), $this->end->shift($duration));
+
+        return $new->equals($this) ? $this : $new;
     }
 
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
-        $rounded = self::between($this->start->roundTo($unit, $mode), $this->end->roundTo($unit, $mode));
+        $new = self::between($this->start->roundTo($unit, $mode), $this->end->roundTo($unit, $mode));
 
-        return $rounded->equals($this) ? $this : $rounded;
+        return $new->equals($this) ? $this : $new;
+    }
+
+    public function roundDurationTo(Unit $unit, SnapMode $mode = SnapMode::Nearest, Bound $anchor = Bound::Start): self
+    {
+        $duration = $this->duration->roundTo($unit, $mode);
+        $new = Bound::Start === $anchor ? self::since($this->start, $duration) : self::until($this->end, $duration);
+
+        return $new->equals($this) ? $this : $new;
     }
 
     /**
@@ -286,11 +296,13 @@ final readonly class Interval implements JsonSerializable
      */
     public function complement(): self
     {
-        return match ($this->type) {
+        $new = match ($this->type) {
             IntervalType::Collapsed => self::circular($this->start),
             IntervalType::Circular => self::collapsed($this->start),
             default => self::between($this->end, $this->start),
         };
+
+        return $new->equals($this) ? $this : $new;
     }
 
     /**

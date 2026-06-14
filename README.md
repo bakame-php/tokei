@@ -576,6 +576,9 @@ Interval::expand(Duration $duration): self
 Interval::shift(Duration $duration): self
 Interval::shiftBound(Duration $duration, Bound $from): self
 Interval::lasting(Duration $duration, Bound $from): self
+Interval::roundTo(Unit $unit, SnapMode $mode): self
+Interval::roundDurationTo(Unit $unit, SnapMode $mode, Bound $anchor = Bound::Start): self
+Interval::lasting(Duration $duration, Bound $from): self
 Interval::complement(): self
 ```
 
