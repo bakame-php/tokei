@@ -513,11 +513,9 @@ using the following Enum:
 ```php
 enum IntervalFormat
 {
-    case Canonical;
     case Iso8601StartDuration;
     case Iso8601DurationEnd;
     case Iso8601StartEnd;
-    case Iso8601;
     case Iso80000;
     case Bourbaki;
 }
@@ -528,7 +526,6 @@ Out of the box, to following formatting algorithm are possible:
 - `Iso8601StartDuration` returns a string representation based on the starting time and the interval duration;
 - `Iso8601DurationEnd` returns a string representation based on the interval duration and the ending time;
 - `Iso8601StartEnd` returns a string representation based on the interval starting and ending times;
-- `Iso8601` returns the same representation as `Iso8601StartDuration`;
 - `Iso80000` returns a string representation based on the interval starting and ending times and the half-open bound;
 - `Bourbaki` returns a string representation based on the interval starting and ending times and the half-open bound, with different boundary markers;
 
@@ -543,7 +540,7 @@ $interval->format(IntervalFormat::Bourbaki);             // returns [00:00:00,12
 
 > [!IMPORTANT]
 > The `IntervalFormat::Iso8601StartDuration` version is the one used for JSOM string representation via `JsonSerialize`
-> the boundaries information IS NOT transferred without loss of information.
+> the boundaries information IS NOT transferred.
 
 #### Iterations
 

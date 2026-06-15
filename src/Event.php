@@ -42,6 +42,11 @@ final class Event implements HasIdentifiers, JsonSerializable
         return new self(Time::fromFormat($time, $format), Identifiers::fromFormat($identifiers));
     }
 
+    public static function fromTask(Task $task, Bound $anchor): self
+    {
+        return new self(Bound::Start === $anchor ? $task->period->start : $task->period->end, $task->identifiers);
+    }
+
     /**
      * @see IntervalFormat::encode()
      *
@@ -74,20 +79,19 @@ final class Event implements HasIdentifiers, JsonSerializable
     }
 
     /**
-     * @param Identifiers|non-empty-string $identifier
+     * @param Identifiers|HasIdentifiers|non-empty-string $identifier
      *
      * @throws TemporalException
      */
-    public function named(Identifiers|string $identifier): static
+    public function named(Identifiers|HasIdentifiers|string $identifier): static
     {
-        $identifier = $identifier instanceof Identifiers ? $identifier : new Identifiers($identifier);
+        $identifier = match (true) {
+            $identifier instanceof HasIdentifiers => $identifier->identifiers,
+            $identifier instanceof Identifiers => $identifier,
+            default => new Identifiers($identifier),
+        };
 
         return $identifier->equals($this->identifiers) ? $this : new self($this->at, $identifier);
-    }
-
-    public function toTask(Interval $period): Task
-    {
-        return Task::for($period, $this->identifiers);
     }
 
     /**

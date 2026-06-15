@@ -6,6 +6,8 @@ namespace Bakame\Tokei;
 
 use Traversable;
 
+use function array_diff_key;
+use function array_key_exists;
 use function array_map;
 use function array_merge;
 use function count;
@@ -24,6 +26,11 @@ final class EventSet implements TemporalSet
     public function __construct(Event|EventSet ...$items)
     {
         $this->items = self::sortChronologically($items);
+    }
+
+    public static function fromTasks(TaskSet $tasks, Bound $anchor = Bound::Start): self
+    {
+        return new self(...$tasks->map(fn (Task $task): Event => Event::fromTask($task, $anchor)));
     }
 
     /**
@@ -139,13 +146,7 @@ final class EventSet implements TemporalSet
 
     public function indexOf(Event $event): ?int
     {
-        foreach ($this->items as $offset => $item) {
-            if ($event->equals($item)) {
-                return $offset;
-            }
-        }
-
-        return null;
+        return array_find_key($this->items, fn (Event $item): bool => $event->equals($item));
     }
 
     public function lastIndexOf(Event $event): ?int
@@ -157,6 +158,17 @@ final class EventSet implements TemporalSet
         }
 
         return null;
+    }
+
+    /**
+     * Tells whether the given interval is present in the set.
+     */
+    public function has(Event ...$items): bool
+    {
+        $check = new self(...$items);
+
+        return !$check->isEmpty()
+            && $check->every(fn (Event $item): bool => null !== $this->indexOf($item));
     }
 
     /**
@@ -286,6 +298,95 @@ final class EventSet implements TemporalSet
         return new self(...$this->items, ...$itemList);
     }
 
+    public function gaps(): IntervalSet
+    {
+        $nbItems = count($this->items);
+        if ($nbItems < 2) {
+            return new IntervalSet();
+        }
+
+        $gaps = [];
+        for ($i = 0; $i < $nbItems - 1; $i++) {
+            $gaps[] = Interval::between($this->items[$i], $this->items[$i + 1]);
+        }
+
+        return new IntervalSet(...$gaps);
+    }
+
+    public function union(Event|EventSet ...$items): self
+    {
+        if ([] === $items) {
+            return $this;
+        }
+
+        $others = new self(...$items);
+        if ($others->isEmpty()) {
+            return $this;
+        }
+
+        $current = self::atomic($this);
+        foreach (self::atomic($others) as $offset => $other) {
+            $current[$offset] = !array_key_exists($offset, $current)
+                ? $other
+                : $current[$offset]->named($current[$offset]->identifiers->merge($other->identifiers));
+        }
+
+        return new self(...$current);
+    }
+
+    public function intersect(Event|EventSet ...$items): self
+    {
+        if ([] === $items) {
+            return new self();
+        }
+
+        $others = new self(...$items);
+        if ($others->isEmpty()) {
+            return new self();
+        }
+
+        $current = self::atomic($this);
+        $result = [];
+        foreach (self::atomic($others) as $offset => $item) {
+            if (array_key_exists($offset, $current)) {
+                $result[$offset] = $current[$offset]->named($current[$offset]->identifiers->merge($item->identifiers));
+            }
+        }
+
+        return new self(...$result);
+    }
+
+    public function difference(Event|EventSet ...$items): self
+    {
+        if ([] === $items) {
+            return $this;
+        }
+
+        $others = new self(...$items);
+
+        return $others->isEmpty()
+            ? $this
+            : new self(...array_diff_key(self::atomic($this), self::atomic($others)));
+    }
+
+    /**
+     * @throws TemporalException
+     *
+     * @return array<non-empty-string, Event>
+     */
+    private static function atomic(self $set): array
+    {
+        $result = [];
+        foreach ($set->items as $item) {
+            $offset = $item->at->format();
+            $result[$offset] = ([] === $result || !array_key_exists($offset, $result))
+                ? $item
+                : $result[$offset]->named($item->identifiers->merge($item->identifiers));
+        }
+
+        return $result;
+    }
+
     public function inside(Interval|Task $interval): self
     {
         if ($interval instanceof Task) {
@@ -295,33 +396,59 @@ final class EventSet implements TemporalSet
         return $this->filter(fn (Event $event): bool => $interval->includes($event));
     }
 
+    public function outside(Interval|Task $interval): self
+    {
+        if ($interval instanceof Task) {
+            $interval = $interval->period;
+        }
+
+        return $this->filter(fn (Event $event): bool => !$interval->includes($event));
+    }
+
     public function at(Time|Event $time): self
     {
         return $this->filter(fn (Event $event): bool => $event->at->equals($time));
     }
 
+    public function before(Time|Event $before): self
+    {
+        $before = $before instanceof Event ? $before->at : $before;
+
+        return $this->filter(fn (Event $event): bool => $event->at->isBefore($before));
+    }
+
+    public function after(Time|Event $before): self
+    {
+        $before = $before instanceof Event ? $before->at : $before;
+
+        return $this->filter(fn (Event $event): bool => $event->at->isAfter($before));
+    }
+
     public function next(Time|Event $atOrAfter, SearchMode $mode): self
     {
-        /** @var TemporalSearch<Event> $navigator */
-        $navigator = TemporalSearch::forTimes($this);
-
-        return new self(...$navigator->next($atOrAfter, $mode));
+        return new self(...$this->engine()->next($atOrAfter, $mode));
     }
 
     public function previous(Time|Event $before, SearchMode $mode): self
     {
-        /** @var TemporalSearch<Event> $navigator */
-        $navigator = TemporalSearch::forTimes($this);
-
-        return new self(...$navigator->previous($before, $mode));
+        return new self(...$this->engine()->previous($before, $mode));
     }
 
     public function nearest(Time|Event $around): self
     {
-        /** @var TemporalSearch<Event> $navigator */
-        $navigator = TemporalSearch::forTimes($this);
+        return new self(...$this->engine()->nearest($around));
+    }
 
-        return new self(...$navigator->nearest($around));
+    public function shift(Duration $duration): self
+    {
+        return $duration->isZero()
+            ? $this
+            : $this->transform(fn (Event $event): Event => $event->occursOn($event->at->shift($duration)));
+    }
+
+    public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
+    {
+        return $this->transform(fn (Event $event): Event => $event->occursOn($event->at->roundTo($unit, $mode)));
     }
 
     /**

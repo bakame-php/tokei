@@ -30,6 +30,16 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
         });
     }
 
+    public static function fromEvent(Event $event, Duration $duration, Bound $from): self
+    {
+        return self::for(
+            Bound::Start === $from
+                ? Interval::since($event->at, $duration)
+                : Interval::until($event->at, $duration),
+            $event->identifiers
+        );
+    }
+
     /**
      * @return non-empty-string
      */
@@ -83,11 +93,6 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
         $identifier = $identifier instanceof Identifiers ? $identifier : new Identifiers($identifier);
 
         return $identifier->equals($this->identifiers) ? $this : new self($this->period, $identifier);
-    }
-
-    public function toEvent(Time $at): Event
-    {
-        return Event::at($at, $this->identifiers);
     }
 
     /**

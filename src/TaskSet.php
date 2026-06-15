@@ -6,7 +6,6 @@ namespace Bakame\Tokei;
 
 use Traversable;
 
-use function array_column;
 use function array_map;
 use function array_merge;
 use function array_values;
@@ -26,6 +25,21 @@ final class TaskSet implements TemporalSet
     public function __construct(Task|TaskSet ...$items)
     {
         $this->items = self::sortChronologically($items);
+    }
+
+    public static function fromEvents(EventSet $items, Duration $duration, Bound $from = Bound::Start): self
+    {
+        return new self(...$items->map(fn (Event $event): Task => Task::fromEvent($event, $duration, $from)));
+    }
+
+    /**
+     * @param Identifiers|HasIdentifiers|non-empty-string $identifiers
+     *
+     * @throws TemporalException
+     */
+    public static function fromIntervals(IntervalSet $intervals, Identifiers|HasIdentifiers|string $identifiers): self
+    {
+        return new self(...$intervals->map(fn (Interval $interval): Task => Task::for($interval, $identifiers)));
     }
 
     /**
@@ -83,7 +97,7 @@ final class TaskSet implements TemporalSet
 
     public function duration(): Duration
     {
-        return $this->toIntervalSet()->duration();
+        return IntervalSet::fromTasks($this)->duration();
     }
 
     public function count(): int
@@ -115,6 +129,33 @@ final class TaskSet implements TemporalSet
     public function isEmpty(): bool
     {
         return [] === $this->items;
+    }
+
+    public function indexOf(Task $task): ?int
+    {
+        return array_find_key($this->items, fn (Task $item) => $task->equals($item));
+    }
+
+    public function lastIndexOf(Task $task): ?int
+    {
+        for ($offset = count($this->items) - 1; $offset >= 0; --$offset) {
+            if ($task->equals($this->items[$offset])) {
+                return $offset;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Tells whether the given interval is present in the set.
+     */
+    public function has(Task ...$items): bool
+    {
+        $check = new self(...$items);
+
+        return !$check->isEmpty()
+            && $check->every(fn (Task $item): bool => null !== $this->indexOf($item));
     }
 
     /**
@@ -279,11 +320,6 @@ final class TaskSet implements TemporalSet
         return [] === $tasks ? $this : new self(...$this->items, ...self::filterTasks(...$tasks));
     }
 
-    public function toIntervalSet(): IntervalSet
-    {
-        return new IntervalSet(...array_column($this->items, 'period'));
-    }
-
     public function abuts(Interval|Task $interval): self
     {
         return $this->filter(fn (Task $task): bool => $task->period->abuts($interval));
@@ -302,8 +338,7 @@ final class TaskSet implements TemporalSet
     public function gaps(): self
     {
         return new self(
-            ...$this
-                ->toIntervalSet()
+            ...IntervalSet::fromTasks($this)
                 ->gaps()
                 ->map(fn (Interval $interval): Task => Task::for($interval))
         );
@@ -321,25 +356,19 @@ final class TaskSet implements TemporalSet
                 static fn (Task $task, int $offset): TaskSet|Task =>
                 IntervalType::Overflow !== $task->period->type
                     ? $task
-                    : new TaskSet(
-                        ...$task->period
-                            ->splitAt(Time::midnight())
-                            ->map(
-                                static fn (Interval $interval): Task => Task::for($interval, $task->identifiers)
-                            )
-                    )
+                    : TaskSet::fromIntervals($task->period->splitAt(Time::midnight()), $task)
             );
 
         /**
-         * @param non-empty-string $source
+         * @param 'A'|'B' $source
          *
-         * @return list<array{event: Event, type: Bound, source: non-empty-string}>
+         * @return list<array{event: Event, type: Bound, source: 'A'|'B'}>
          */
         $addEvents = static fn (TaskSet $set, string $source): array => $splitTasks($set)
             ->reduce(
                 function (array $events, Task $task) use ($source): array {
-                    $events[] = ['event' => $task->toEvent($task->period->start), 'type' => Bound::Start, 'source' => $source];
-                    $events[] = ['event' => $task->toEvent($task->period->end), 'type' => Bound::End, 'source' => $source];
+                    $events[] = ['event' => Event::fromTask($task, Bound::Start), 'type' => Bound::Start, 'source' => $source];
+                    $events[] = ['event' => Event::fromTask($task, Bound::End), 'type' => Bound::End, 'source' => $source];
 
                     return $events;
                 },
@@ -347,8 +376,10 @@ final class TaskSet implements TemporalSet
             );
 
         /**
-         * @param array{event:Event, type:Bound, source:non-empty-string} $a
-         * @param array{event:Event, type:Bound, source:non-empty-string} $b
+         * @param array{event: Event, type: Bound, source: 'A'|'B'} $a
+         * @param array{event: Event, type: Bound, source: 'A'|'B'} $b
+         *
+         * @return int<-1, 1>
          */
         $sortEvents = static function (array $a, array $b): int {
             /* @phpstan-ignore-next-line */
@@ -387,17 +418,15 @@ final class TaskSet implements TemporalSet
             }
 
             if ('A' === $event['source']) {
-                if (Bound::Start === $event['type']) {
-                    $activeA = $activeA->merge($event['event']->identifiers);
-                } else {
-                    $activeA = new Identifiers();
-                }
-            } else {
-                if (Bound::Start === $event['type']) {
-                    $activeB = $activeB->merge($event['event']->identifiers);
-                } else {
-                    $activeB = new Identifiers();
-                }
+                $activeA = Bound::Start === $event['type']
+                    ? $activeA->merge($event['event']->identifiers)
+                    : new Identifiers();
+            }
+
+            if ('B' === $event['source']) {
+                $activeB = Bound::Start === $event['type']
+                    ? $activeB->merge($event['event']->identifiers)
+                    : new Identifiers();
             }
 
             $lastTime = $currentTime;
@@ -416,8 +445,7 @@ final class TaskSet implements TemporalSet
         $set = $this->push(...$sets);
 
         return new self(
-            ...$set
-                ->toIntervalSet()
+            ...IntervalSet::fromTasks($set)
                 ->atomic()
                 ->map(fn (Interval $interval): Task => Task::for($interval, self::computeIdentifiers($set, $interval)))
         );
@@ -433,8 +461,7 @@ final class TaskSet implements TemporalSet
         $others = new self(...self::filterTasks(...$sets));
 
         return $others->isEmpty() ? $this : new self(
-            ...$this
-                ->toIntervalSet()
+            ...IntervalSet::fromTasks($this)
                 ->difference($others)
                 ->atomic()
                 ->map(fn (Interval $interval): Task => Task::for($interval, self::computeIdentifiers($this, $interval)))

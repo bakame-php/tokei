@@ -161,9 +161,11 @@ final class EventSetTest extends TestCase
         );
 
         $interval = Interval::between(Time::at(23), Time::at(2));
-        $result = $set->inside($interval);
 
-        self::assertGreaterThanOrEqual(2, $result->count());
+        self::assertCount(3, $set->inside($interval));
+        self::assertCount(1, $set->outside($interval));
+        self::assertCount(3, $set->before(Time::at(23)));
+        self::assertCount(1, $set->after(Time::at(10)));
     }
 
     /* =========================================================
@@ -372,5 +374,224 @@ final class EventSetTest extends TestCase
 
         self::assertInstanceOf(EventSet::class, $restored);
         self::assertEquals($eventSet, $restored);
+    }
+
+    public function testUnionOfDisjointSets(): void
+    {
+        $left = new EventSet(Event::at(Time::at(9), 'A'));
+        $right = new EventSet(Event::at(Time::at(10), 'B'));
+
+        self::assertSame(['09:00:00;A', '10:00:00;B'], $left->union($right)->allFormatted());
+    }
+
+    public function testUnionMergesEventsAtSameTime(): void
+    {
+        $left = new EventSet(Event::at(Time::at(9), 'A'));
+        $right = new EventSet(Event::at(Time::at(9), 'B'));
+
+        self::assertSame(['09:00:00;A,B'], $left->union($right)->allFormatted());
+    }
+
+    public function testUnionWithPartialOverlap(): void
+    {
+        $left = new EventSet(
+            Event::at(Time::at(9), 'A'),
+            Event::at(Time::at(10), 'B')
+        );
+
+        $right = new EventSet(
+            Event::at(Time::at(10), 'C'),
+            Event::at(Time::at(11), 'D')
+        );
+
+        self::assertSame(
+            [
+                '09:00:00;A',
+                '10:00:00;B,C',
+                '11:00:00;D',
+            ],
+            $left->union($right)->allFormatted()
+        );
+    }
+
+    public function testIntersectOfDisjointSetsIsEmpty(): void
+    {
+        $left = new EventSet(Event::at(Time::at(9), 'A'));
+        $right = new EventSet(Event::at(Time::at(10), 'B'));
+
+        self::assertTrue($left->intersect($right)->isEmpty());
+    }
+
+    public function testIntersectKeepsCommonEvent(): void
+    {
+        $left = new EventSet(Event::at(Time::at(9), 'A'));
+        $right = new EventSet(Event::at(Time::at(9), 'B'));
+
+        self::assertSame(['09:00:00;A,B'], $left->intersect($right)->allFormatted());
+    }
+
+    public function testIntersectKeepsOnlySharedTimes(): void
+    {
+        $left = new EventSet(
+            Event::at(Time::at(9), 'A'),
+            Event::at(Time::at(10), 'B'),
+            Event::at(Time::at(11), 'C')
+        );
+
+        $right = new EventSet(
+            Event::at(Time::at(10), 'D'),
+            Event::at(Time::at(11), 'E'),
+            Event::at(Time::at(12), 'F')
+        );
+
+        self::assertSame(
+            [
+                '10:00:00;B,D',
+                '11:00:00;C,E',
+            ],
+            $left->intersect($right)->allFormatted()
+        );
+    }
+
+    public function testDifferenceOfDisjointSetsReturnsOriginalSet(): void
+    {
+        $left = new EventSet(Event::at(Time::at(9), 'A'));
+        $right = new EventSet(Event::at(Time::at(10), 'B'));
+
+        self::assertSame(['09:00:00;A'], $left->difference($right)->allFormatted());
+    }
+
+    public function testDifferenceRemovesCommonEvent(): void
+    {
+        $left = new EventSet(
+            Event::at(Time::at(9), 'A'),
+            Event::at(Time::at(10), 'B')
+        );
+        $right = new EventSet(Event::at(Time::at(10), 'C'));
+
+        self::assertSame(['09:00:00;A'], $left->difference($right)->allFormatted());
+    }
+
+    public function testDifferenceOfIdenticalSetsIsEmpty(): void
+    {
+        $left = new EventSet(Event::at(Time::at(9), 'A'));
+        $right = new EventSet(Event::at(Time::at(9), 'B'));
+
+        self::assertTrue($left->difference($right)->isEmpty());
+    }
+
+    public function testUnionIsCommutative(): void
+    {
+        $left = new EventSet(Event::at(Time::at(9), 'A'));
+        $right = new EventSet(Event::at(Time::at(9), 'B'));
+
+        $leftFirst = $left->union($right)->first();
+        self::assertInstanceOf(Event::class, $leftFirst);
+
+        $rightFirst = $right->union($left)->first();
+        self::assertInstanceOf(Event::class, $rightFirst);
+
+        self::assertTrue($leftFirst->identifiers->equals($rightFirst->identifiers));
+    }
+
+    public function testIntersectionIsCommutative(): void
+    {
+        $left = new EventSet(
+            Event::at(Time::at(9), 'A'),
+            Event::at(Time::at(10), 'B'),
+            Event::at(Time::at(11), 'C')
+        );
+
+        $right = new EventSet(
+            Event::at(Time::at(10), 'D'),
+            Event::at(Time::at(11), 'E'),
+            Event::at(Time::at(12), 'F')
+        );
+
+        $leftFirst = $left->intersect($right)->first();
+        self::assertInstanceOf(Event::class, $leftFirst);
+
+        $rightFirst = $right->intersect($left)->first();
+        self::assertInstanceOf(Event::class, $rightFirst);
+
+        self::assertTrue($leftFirst->identifiers->equals($rightFirst->identifiers));
+    }
+
+    public function testDifferenceIsNotCommutative(): void
+    {
+        $left = new EventSet(
+            Event::at(Time::at(9), 'A'),
+            Event::at(Time::at(10), 'B')
+        );
+        $right = new EventSet(Event::at(Time::at(10), 'C'));
+
+        self::assertNotEquals(
+            $left->difference($right),
+            $right->difference($left)
+        );
+    }
+
+    public function testIntersectionIsSubsetOfUnion(): void
+    {
+        $left = new EventSet(
+            Event::at(Time::at(9), 'A'),
+            Event::at(Time::at(10), 'B'),
+            Event::at(Time::at(11), 'C')
+        );
+
+        $right = new EventSet(
+            Event::at(Time::at(10), 'D'),
+            Event::at(Time::at(11), 'E'),
+            Event::at(Time::at(12), 'F')
+        );
+
+        $intersection = $left->intersect($right);
+        $union = $left->union($right);
+
+        foreach ($intersection as $event) {
+            self::assertTrue($union->has($event));
+        }
+    }
+
+    public function testGapsUnavailable(): void
+    {
+        $left = new EventSet()->gaps();
+        $right = new EventSet(Event::at(Time::at(9), 'B'))->gaps();
+
+        self::assertTrue($left->isEmpty());
+        self::assertTrue($right->isEmpty());
+    }
+
+    public function testGapsForEvents(): void
+    {
+        $gaps = new EventSet(
+            Event::at(Time::at(9), 'A'),
+            Event::at(Time::at(10), 'B'),
+            Event::at(Time::at(11), 'C')
+        )->gaps();
+
+        self::assertFalse($gaps->isEmpty());
+        self::assertCount(2, $gaps);
+        self::assertInstanceOf(Interval::class, $gaps->first());
+        self::assertInstanceOf(Interval::class, $gaps->last());
+        self::assertTrue($gaps->first()->equals(Interval::between(Time::at(9), Time::at(10))));
+        self::assertTrue($gaps->last()->equals(Interval::between(Time::at(10), Time::at(11))));
+    }
+
+    public function test_shift_set(): void
+    {
+        $shifts = new EventSet(
+            Event::at(Time::at(9), 'A'),
+            Event::at(Time::at(10), 'B'),
+            Event::at(Time::at(11), 'C')
+        )->shift(Duration::of(hours: 2));
+
+        self::assertFalse($shifts->isEmpty());
+        self::assertCount(3, $shifts);
+        self::assertTrue(
+            $shifts->get(0)->equals(
+                Event::at(Time::at(11), 'A')
+            )
+        );
     }
 }

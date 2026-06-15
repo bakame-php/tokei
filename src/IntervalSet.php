@@ -68,6 +68,11 @@ final class IntervalSet implements TemporalSet
         return new self(...$items)->sorted();
     }
 
+    public static function fromTasks(TaskSet|Task ...$items): self
+    {
+        return new self(...new TaskSet(...$items)->map(static fn (Task $task): Interval => $task->period));
+    }
+
     public function count(): int
     {
         return count($this->items);
@@ -162,13 +167,7 @@ final class IntervalSet implements TemporalSet
 
     public function indexOf(Interval $interval): ?int
     {
-        foreach ($this->items as $offset => $item) {
-            if ($item->equals($interval)) {
-                return $offset;
-            }
-        }
-
-        return null;
+        return array_find_key($this->items, fn (Interval $item) => $interval->equals($item));
     }
 
     public function lastIndexOf(Interval $interval): ?int
@@ -269,7 +268,7 @@ final class IntervalSet implements TemporalSet
         foreach ($items as $item) {
             $res = [...$res, ...match (true) {
                 $item instanceof Interval => [$item],
-                $item instanceof TaskSet => $item->toIntervalSet()->items,
+                $item instanceof TaskSet => self::fromTasks($item)->items,
                 $item instanceof Task => [$item->period],
                 default => $item->items,
             }];
@@ -323,6 +322,18 @@ final class IntervalSet implements TemporalSet
     public function nearest(Time|Event $around, Bound $using = Bound::Start): self
     {
         return new self(...$this->engine($using)->nearest($around));
+    }
+
+    public function shift(Duration $duration): self
+    {
+        return $duration->isZero()
+            ? $this
+            : $this->transform(fn (Interval $interval): Interval => $interval->shift($duration));
+    }
+
+    public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
+    {
+        return $this->transform(fn (Interval $interval): Interval => $interval->roundTo($unit, $mode));
     }
 
     /**
