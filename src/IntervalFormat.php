@@ -25,7 +25,6 @@ enum IntervalFormat
     case Iso8601StartDuration;
     case Iso8601DurationEnd;
     case Iso8601StartEnd;
-    case Iso8601;
 
     private const string REGEXP_ISO80000 = '/^\[(?<start>[^,)]*),(?<end>[^,)]*)\)$/';
     private const string REGEXP_BOURBAKI = '/^\[(?<start>[^,\[]*),(?<end>[^,\[]*)\[$/';
@@ -40,7 +39,6 @@ enum IntervalFormat
         $end = $this->formatTime($interval->end, $unit);
 
         return match ($this) {
-            self::Iso8601,
             self::Iso8601StartDuration => $start.'/'.$interval->duration->format(),
             self::Iso8601DurationEnd => $interval->duration->format().'/'.$end,
             self::Iso8601StartEnd => $start.'/'.$end,
@@ -153,46 +151,10 @@ enum IntervalFormat
         $isDurationFormat = static fn (string $format): bool => str_starts_with($format, 'P') || str_starts_with($format, '-P');
 
         return match (true) {
-            $this->supportsDurationEnd() && $isDurationFormat($start) => Interval::until(
-                end: TimeFormat::Iso8601->decode($end),
-                duration: DurationFormat::Iso8601->decode($start)
-            ),
-            $this->supportsStartDuration() && $isDurationFormat($end) => Interval::since(
-                start: TimeFormat::Iso8601->decode($start),
-                duration: DurationFormat::Iso8601->decode($end),
-            ),
-            $this->supportsStartEnd() => Interval::between(
-                start: TimeFormat::Iso8601->decode($start),
-                end: TimeFormat::Iso8601->decode($end),
-            ),
+            self::Iso8601DurationEnd === $this && $isDurationFormat($start) => Interval::until(TimeFormat::Iso8601->decode($end), DurationFormat::Iso8601->decode($start)),
+            self::Iso8601StartDuration === $this && $isDurationFormat($end) => Interval::since(TimeFormat::Iso8601->decode($start), DurationFormat::Iso8601->decode($end)),
+            self::Iso8601StartEnd === $this => Interval::between(TimeFormat::Iso8601->decode($start), TimeFormat::Iso8601->decode($end)),
             default => throw InvalidInterval::dueToMalformedFormat($format, $this),
-        };
-    }
-
-    private function supportsStartDuration(): bool
-    {
-        return match ($this) {
-            self::Iso8601,
-            self::Iso8601StartDuration => true,
-            default => false,
-        };
-    }
-
-    private function supportsDurationEnd(): bool
-    {
-        return match ($this) {
-            self::Iso8601,
-            self::Iso8601DurationEnd => true,
-            default => false,
-        };
-    }
-
-    private function supportsStartEnd(): bool
-    {
-        return match ($this) {
-            self::Iso8601,
-            self::Iso8601StartEnd => true,
-            default => false,
         };
     }
 

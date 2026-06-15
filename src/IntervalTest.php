@@ -623,23 +623,23 @@ final class IntervalTest extends TestCase
      * @throws TimeException
      */
     #[DataProvider('iso8601ValidProvider')]
-    public function test_from_iso8601(string $input, string $expected): void
+    public function test_from_iso8601(string $input, string $expected, IntervalFormat $inputFormat): void
     {
-        self::assertSame($expected, Interval::fromFormat($input, IntervalFormat::Iso8601)->format(IntervalFormat::Iso80000));
+        self::assertSame($expected, Interval::fromFormat($input, $inputFormat)->format(IntervalFormat::Iso80000));
     }
 
     /**
-     * @return array<non-empty-string, array{0: non-empty-string, 1: non-empty-string}>
+     * @return array<non-empty-string, array{0: non-empty-string, 1: non-empty-string, 2: IntervalFormat}>
      */
     public static function iso8601ValidProvider(): array
     {
         return [
-            'valid simple with start date' => ['10:00:00/PT1H', '[10:00:00,11:00:00)'],
-            'valid with spaces' => [' 10:00:00/PT1H ', '[10:00:00,11:00:00)'],
-            'valid simple with end date' => ['PT1H/11:00:00', '[10:00:00,11:00:00)'],
-            'valid with end date and space' => [' PT1H/11:00:00 ', '[10:00:00,11:00:00)'],
-            'valid with start and end time' => ['10:00:00/11:00:00', '[10:00:00,11:00:00)'],
-            'valid with start and end time with space' => [' 10:00:00 / 11:00:00 ', '[10:00:00,11:00:00)'],
+            'valid simple with start date' => ['10:00:00/PT1H', '[10:00:00,11:00:00)', IntervalFormat::Iso8601StartDuration],
+            'valid with spaces' => [' 10:00:00/PT1H ', '[10:00:00,11:00:00)', IntervalFormat::Iso8601StartDuration],
+            'valid simple with end date' => ['PT1H/11:00:00', '[10:00:00,11:00:00)', IntervalFormat::Iso8601DurationEnd],
+            'valid with end date and space' => [' PT1H/11:00:00 ', '[10:00:00,11:00:00)', IntervalFormat::Iso8601DurationEnd],
+            'valid with start and end time' => ['10:00:00/11:00:00', '[10:00:00,11:00:00)', IntervalFormat::Iso8601StartEnd],
+            'valid with start and end time with space' => [' 10:00:00 / 11:00:00 ', '[10:00:00,11:00:00)', IntervalFormat::Iso8601StartEnd],
         ];
     }
 
@@ -649,26 +649,26 @@ final class IntervalTest extends TestCase
      * @throws InvalidInterval
      */
     #[DataProvider('iso8601InvalidProvider')]
-    public function test_from_iso8601_invalid(string $input): void
+    public function test_from_iso8601_invalid(string $input, IntervalFormat $format): void
     {
         $this->expectException(TimeException::class);
 
-        Interval::fromFormat($input, IntervalFormat::Iso8601);
+        Interval::fromFormat($input, $format);
     }
 
     /**
-     * @return array<non-empty-string, array{0: string}>
+     * @return array<non-empty-string, array{0: string, 1: IntervalFormat}>
      */
     public static function iso8601InvalidProvider(): array
     {
         return [
-            'missing slash' => ['10:00:00PT1H'],
-            'empty string' => [''],
-            'invalid start time' => ['invalid/PT1H'],
-            'invalid end duration' => ['10:00:00/invalid'],
-            'extra segments' => ['10:00:00/PT1H/PT2H'],
-            'invalid end time' => ['PT2H/invalid'],
-            'invalid start duration' => ['Pinvalid/09:00:00'],
+            'missing slash' => ['10:00:00PT1H', IntervalFormat::Iso8601StartDuration],
+            'empty string' => ['', IntervalFormat::Bourbaki],
+            'invalid start time' => ['invalid/PT1H', IntervalFormat::Iso8601StartDuration],
+            'invalid end duration' => ['10:00:00/invalid', IntervalFormat::Iso8601StartDuration],
+            'extra segments' => ['10:00:00/PT1H/PT2H', IntervalFormat::Iso8601StartDuration],
+            'invalid end time' => ['PT2H/invalid', IntervalFormat::Iso8601DurationEnd],
+            'invalid start duration' => ['Pinvalid/09:00:00', IntervalFormat::Iso8601DurationEnd],
         ];
     }
 
@@ -780,7 +780,7 @@ final class IntervalTest extends TestCase
 
     public function test_interval_can_be_serialized_and_unserialized(): void
     {
-        $interval = Interval::fromFormat('12:34:56/-PT23H30S', IntervalFormat::Iso8601);
+        $interval = Interval::fromFormat('12:34:56/-PT23H30S');
         $restored = unserialize(serialize($interval));
 
         self::assertInstanceOf(Interval::class, $restored);
