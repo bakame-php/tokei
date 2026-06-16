@@ -48,6 +48,14 @@ final class Event implements HasIdentifiers, JsonSerializable
     }
 
     /**
+     * @return non-empty-string
+     */
+    public function jsonSerialize(): string
+    {
+        return $this->format();
+    }
+
+    /**
      * @see IntervalFormat::encode()
      *
      * @return non-empty-string
@@ -55,14 +63,6 @@ final class Event implements HasIdentifiers, JsonSerializable
     public function format(TimeFormat $format = TimeFormat::Iso8601): string
     {
         return $format->encode($this->at).';'.$this->identifiers->formatted();
-    }
-
-    /**
-     * @return non-empty-string
-     */
-    public function jsonSerialize(): string
-    {
-        return $this->format();
     }
 
     public function equals(Event $other): bool

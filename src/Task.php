@@ -41,14 +41,6 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     }
 
     /**
-     * @return non-empty-string
-     */
-    public function jsonSerialize(): string
-    {
-        return $this->format();
-    }
-
-    /**
      * @see IntervalFormat::decode()
      *
      * @throws InvalidInterval|TemporalException
@@ -58,6 +50,14 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
         [$period, $identifiers] = explode(';', $value, 2) + [1 => ''];
 
         return new self(Interval::fromFormat($period, $format, $unit), Identifiers::fromFormat($identifiers));
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    public function jsonSerialize(): string
+    {
+        return $this->format();
     }
 
     /**
@@ -84,13 +84,17 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     }
 
     /**
-     * @param Identifiers|non-empty-string $identifier
+     * @param Identifiers|HasIdentifiers|non-empty-string $identifier
      *
      * @throws TemporalException
      */
-    public function named(Identifiers|string $identifier): static
+    public function named(Identifiers|HasIdentifiers|string $identifier): static
     {
-        $identifier = $identifier instanceof Identifiers ? $identifier : new Identifiers($identifier);
+        $identifier = match (true) {
+            $identifier instanceof HasIdentifiers => $identifier->identifiers,
+            $identifier instanceof Identifiers => $identifier,
+            default => new Identifiers($identifier),
+        };
 
         return $identifier->equals($this->identifiers) ? $this : new self($this->period, $identifier);
     }

@@ -333,7 +333,12 @@ final class IntervalSet implements TemporalSet
 
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
-        return $this->transform(fn (Interval $interval): Interval => $interval->roundTo($unit, $mode));
+        return $this->transform(static fn (Interval $interval): Interval => $interval->roundTo($unit, $mode));
+    }
+
+    public function roundDurationTo(Unit $unit, SnapMode $mode = SnapMode::Nearest, Bound $anchor = Bound::Start): self
+    {
+        return $this->transform(static fn (Interval $interval): Interval => $interval->roundDurationTo($unit, $mode, $anchor));
     }
 
     /**

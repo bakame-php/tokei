@@ -13,6 +13,8 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `IntervalSet::next`
 - `IntervalSet::previous`
 - `IntervalSet::nearest`
+- `IntervalSet::roundTo`
+- `IntervalSet::roundDurationTo`
 - `Interval::fromFormat`
 - `Interval::roundTo`
 - `Interval::roundDurationTo`
@@ -30,9 +32,9 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Time::toOffset`
 - `Time::shift`
 - `Time::utc`
+- `Time::roundTo`
 - `LocaleTimeFormatter`to improve time string localization using `ext-intl`
 - `IntervalFormat::encode` and `IntervalFormat::decode` to improve `Interval` encoding and decoding from and to string representation.
-- `IntervalFormat::Canonical` format added.
 - `DurationFormat::encode` and `DurationFormat::decode` to improve `Duration` encoding and decoding from and to string representation.
 - `TimeFormat` added to improve `Time` encoding and decoding from and to string representation.
 - `Direction` to unify sorting across the package

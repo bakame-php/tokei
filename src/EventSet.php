@@ -448,7 +448,7 @@ final class EventSet implements TemporalSet
 
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
-        return $this->transform(fn (Event $event): Event => $event->occursOn($event->at->roundTo($unit, $mode)));
+        return $this->transform(static fn (Event $event): Event => $event->occursOn($event->at->roundTo($unit, $mode)));
     }
 
     /**

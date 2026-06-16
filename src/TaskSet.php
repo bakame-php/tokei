@@ -7,7 +7,6 @@ namespace Bakame\Tokei;
 use Traversable;
 
 use function array_map;
-use function array_merge;
 use function array_values;
 use function count;
 use function usort;
@@ -67,7 +66,7 @@ final class TaskSet implements TemporalSet
         $res = [];
         foreach ($items as $task) {
             if ($task instanceof TaskSet) {
-                $res = array_merge($res, $task->items);
+                $res = [...$res, ...$task->items];
                 continue;
             }
 
@@ -294,6 +293,16 @@ final class TaskSet implements TemporalSet
         return $result;
     }
 
+    public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
+    {
+        return $this->transform(static fn (Task $task): Task => $task->during($task->period->roundTo($unit, $mode)));
+    }
+
+    public function roundDurationTo(Unit $unit, SnapMode $mode = SnapMode::Nearest, Bound $anchor = Bound::Start): self
+    {
+        return $this->transform(static fn (Task $task): Task => $task->during($task->period->roundDurationTo($unit, $mode, $anchor)));
+    }
+
     /**
      * Iterates over all tasks in this set.
      *
@@ -335,6 +344,11 @@ final class TaskSet implements TemporalSet
         return $this->filter(fn (Task $task): bool => $task->period->includes($time));
     }
 
+    public function excludes(Time|Event $time): self
+    {
+        return $this->filter(fn (Task $task): bool => !$task->period->includes($time));
+    }
+
     public function gaps(): self
     {
         return new self(
@@ -354,9 +368,9 @@ final class TaskSet implements TemporalSet
         $splitTasks = static fn (TaskSet $set): TaskSet => $set
             ->transform(
                 static fn (Task $task, int $offset): TaskSet|Task =>
-                IntervalType::Overflow !== $task->period->type
-                    ? $task
-                    : TaskSet::fromIntervals($task->period->splitAt(Time::midnight()), $task)
+                    IntervalType::Overflow !== $task->period->type
+                        ? $task
+                        : TaskSet::fromIntervals($task->period->splitAt(Time::midnight()), $task)
             );
 
         /**
@@ -403,7 +417,7 @@ final class TaskSet implements TemporalSet
         }
 
         /** @var list<array{event: Event, type: Bound, source: non-empty-string}> $events */
-        $events = array_merge($addEvents($this, 'A'), $addEvents($others, 'B'));
+        $events = [...$addEvents($this, 'A'), ...$addEvents($others, 'B')];
         usort($events, $sortEvents);
 
         $activeA = new Identifiers();

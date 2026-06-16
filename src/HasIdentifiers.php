@@ -9,9 +9,9 @@ interface HasIdentifiers
     public Identifiers $identifiers { get; }
 
     /**
-     * @param Identifiers|non-empty-string $identifier
+     * @param Identifiers|HasIdentifiers|non-empty-string $identifier
      *
      * @throws TemporalException
      */
-    public function named(Identifiers|string $identifier): static;
+    public function named(Identifiers|HasIdentifiers|string $identifier): static;
 }
