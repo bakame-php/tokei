@@ -28,8 +28,8 @@ final class IdentifiersTest extends TestCase
         $attributes = new Identifiers(['John', '5']);
 
         self::assertSame(['John', '5'], $attributes->all());
-        self::assertSame('John', $attributes->first());
-        self::assertSame('5', $attributes->last());
+        self::assertSame('John', $attributes->primary());
+        self::assertSame('5', $attributes->nth(-1));
     }
 
     public function testHas(): void
@@ -150,5 +150,57 @@ final class IdentifiersTest extends TestCase
 
         self::assertInstanceOf(Identifiers::class, $restored);
         self::assertEquals($identifiers, $restored);
+    }
+
+    public function test_merge_effect_on_primary_identifiers(): void
+    {
+        $identifiersA = new Identifiers([
+            'employee',
+            'priority',
+            'age',
+        ]);
+
+        $identifiersB = new Identifiers([
+            'gender',
+            'height',
+        ]);
+
+        $mergeAB = $identifiersA->merge($identifiersB);
+        $mergeBA = $identifiersB->merge($identifiersA);
+
+        self::assertSame('employee', $mergeAB->primary());
+        self::assertSame('gender', $mergeBA->primary());
+        self::assertTrue($mergeBA->equals($mergeAB));
+        self::assertNotSame($mergeBA->asCommaSeparated(), $mergeAB->asCommaSeparated());
+        self::assertSame($mergeBA->sorted()->asCommaSeparated(), $mergeAB->sorted()->asCommaSeparated());
+        self::assertNotSame($mergeBA->sorted(), $mergeAB->sorted(Direction::Descending));
+    }
+
+    public function test_unique_is_case_sensitive(): void
+    {
+        $identifiersA = new Identifiers([
+            'employee',
+            'priority',
+            'age',
+        ]);
+
+        $identifiersB = new Identifiers([
+            'gender',
+            'height',
+            'Employee',
+        ]);
+
+        self::assertTrue(
+            $identifiersA
+                ->merge($identifiersB)
+                ->has('employee', 'Employee')
+        );
+    }
+
+    public function test_fails_from_comma_separated(): void
+    {
+        $this->expectException(TemporalException::class);
+
+        Identifiers::fromCommaSeparated('foo,,bar');
     }
 }

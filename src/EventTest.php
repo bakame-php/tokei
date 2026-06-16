@@ -75,7 +75,7 @@ final class EventTest extends TestCase
         $event = Event::fromFormat($input);
 
         self::assertSame($expectedTime, $event->at->format());
-        self::assertSame($expectedIdentifier, $event->identifiers->formatted());
+        self::assertSame($expectedIdentifier, $event->identifiers->asCommaSeparated());
     }
 
     /**
@@ -155,6 +155,10 @@ final class EventTest extends TestCase
 
         yield 'extra separator' => [
             '12:00:23;larry;king',
+        ];
+
+        yield 'empty identifier' => [
+            '12:00:23;larry,,king',
         ];
     }
 }

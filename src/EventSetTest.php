@@ -14,6 +14,7 @@ use function unserialize;
 #[CoversClass(Event::class)]
 #[CoversClass(TemporalSearch::class)]
 #[CoversClass(TokeiException::class)]
+#[CoversClass(Identifiers::class)]
 final class EventSetTest extends TestCase
 {
     /* =========================================================
@@ -265,7 +266,7 @@ final class EventSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Event::class, $result);
-        self::assertSame('B', $result->identifiers->first());
+        self::assertSame('B', $result->identifiers->primary());
     }
 
     public function test_next_includes_exact_time(): void
@@ -276,7 +277,7 @@ final class EventSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Event::class, $result);
-        self::assertSame('B', $result->identifiers->first());
+        self::assertSame('B', $result->identifiers->primary());
     }
 
     public function test_next_returns_null_if_none(): void
@@ -296,7 +297,7 @@ final class EventSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Event::class, $result);
-        self::assertSame('B', $result->identifiers->first());
+        self::assertSame('B', $result->identifiers->primary());
     }
 
     public function test_previous_excludes_exact_time(): void
@@ -307,7 +308,7 @@ final class EventSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Event::class, $result);
-        self::assertSame('B', $result->identifiers->first());
+        self::assertSame('B', $result->identifiers->primary());
     }
 
     public function test_previous_returns_null_when_none(): void
@@ -327,7 +328,7 @@ final class EventSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Event::class, $result);
-        self::assertSame('B', $result->identifiers->first());
+        self::assertSame('B', $result->identifiers->primary());
     }
 
     public function test_nearest_prefers_forward_when_tie(): void
@@ -339,7 +340,7 @@ final class EventSetTest extends TestCase
 
         $firstResult = $results->first();
         self::assertInstanceOf(Event::class, $firstResult);
-        self::assertSame('A', $firstResult->identifiers->first());
+        self::assertSame('A', $firstResult->identifiers->primary());
     }
 
     public function test_nearest_exact_match(): void
@@ -350,7 +351,7 @@ final class EventSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Event::class, $result);
-        self::assertSame('B', $result->identifiers->first());
+        self::assertSame('B', $result->identifiers->primary());
     }
 
     public function test_next_and_previous_do_not_overlap(): void
@@ -362,8 +363,8 @@ final class EventSetTest extends TestCase
         $next = $events->next($t, SearchMode::Linear);
 
         self::assertNotSame(
-            $prev->first()?->identifiers->first(),
-            $next->first()?->identifiers->first(),
+            $prev->first()?->identifiers->primary(),
+            $next->first()?->identifiers->primary(),
         );
     }
 
@@ -381,7 +382,7 @@ final class EventSetTest extends TestCase
         $left = new EventSet(Event::at(Time::at(9), 'A'));
         $right = new EventSet(Event::at(Time::at(10), 'B'));
 
-        self::assertSame(['09:00:00;A', '10:00:00;B'], $left->union($right)->allFormatted());
+        self::assertSame(['09:00:00;A', '10:00:00;B'], $left->union($right)->formatAll());
     }
 
     public function testUnionMergesEventsAtSameTime(): void
@@ -389,7 +390,7 @@ final class EventSetTest extends TestCase
         $left = new EventSet(Event::at(Time::at(9), 'A'));
         $right = new EventSet(Event::at(Time::at(9), 'B'));
 
-        self::assertSame(['09:00:00;A,B'], $left->union($right)->allFormatted());
+        self::assertSame(['09:00:00;A,B'], $left->union($right)->formatAll());
     }
 
     public function testUnionWithPartialOverlap(): void
@@ -410,7 +411,7 @@ final class EventSetTest extends TestCase
                 '10:00:00;B,C',
                 '11:00:00;D',
             ],
-            $left->union($right)->allFormatted()
+            $left->union($right)->formatAll()
         );
     }
 
@@ -427,7 +428,7 @@ final class EventSetTest extends TestCase
         $left = new EventSet(Event::at(Time::at(9), 'A'));
         $right = new EventSet(Event::at(Time::at(9), 'B'));
 
-        self::assertSame(['09:00:00;A,B'], $left->intersect($right)->allFormatted());
+        self::assertSame(['09:00:00;A,B'], $left->intersect($right)->formatAll());
     }
 
     public function testIntersectKeepsOnlySharedTimes(): void
@@ -449,7 +450,7 @@ final class EventSetTest extends TestCase
                 '10:00:00;B,D',
                 '11:00:00;C,E',
             ],
-            $left->intersect($right)->allFormatted()
+            $left->intersect($right)->formatAll()
         );
     }
 
@@ -458,7 +459,7 @@ final class EventSetTest extends TestCase
         $left = new EventSet(Event::at(Time::at(9), 'A'));
         $right = new EventSet(Event::at(Time::at(10), 'B'));
 
-        self::assertSame(['09:00:00;A'], $left->difference($right)->allFormatted());
+        self::assertSame(['09:00:00;A'], $left->difference($right)->formatAll());
     }
 
     public function testDifferenceRemovesCommonEvent(): void
@@ -469,7 +470,7 @@ final class EventSetTest extends TestCase
         );
         $right = new EventSet(Event::at(Time::at(10), 'C'));
 
-        self::assertSame(['09:00:00;A'], $left->difference($right)->allFormatted());
+        self::assertSame(['09:00:00;A'], $left->difference($right)->formatAll());
     }
 
     public function testDifferenceOfIdenticalSetsIsEmpty(): void
@@ -593,5 +594,21 @@ final class EventSetTest extends TestCase
                 Event::at(Time::at(11), 'A')
             )
         );
+    }
+
+    public function test_roundto_set(): void
+    {
+        $events = new EventSet(
+            Event::at(Time::at(9, 23), 'A'),
+            Event::at(Time::at(10, 35), 'B'),
+            Event::at(Time::at(11, 22), 'C')
+        );
+
+        $roundedEvents = $events->roundTo(Unit::Hour, SnapMode::Floor);
+
+        self::assertFalse($roundedEvents->isEmpty());
+        self::assertCount(3, $roundedEvents);
+        self::assertTrue(new Identifiers(...$events)->equals(new Identifiers(...$roundedEvents)));
+        self::assertTrue(Time::at(9)->equals($roundedEvents->get(0)->at));
     }
 }

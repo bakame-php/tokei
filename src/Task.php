@@ -49,7 +49,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     {
         [$period, $identifiers] = explode(';', $value, 2) + [1 => ''];
 
-        return new self(Interval::fromFormat($period, $format, $unit), Identifiers::fromFormat($identifiers));
+        return new self(Interval::fromFormat($period, $format, $unit), Identifiers::fromCommaSeparated($identifiers));
     }
 
     /**
@@ -67,7 +67,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
      */
     public function format(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): string
     {
-        return $format->encode($this->period, $unit).';'.$this->identifiers->formatted();
+        return $format->encode($this->period, $unit).';'.$this->identifiers->asCommaSeparated();
     }
 
     public function equals(Task $other): bool

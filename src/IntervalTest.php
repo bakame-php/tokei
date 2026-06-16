@@ -802,7 +802,7 @@ final class IntervalTest extends TestCase
     #[DataProvider('splitAtProvider')]
     public function test_split_at(Interval $interval, Time $split, array $expected): void
     {
-        self::assertSame($expected, $interval->splitAt($split)->allFormatted());
+        self::assertSame($expected, $interval->splitAt($split)->formatAll());
     }
 
     /**
@@ -963,7 +963,7 @@ final class IntervalTest extends TestCase
                 '[23:00:00,01:00:00)',
                 '[01:00:00,03:00:00)',
             ],
-            $splits->allFormatted(IntervalFormat::Iso80000)
+            $splits->formatAll(IntervalFormat::Iso80000)
         );
     }
 

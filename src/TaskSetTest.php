@@ -14,6 +14,7 @@ use function unserialize;
 #[CoversClass(TaskSet::class)]
 #[CoversClass(IntervalSet::class)]
 #[CoversClass(TemporalSearch::class)]
+#[CoversClass(Identifiers::class)]
 final class TaskSetTest extends TestCase
 {
     /**
@@ -29,7 +30,7 @@ final class TaskSetTest extends TestCase
      */
     private function format(TaskSet $set): array
     {
-        return $set->allFormatted(IntervalFormat::Iso80000);
+        return $set->formatAll(IntervalFormat::Iso80000);
     }
 
     public function test_union_merges_overlapping_tasks(): void
@@ -242,7 +243,7 @@ final class TaskSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Task::class, $firstTask);
-        self::assertSame('B', $firstTask->identifiers->first());
+        self::assertSame('B', $firstTask->identifiers->primary());
     }
 
     public function test_next_includes_start_boundary(): void
@@ -252,7 +253,7 @@ final class TaskSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Task::class, $firstTask);
-        self::assertSame('B', $firstTask->identifiers->first());
+        self::assertSame('B', $firstTask->identifiers->primary());
     }
 
     public function test_next_linear_returns_null_if_none(): void
@@ -284,7 +285,7 @@ final class TaskSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Task::class, $firstTask);
-        self::assertSame('A', $firstTask->identifiers->first());
+        self::assertSame('A', $firstTask->identifiers->primary());
     }
 
     public function test_previous_finds_previous_task(): void
@@ -294,7 +295,7 @@ final class TaskSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Task::class, $firstTask);
-        self::assertSame('A', $firstTask->identifiers->first());
+        self::assertSame('A', $firstTask->identifiers->primary());
     }
 
     public function test_previous_does_not_include_current_boundary(): void
@@ -304,7 +305,7 @@ final class TaskSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Task::class, $firstTask);
-        self::assertSame('A', $firstTask->identifiers->first());
+        self::assertSame('A', $firstTask->identifiers->primary());
     }
 
     public function test_previous_circular_wraps_to_last(): void
@@ -314,7 +315,7 @@ final class TaskSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Task::class, $firstTask);
-        self::assertSame('C', $firstTask->identifiers->first());
+        self::assertSame('C', $firstTask->identifiers->primary());
     }
 
     public function test_around_finds_closest_task(): void
@@ -324,7 +325,7 @@ final class TaskSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Task::class, $firstTask);
-        self::assertSame('B', $firstTask->identifiers->first());
+        self::assertSame('B', $firstTask->identifiers->primary());
     }
 
     public function test_around_prefers_forward_when_tie(): void
@@ -334,7 +335,7 @@ final class TaskSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Task::class, $firstTask);
-        self::assertSame('B', $firstTask->identifiers->first());
+        self::assertSame('B', $firstTask->identifiers->primary());
     }
 
     public function test_around_at_start_boundary(): void
@@ -344,7 +345,7 @@ final class TaskSetTest extends TestCase
             ->first();
 
         self::assertInstanceOf(Task::class, $firstTask);
-        self::assertSame('A', $firstTask->identifiers->first());
+        self::assertSame('A', $firstTask->identifiers->primary());
     }
 
     public function test_previous_and_next_are_disjoint(): void
@@ -353,8 +354,8 @@ final class TaskSetTest extends TestCase
         $tasks = $this->basicTaskSet();
 
         self::assertNotSame(
-            $tasks->previous($t, SearchMode::Linear)->first()?->identifiers->first(),
-            $tasks->next($t, SearchMode::Linear)->first()?->identifiers->first()
+            $tasks->previous($t, SearchMode::Linear)->first()?->identifiers->primary(),
+            $tasks->next($t, SearchMode::Linear)->first()?->identifiers->primary()
         );
     }
 
@@ -369,7 +370,7 @@ final class TaskSetTest extends TestCase
         $result = $tasks->nearest(Time::at(11, 30))->first();
 
         self::assertInstanceOf(Task::class, $result);
-        self::assertSame('B', $result->identifiers->first());
+        self::assertSame('B', $result->identifiers->primary());
     }
 
     public function test_nearest_is_consistent_with_direction_bias(): void
@@ -386,7 +387,7 @@ final class TaskSetTest extends TestCase
 
         self::assertInstanceOf(Task::class, $forward);
         self::assertInstanceOf(Task::class, $nearest);
-        self::assertSame($forward->identifiers->first(), $nearest->identifiers->first());
+        self::assertSame($forward->identifiers->primary(), $nearest->identifiers->primary());
     }
 
     public function test_duration_can_be_serialized_and_unserialized(): void

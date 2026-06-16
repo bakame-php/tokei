@@ -15,6 +15,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `IntervalSet::nearest`
 - `IntervalSet::roundTo`
 - `IntervalSet::roundDurationTo`
+- `IntervalSet::formatAll`
 - `Interval::fromFormat`
 - `Interval::roundTo`
 - `Interval::roundDurationTo`
@@ -68,7 +69,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC BREAK:** `Duration::toCompact` is removed and replaced by `Duration::format` with the `DurationFormat::Compact` argument
 - **BC BREAK:** `Duration::increment` is removed use `Duration::increase` instead
 - **BC BREAK:** `Duration::isEmpty` is removed use `Duration::isZero` instead
-- **BC BREAK:** `Interval::fromIso8601` is removed and replaced by `Interval::fromFormat` with the `IntervalFormat::Iso8601` argument
+- **BC BREAK:** `Interval::fromIso8601` is removed and replaced by `Interval::fromFormat` with the `IntervalFormat::Iso8601StartDuration` argument
 - **BC BREAK:** `SubSecondDisplay` is removed with no remplacement use rounding with the `Rounding::Floor` mode
 - **BC BREAK:** `truncateTo` is removed use `roundTo` instead with the new `Rounding:Floor` mode
 - **BC BREAK:** `Time::add` is removed use `Time::shift` instead
@@ -77,6 +78,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC BREAK:** `Time::toUnitOfDay` is removed use `Time::toOffset` instead
 - **BC BREAK:** `Time::toString` is removed use `Time::format` instead
 - **BC BREAK:** `IntervalSet::sorted` argument was a string or PHP8.6 `SorDirection` enum is changed to using the `Order` enum instead.
+- **BC BREAK:** `IntervalSet::allFormatted` is removed use `IntervalSet::formatAll` instead
 
 ## [0.1.0 - asagao](https://github.com/bakame-php/tokei/releases/tag/0.1.0) - 2026-05-27
 

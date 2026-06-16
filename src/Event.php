@@ -39,7 +39,7 @@ final class Event implements HasIdentifiers, JsonSerializable
     {
         [$time, $identifiers] = explode(';', $value, 2) + [1 => ''];
 
-        return new self(Time::fromFormat($time, $format), Identifiers::fromFormat($identifiers));
+        return new self(Time::fromFormat($time, $format), Identifiers::fromCommaSeparated($identifiers));
     }
 
     public static function fromTask(Task $task, Bound $anchor): self
@@ -62,7 +62,7 @@ final class Event implements HasIdentifiers, JsonSerializable
      */
     public function format(TimeFormat $format = TimeFormat::Iso8601): string
     {
-        return $format->encode($this->at).';'.$this->identifiers->formatted();
+        return $format->encode($this->at).';'.$this->identifiers->asCommaSeparated();
     }
 
     public function equals(Event $other): bool

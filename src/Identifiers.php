@@ -9,15 +9,18 @@ use Iterator;
 use IteratorAggregate;
 use JsonSerializable;
 
+use function array_diff;
 use function array_fill_keys;
 use function array_filter;
 use function array_keys;
+use function array_values;
 use function count;
 use function explode;
 use function implode;
 use function in_array;
 use function is_string;
 use function preg_match;
+use function rsort;
 use function sort;
 use function trim;
 
@@ -37,20 +40,6 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
         (?:[a-z0-9._-]*[a-z0-9])?  # middle optional, ending with letter or digit
     $/ix';
 
-    /**
-     * @throws TemporalException
-     *
-     * @return non-empty-string
-     */
-    private static function sanitize(mixed $value): string
-    {
-        is_string($value) || throw TemporalException::dueToInvalidIdentifier($value);
-        $value = trim($value);
-        1 === preg_match(self::REGEXP_IDENTIFIER, $value) || throw TemporalException::dueToInvalidIdentifier($value);
-
-        return $value;
-    }
-
     /** @var list<non-empty-string> */
     private array $items;
 
@@ -64,11 +53,11 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
         $found = [];
         foreach ($items as $item) {
             foreach (self::filterIdentifiers($item) as $value) {
-                $found[] = $value;
+                $found[$value] = $value;
             }
         }
 
-        $this->items = array_values(array_unique($found));
+        $this->items = array_values($found);
     }
 
     /**
@@ -88,13 +77,21 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
             return $data->all();
         }
 
+        $sanitize = static function (mixed $value): string {
+            is_string($value) || throw TemporalException::dueToInvalidIdentifier($value);
+            $value = trim($value);
+            1 === preg_match(self::REGEXP_IDENTIFIER, $value) || throw TemporalException::dueToInvalidIdentifier($value);
+
+            return $value;
+        };
+
         if (is_string($data)) {
             $data = [$data];
         }
 
         $filteredData = [];
         foreach ($data as $value) {
-            $filteredData[] = self::sanitize($value);
+            $filteredData[] = $sanitize($value);
         }
 
         return $filteredData;
@@ -103,11 +100,15 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
     /**
      * @throws TemporalException
      */
-    public static function fromFormat(string $value): self
+    public static function fromCommaSeparated(string $value): self
     {
         $value = trim($value);
+        $list = array_map(trim(...), '' === $value ? [] : explode(',', $value));
+        $filtered = array_filter($list, fn (string $value): bool => '' !== $value);
 
-        return '' === $value ? new self() : new self(explode(',', $value)); /* @phpstan-ignore-line  */
+        return $list === $filtered
+            ? new self(...$filtered)
+            : throw new TemporalException('The submitted value `'.$value.'` contains invalid Identifiers.');
     }
 
     public function count(): int
@@ -146,18 +147,28 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
 
     public function equals(HasIdentifiers|Identifiers $other): bool
     {
-        $currentLabels = $this->items;
         $otherLabels = $other instanceof HasIdentifiers ? $other->identifiers->items : $other->items;
 
-        sort($currentLabels, SORT_STRING);
-        sort($otherLabels, SORT_STRING);
-
-        return $currentLabels === $otherLabels;
+        return [] === array_diff($this->items, $otherLabels);
     }
 
-    public function has(string $value): bool
+    public function has(string ...$values): bool
     {
-        return in_array($value, $this->items, true);
+        foreach ($values as $value) {
+            if (!in_array($value, $this->items, true)) {
+                return false;
+            }
+        }
+
+        return [] !== $this->items;
+    }
+
+    /**
+     * @return ?non-empty-string
+     */
+    public function primary(): ?string
+    {
+        return $this->nth(0);
     }
 
     /**
@@ -188,22 +199,6 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
     }
 
     /**
-     * @return ?non-empty-string
-     */
-    public function first(): ?string
-    {
-        return $this->nth(0);
-    }
-
-    /**
-     * @return ?non-empty-string
-     */
-    public function last(): ?string
-    {
-        return $this->nth(-1);
-    }
-
-    /**
      * @throws TemporalException
      */
     public function only(string ...$labels): self
@@ -223,9 +218,20 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
         return $data === $this->items ? $this : new self($data);
     }
 
-    public function formatted(): string
+    public function asCommaSeparated(): string
     {
         return implode(',', $this->items);
+    }
+
+    public function sorted(Direction $direction = Direction::Ascending): self
+    {
+        $data = $this->items;
+
+        Direction::Ascending === $direction
+                ? sort($data, SORT_STRING)
+                : rsort($data, SORT_STRING);
+
+        return $data === $this->items ? $this : new self($data);
     }
 
     /**
