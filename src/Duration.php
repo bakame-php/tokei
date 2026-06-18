@@ -210,8 +210,6 @@ final readonly class Duration implements JsonSerializable
 
     /**
      * Converts the instance to an DateInterval object.
-     *
-     *
      */
     public function toDateInterval(?DateTimeInterface $relativeTo = null): DateInterval
     {

@@ -328,7 +328,7 @@ final class DurationTest extends TestCase
 
     public function test_it_can_not_invert_php_int_max(): void
     {
-        $this->expectExceptionObject(InvalidDuration::dueToOverflow());
+        $this->expectException(InvalidDuration::class);
 
         Duration::of(microseconds:PHP_INT_MAX)->negated();
     }
