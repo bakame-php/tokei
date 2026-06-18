@@ -529,14 +529,14 @@ final class IntervalSetTest extends TestCase
         $class = new class () extends DateTimeImmutable {};
         $timeZoneName = 'Africa/Brazzaville';
 
-        $converted = Business::shifts()->allNative(new $class('2025-03-02 23:12:59', new DateTimeZone($timeZoneName)));
+        $converted = Business::shifts()->toNative(new $class('2025-03-02 23:12:59', new DateTimeZone($timeZoneName)));
         self::assertCount(5, $converted);
 
         $interval = $converted[1];
-        self::assertInstanceOf($class::class, $interval['startDate']);
-        self::assertSame($interval['startDate']->getTimezone()->getName(), $timeZoneName);
-        self::assertSame('2025-03-02 12:00:00', $interval['startDate']->format('Y-m-d H:i:s'));
-        self::assertEquals(new DateInterval('PT6H'), $interval['interval']);
+        self::assertInstanceOf($class::class, $interval->start);
+        self::assertSame($interval->start->getTimezone()->getName(), $timeZoneName);
+        self::assertSame('2025-03-02 12:00:00', $interval->start->format('Y-m-d H:i:s'));
+        self::assertEquals(new DateInterval('PT6H'), $interval->duration());
     }
 
     public function test_it_can_be_iterated_with_foreach(): void

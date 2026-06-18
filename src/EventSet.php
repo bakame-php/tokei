@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
+use DateTimeInterface;
 use Traversable;
 
 use function array_diff_key;
 use function array_key_exists;
 use function array_map;
-use function array_merge;
 use function count;
 use function usort;
 
@@ -23,7 +23,7 @@ final class EventSet implements TemporalSet
     /** @var TemporalSearch<Event> */
     private TemporalSearch $engine;
 
-    public function __construct(Event|EventSet ...$items)
+    public function __construct(Event|NativeEvent|EventSet ...$items)
     {
         $this->items = self::sortChronologically($items);
     }
@@ -49,7 +49,7 @@ final class EventSet implements TemporalSet
     }
 
     /**
-     * @param array<EventSet|Event> $items
+     * @param array<EventSet|Event|NativeEvent> $items
      *
      * @return list<Event>
      */
@@ -58,11 +58,11 @@ final class EventSet implements TemporalSet
         $res = [];
         foreach ($items as $item) {
             if ($item instanceof EventSet) {
-                $res = array_merge($res, $item->items);
+                $res = [...$res, ...$item->items];
                 continue;
             }
 
-            $res[] = $item;
+            $res[] = $item instanceof NativeEvent ? Event::fromNative($item) : $item;
         }
 
         usort($res, static fn (Event $a, Event $b): int => $a->at->compareTo($b->at));
@@ -280,7 +280,7 @@ final class EventSet implements TemporalSet
         return true;
     }
 
-    public function push(Event|EventSet ...$items): self
+    public function push(Event|EventSet|NativeEvent ...$items): self
     {
         if ([] === $items) {
             return $this;
@@ -313,7 +313,7 @@ final class EventSet implements TemporalSet
         return new IntervalSet(...$gaps);
     }
 
-    public function union(Event|EventSet ...$items): self
+    public function union(Event|EventSet|NativeEvent ...$items): self
     {
         if ([] === $items) {
             return $this;
@@ -334,7 +334,7 @@ final class EventSet implements TemporalSet
         return new self(...$current);
     }
 
-    public function intersect(Event|EventSet ...$items): self
+    public function intersect(Event|EventSet|NativeEvent ...$items): self
     {
         if ([] === $items) {
             return new self();
@@ -356,7 +356,7 @@ final class EventSet implements TemporalSet
         return new self(...$result);
     }
 
-    public function difference(Event|EventSet ...$items): self
+    public function difference(Event|EventSet|NativeEvent ...$items): self
     {
         if ([] === $items) {
             return $this;
@@ -390,7 +390,7 @@ final class EventSet implements TemporalSet
     public function inside(Interval|Task $interval): self
     {
         if ($interval instanceof Task) {
-            $interval = $interval->period;
+            $interval = $interval->interval;
         }
 
         return $this->filter(fn (Event $event): bool => $interval->includes($event));
@@ -399,13 +399,13 @@ final class EventSet implements TemporalSet
     public function outside(Interval|Task $interval): self
     {
         if ($interval instanceof Task) {
-            $interval = $interval->period;
+            $interval = $interval->interval;
         }
 
         return $this->filter(fn (Event $event): bool => !$interval->includes($event));
     }
 
-    public function at(Time|Event $time): self
+    public function at(Time|Event|NativeEvent $time): self
     {
         return $this->filter(fn (Event $event): bool => $event->at->equals($time));
     }
@@ -449,6 +449,14 @@ final class EventSet implements TemporalSet
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
         return $this->transform(static fn (Event $event): Event => $event->occursOn($event->at->roundTo($unit, $mode)));
+    }
+
+    /**
+     * @return list<NativeEvent>
+     */
+    public function toNative(DateTimeInterface $reference): array
+    {
+        return array_map(fn (Event $event): NativeEvent => $event->toNative($reference), $this->items);
     }
 
     /**

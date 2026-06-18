@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
+use DateInterval;
+use DateTimeInterface;
 use JsonSerializable;
 
 use function explode;
@@ -11,7 +13,7 @@ use function explode;
 final readonly class Task implements HasIdentifiers, JsonSerializable
 {
     private function __construct(
-        public Interval $period,
+        public Interval $interval,
         public Identifiers $identifiers,
     ) {
     }
@@ -21,16 +23,24 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
      *
      * @throws TemporalException
      */
-    public static function for(Interval $period, Identifiers|HasIdentifiers|string $identifier = new Identifiers()): self
+    public static function for(Interval|NativeInterval|Task|NativeTask $interval, Identifiers|HasIdentifiers|string $identifier = new Identifiers()): self
     {
-        return new self($period, match (true) {
-            $identifier instanceof HasIdentifiers => $identifier->identifiers,
-            $identifier instanceof Identifiers => $identifier,
-            default => new Identifiers($identifier),
-        });
+        return new self(
+            match (true) {
+                $interval instanceof Interval => $interval,
+                $interval instanceof NativeInterval => Interval::fromNative($interval),
+                $interval instanceof NativeTask => Task::fromNative($interval)->interval,
+                $interval instanceof Task => $interval->interval,
+            },
+            match (true) {
+                $identifier instanceof HasIdentifiers => $identifier->identifiers,
+                $identifier instanceof Identifiers => $identifier,
+                default => new Identifiers($identifier),
+            }
+        );
     }
 
-    public static function fromEvent(Event $event, Duration $duration, Bound $from): self
+    public static function fromEvent(Event $event, Duration|DateInterval $duration, Bound $from): self
     {
         return self::for(
             Bound::Start === $from
@@ -47,9 +57,9 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
      */
     public static function fromFormat(string $value, IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): self
     {
-        [$period, $identifiers] = explode(';', $value, 2) + [1 => ''];
+        [$interval, $identifiers] = explode(';', $value, 2) + [1 => ''];
 
-        return new self(Interval::fromFormat($period, $format, $unit), Identifiers::fromCommaSeparated($identifiers));
+        return new self(Interval::fromFormat($interval, $format, $unit), Identifiers::fromCommaSeparated($identifiers));
     }
 
     /**
@@ -67,20 +77,20 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
      */
     public function format(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): string
     {
-        return $format->encode($this->period, $unit).';'.$this->identifiers->asCommaSeparated();
+        return $format->encode($this->interval, $unit).';'.$this->identifiers->toCommaSeparated();
     }
 
     public function equals(Task $other): bool
     {
-        return $this->period->equals($other)
+        return $this->interval->equals($other)
             && $this->identifiers->equals($other);
     }
 
-    public function during(Task|Interval $period): self
+    public function during(Task|Interval|NativeInterval|NativeTask $interval): self
     {
-        $period = $period instanceof Task ? $period->period : $period;
+        $interval = $interval instanceof Task ? $interval->interval : $interval;
 
-        return $period->equals($this->period) ? $this : new self($period, $this->identifiers);
+        return $this->interval->equals($interval) ? $this : self::for($interval, $this->identifiers);
     }
 
     /**
@@ -96,24 +106,34 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
             default => new Identifiers($identifier),
         };
 
-        return $identifier->equals($this->identifiers) ? $this : new self($this->period, $identifier);
+        return $identifier->equals($this->identifiers) ? $this : new self($this->interval, $identifier);
+    }
+
+    public function toNative(DateTimeInterface $reference): NativeTask
+    {
+        return new NativeTask($this->interval->toNative($reference), $this->identifiers);
+    }
+
+    public static function fromNative(NativeTask $task): self
+    {
+        return new self(Interval::fromNative($task->interval), $task->identifiers);
     }
 
     /**
-     * @return array{0: array{period: Interval, identifiers: Identifiers}, 1: array{}}
+     * @return array{0: array{interval: Interval, identifiers: Identifiers}, 1: array{}}
      */
     public function __serialize(): array
     {
-        return [['period' => $this->period, 'identifiers' => $this->identifiers], []];
+        return [['interval' => $this->interval, 'identifiers' => $this->identifiers], []];
     }
 
     /**
-     * @param array{0: array{period: Interval, identifiers: Identifiers}, 1: array{}} $data
+     * @param array{0: array{interval: Interval, identifiers: Identifiers}, 1: array{}} $data
      */
     public function __unserialize(array $data): void
     {
         [$properties] = $data;
-        $this->period = $properties['period'];
+        $this->interval = $properties['interval'];
         $this->identifiers = $properties['identifiers'];
     }
 }

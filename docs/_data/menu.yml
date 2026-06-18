@@ -1,0 +1,17 @@
+version:
+    '1.0':
+        Getting Started:
+            Installation: '/1.0/'
+            Accepted Input: '/1.0/accepted-input-types'
+        Temporal Primitives:
+            Time: '/1.0/time/'
+            Duration: '/1.0/duration/'
+            Interval: '/1.0/interval/'
+            IntervalSet: '/1.0/Intervalset/'
+        Annotated Values:
+            Event: '/1.0/event/'
+            Task: '/1.0/task/'
+            EventSet: '/1.0/eventset/'
+            TaskSet: '/1.0/taskset/'
+upgrading:
+        Release Notes: '/releases/'

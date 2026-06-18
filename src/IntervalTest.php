@@ -900,10 +900,10 @@ final class IntervalTest extends TestCase
         $timeZoneName = 'Africa/Brazzaville';
 
         $interval = Interval::between(Time::noon(), Time::at(18))->toNative(new $class('2025-03-02 23:12:59', new DateTimeZone($timeZoneName)));
-        self::assertInstanceOf($class::class, $interval['startDate']);
-        self::assertSame($interval['startDate']->getTimezone()->getName(), $timeZoneName);
-        self::assertSame('2025-03-02 12:00:00', $interval['startDate']->format('Y-m-d H:i:s'));
-        self::assertEquals(new DateInterval('PT6H'), $interval['interval']);
+        self::assertInstanceOf($class::class, $interval->start);
+        self::assertSame($interval->start->getTimezone()->getName(), $timeZoneName);
+        self::assertSame('2025-03-02 12:00:00', $interval->start->format('Y-m-d H:i:s'));
+        self::assertEquals(new DateInterval('PT6H'), $interval->duration());
     }
 
     public function test_splitting_is_coherent(): void

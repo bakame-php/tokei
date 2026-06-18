@@ -6,7 +6,8 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Added
 
-- Temporal API to work with identified `Time` and `Interval`.
+- `Event`, `Task`, `EventSet`, `TaskSet`, `Identifiers`, `NativeEvent`, `NativeTask` to work with identified Temporal Values.
+- `NativeInterval` to allow better conversion to PHP Native Date API.
 - `IntervalSet::each`
 - `IntervalSet::transform`
 - `IntervalSet::chronological`
@@ -38,8 +39,9 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `IntervalFormat::encode` and `IntervalFormat::decode` to improve `Interval` encoding and decoding from and to string representation.
 - `DurationFormat::encode` and `DurationFormat::decode` to improve `Duration` encoding and decoding from and to string representation.
 - `TimeFormat` added to improve `Time` encoding and decoding from and to string representation.
-- `Direction` to unify sorting across the package
-- `SnapMode` to unify rounding across the package
+- `Direction` to unify sorting
+- `SnapMode` to unify rounding
+- `SearchMode` to unify search type (linear or circular)
 - `LocaleVerbosity` to allow fine-grained locale string representation using by `LocaleTimeFormatter`
 
 ### Fixed

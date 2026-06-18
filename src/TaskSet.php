@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
+use DateInterval;
+use DateTimeInterface;
 use Traversable;
 
 use function array_map;
 use function array_values;
 use function count;
+use function in_array;
 use function usort;
 
 /**
@@ -21,12 +24,12 @@ final class TaskSet implements TemporalSet
     /** @var array<non-empty-string, TemporalSearch<Task>> */
     private array $engine;
 
-    public function __construct(Task|TaskSet ...$items)
+    public function __construct(Task|NativeTask|TaskSet ...$items)
     {
         $this->items = self::sortChronologically($items);
     }
 
-    public static function fromEvents(EventSet $items, Duration $duration, Bound $from = Bound::Start): self
+    public static function fromEvents(EventSet $items, Duration|DateInterval $duration, Bound $from = Bound::Start): self
     {
         return new self(...$items->map(fn (Event $event): Task => Task::fromEvent($event, $duration, $from)));
     }
@@ -57,7 +60,7 @@ final class TaskSet implements TemporalSet
     }
 
     /**
-     * @param array<Task|TaskSet> $items
+     * @param array<Task|TaskSet|NativeTask> $items
      *
      * @return list<Task>
      */
@@ -70,15 +73,20 @@ final class TaskSet implements TemporalSet
                 continue;
             }
 
+            if ($task instanceof NativeTask) {
+                $res[] = Task::fromNative($task);
+                continue;
+            }
+
             $res[] = $task;
         }
 
         usort(
             $res,
             static fn (Task $a, Task $b): int =>
-            0 !== ($cmp = $a->period->start->compareTo($b->period->start))
+            0 !== ($cmp = $a->interval->start->compareTo($b->interval->start))
                 ? $cmp
-                : $a->period->duration->compareTo($b->period->duration)
+                : $a->interval->duration->compareTo($b->interval->duration)
         );
 
         return $res;
@@ -94,9 +102,17 @@ final class TaskSet implements TemporalSet
         return array_map(static fn (Task $item): string => $item->format($format, $unit), $this->items);
     }
 
+    /**
+     * @return list<NativeTask>
+     */
+    public function toNative(DateTimeInterface $reference): array
+    {
+        return array_map(static fn (Task $item): NativeTask => $item->toNative($reference), $this->items);
+    }
+
     public function duration(): Duration
     {
-        return IntervalSet::fromTasks($this)->duration();
+        return IntervalSet::chronological($this)->duration();
     }
 
     public function count(): int
@@ -222,17 +238,17 @@ final class TaskSet implements TemporalSet
         return $this->engine()->every($predicate);
     }
 
-    public function next(Time|Event $atOrAfter, SearchMode $mode, Bound $using = Bound::Start): self
+    public function next(Time|Event|NativeEvent|DateTimeInterface $atOrAfter, SearchMode $mode, Bound $using = Bound::Start): self
     {
         return new self(...$this->engine($using)->next($atOrAfter, $mode));
     }
 
-    public function previous(Time|Event $before, SearchMode $mode, Bound $using = Bound::Start): self
+    public function previous(Time|Event|NativeEvent|DateTimeInterface $before, SearchMode $mode, Bound $using = Bound::Start): self
     {
         return new self(...$this->engine($using)->previous($before, $mode));
     }
 
-    public function nearest(Time|Event $around, Bound $using = Bound::Start): self
+    public function nearest(Time|Event|NativeEvent|DateTimeInterface $around, Bound $using = Bound::Start): self
     {
         return new self(...$this->engine($using)->nearest($around));
     }
@@ -295,12 +311,12 @@ final class TaskSet implements TemporalSet
 
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
-        return $this->transform(static fn (Task $task): Task => $task->during($task->period->roundTo($unit, $mode)));
+        return $this->transform(static fn (Task $task): Task => $task->during($task->interval->roundTo($unit, $mode)));
     }
 
     public function roundDurationTo(Unit $unit, SnapMode $mode = SnapMode::Nearest, Bound $anchor = Bound::Start): self
     {
-        return $this->transform(static fn (Task $task): Task => $task->during($task->period->roundDurationTo($unit, $mode, $anchor)));
+        return $this->transform(static fn (Task $task): Task => $task->during($task->interval->roundDurationTo($unit, $mode, $anchor)));
     }
 
     /**
@@ -329,37 +345,90 @@ final class TaskSet implements TemporalSet
         return [] === $tasks ? $this : new self(...$this->items, ...self::filterTasks(...$tasks));
     }
 
-    public function abuts(Interval|Task $interval): self
+    /**
+     * @throws InvalidDuration
+     */
+    public function remove(int ...$offsets): self
     {
-        return $this->filter(fn (Task $task): bool => $task->period->abuts($interval));
+        if ([] === $offsets) {
+            return $this;
+        }
+
+        $nbIntervals = count($this->items);
+        $normalized = [];
+        foreach ($offsets as $offset) {
+            if ($offset < 0) {
+                $offset += $nbIntervals;
+            }
+
+            if (0 > $offset || $nbIntervals <= $offset) {
+                continue;
+            }
+
+            $normalized[] = $offset;
+        }
+
+        if ([] === $normalized) {
+            return $this;
+        }
+
+        return $this->filter(static fn (Task $item, int $index): bool => !in_array($index, $normalized, true));
     }
 
-    public function overlaps(Interval|Task $interval): self
+    /**
+     * @throws InvalidDuration
+     * @throws TimeException
+     */
+    public function replace(int $offset, Task $item): self
     {
-        return $this->filter(fn (Task $task): bool => $task->period->overlaps($interval));
+        if ($offset < 0) {
+            $offset += count($this->items);
+        }
+
+        isset($this->items[$offset]) || throw TimeException::dueToInvalidOffset($offset, self::class);
+
+        $intervals = $this->items;
+        $intervals[$offset] = $item;
+
+        return new self(...$intervals);
     }
 
-    public function includes(Time|Event $time): self
+    public function abuts(Interval|Task|NativeInterval|NativeTask $interval): self
     {
-        return $this->filter(fn (Task $task): bool => $task->period->includes($time));
+        return $this->filter(fn (Task $task): bool => $task->interval->abuts($interval));
     }
 
-    public function excludes(Time|Event $time): self
+    public function overlaps(Interval|Task|NativeInterval|NativeTask $interval): self
     {
-        return $this->filter(fn (Task $task): bool => !$task->period->includes($time));
+        return $this->filter(fn (Task $task): bool => $task->interval->overlaps($interval));
+    }
+
+    public function contains(Interval|Task|NativeInterval|NativeTask $interval): self
+    {
+        return $this->filter(fn (Task $task): bool => $task->interval->contains($interval));
+    }
+
+    public function includes(Time|Event|NativeEvent|DateTimeInterface $time): self
+    {
+        return $this->filter(fn (Task $task): bool => $task->interval->includes($time));
+    }
+
+    public function outsideOf(Time|Event|NativeEvent|DateTimeInterface $time): self
+    {
+        return $this->filter(fn (Task $task): bool => !$task->interval->includes($time));
     }
 
     public function gaps(): self
     {
         return new self(
-            ...IntervalSet::fromTasks($this)
+            ...IntervalSet::chronological($this)
                 ->gaps()
                 ->map(fn (Interval $interval): Task => Task::for($interval))
         );
     }
 
     /**
-     * @param iterable<TaskSet|Task> $sets
+     * @param iterable<TaskSet|Task|NativeTask> $sets
      *
      * @throws InvalidDuration|InvalidInterval|TemporalException
      */
@@ -368,9 +437,9 @@ final class TaskSet implements TemporalSet
         $splitTasks = static fn (TaskSet $set): TaskSet => $set
             ->transform(
                 static fn (Task $task, int $offset): TaskSet|Task =>
-                    IntervalType::Overflow !== $task->period->type
+                    IntervalType::Overflow !== $task->interval->type
                         ? $task
-                        : TaskSet::fromIntervals($task->period->splitAt(Time::midnight()), $task)
+                        : TaskSet::fromIntervals($task->interval->splitAt(Time::midnight()), $task)
             );
 
         /**
@@ -459,9 +528,9 @@ final class TaskSet implements TemporalSet
         $set = $this->push(...$sets);
 
         return new self(
-            ...IntervalSet::fromTasks($set)
+            ...IntervalSet::chronological($set)
                 ->atomic()
-                ->map(fn (Interval $interval): Task => Task::for($interval, self::computeIdentifiers($set, $interval)))
+                ->map(fn (Interval $interval): Task => Task::for($interval, new Identifiers($set->overlaps($interval))))
         );
     }
 
@@ -475,21 +544,11 @@ final class TaskSet implements TemporalSet
         $others = new self(...self::filterTasks(...$sets));
 
         return $others->isEmpty() ? $this : new self(
-            ...IntervalSet::fromTasks($this)
+            ...IntervalSet::chronological($this)
                 ->difference($others)
                 ->atomic()
-                ->map(fn (Interval $interval): Task => Task::for($interval, self::computeIdentifiers($this, $interval)))
+                ->map(fn (Interval $interval): Task => Task::for($interval, new Identifiers($this->overlaps($interval))))
         );
-    }
-
-    private static function computeIdentifiers(self $source, Interval $interval): Identifiers
-    {
-        return $source
-            ->overlaps($interval)
-            ->reduce(
-                static fn (Identifiers $carry, Task $task): Identifiers => $carry->merge($task),
-                new Identifiers()
-            );
     }
 
     /**

@@ -1,0 +1,15 @@
+# Documentation website
+title: Tokei
+tagline: "Work with HTTP Structured Fields in PHP."
+description: "A framework-agnostic PHP library to handle time, duration, circular 24-hour intervals, and interval sets, without timezone handling."
+# Github repository
+package: 'bakame/tokei'
+repository_url: 'https://github.com/bakame-php/tokei'
+release_major: '1.0'
+version: 0.2.0
+support: 'Once a new major version is released, the previous stable release remains supported for six more months with patches and security fixes.'
+releases:
+    current:
+        version: '1.0'
+        requires: 'PHP >= 8.4.0'
+        documentation_link: '/1.0/'

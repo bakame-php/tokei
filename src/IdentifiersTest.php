@@ -171,8 +171,8 @@ final class IdentifiersTest extends TestCase
         self::assertSame('employee', $mergeAB->primary());
         self::assertSame('gender', $mergeBA->primary());
         self::assertTrue($mergeBA->equals($mergeAB));
-        self::assertNotSame($mergeBA->asCommaSeparated(), $mergeAB->asCommaSeparated());
-        self::assertSame($mergeBA->sorted()->asCommaSeparated(), $mergeAB->sorted()->asCommaSeparated());
+        self::assertNotSame($mergeBA->toCommaSeparated(), $mergeAB->toCommaSeparated());
+        self::assertSame($mergeBA->sorted()->toCommaSeparated(), $mergeAB->sorted()->toCommaSeparated());
         self::assertNotSame($mergeBA->sorted(), $mergeAB->sorted(Direction::Descending));
     }
 

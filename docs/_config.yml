@@ -1,0 +1,5 @@
+---
+permalink: pretty
+baseurl: /tokei
+plugins:
+  - jekyll-redirect-from

@@ -20,14 +20,14 @@ use function implode;
 use function in_array;
 use function is_string;
 use function preg_match;
-use function rsort;
-use function sort;
+use function strcmp;
 use function trim;
-
-use const SORT_STRING;
+use function usort;
 
 /**
- * @phpstan-type InputIdentifiers Identifiers|HasIdentifiers|(iterable<non-empty-string>)|non-empty-string
+ * @phpstan-type InputIdentifiers HasIdentifiers|Identifiers|non-empty-string
+ * @phpstan-type InputIdentifiersList iterable<InputIdentifiers>
+ *
  * @implements IteratorAggregate<non-empty-string>
  */
 final readonly class Identifiers implements Countable, IteratorAggregate, JsonSerializable
@@ -44,7 +44,7 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
     private array $items;
 
     /**
-     * @param InputIdentifiers ...$items
+     * @param InputIdentifiersList|InputIdentifiers ...$items
      *
      * @throws TemporalException
      */
@@ -61,7 +61,7 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
     }
 
     /**
-     * @param InputIdentifiers $data
+     * @param InputIdentifiersList|InputIdentifiers $data
      *
      * @throws TemporalException
      *
@@ -91,6 +91,16 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
 
         $filteredData = [];
         foreach ($data as $value) {
+            if ($value instanceof Identifiers) {
+                $filteredData = [...$filteredData, ...$value->all()];
+                continue;
+            }
+
+            if ($value instanceof HasIdentifiers) {
+                $filteredData = [...$filteredData, ...$value->identifiers->all()];
+                continue;
+            }
+
             $filteredData[] = $sanitize($value);
         }
 
@@ -154,13 +164,8 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
 
     public function has(string ...$values): bool
     {
-        foreach ($values as $value) {
-            if (!in_array($value, $this->items, true)) {
-                return false;
-            }
-        }
-
-        return [] !== $this->items;
+        return [] !== $this->items
+            && !array_any($values, fn (string $value): bool => !in_array($value, $this->items, true));
     }
 
     /**
@@ -218,24 +223,40 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
         return $data === $this->items ? $this : new self($data);
     }
 
-    public function asCommaSeparated(): string
+    public function toCommaSeparated(): string
     {
         return implode(',', $this->items);
     }
 
+    /**
+     * @throws TemporalException
+     */
     public function sorted(Direction $direction = Direction::Ascending): self
     {
-        $data = $this->items;
+        $callback = Direction::Ascending === $direction
+                ? static fn (string $a, string $b): int => strcmp($a, $b)
+                : static fn (string $a, string $b): int => strcmp($b, $a);
 
-        Direction::Ascending === $direction
-                ? sort($data, SORT_STRING)
-                : rsort($data, SORT_STRING);
-
-        return $data === $this->items ? $this : new self($data);
+        return $this->sortedUsing($callback);
     }
 
     /**
-     * @param InputIdentifiers ...$others
+     * @param callable(string, string): int $callback
+     *
+     * @throws TemporalException
+     */
+    public function sortedUsing(callable $callback): self
+    {
+        $items = $this->items;
+        if (1 < count($this->items)) {
+            usort($items, $callback);
+        }
+
+        return $items === $this->items ? $this : new self(...$items);
+    }
+
+    /**
+     * @param InputIdentifiersList|InputIdentifiers ...$others
      *
      * @throws TemporalException
      */

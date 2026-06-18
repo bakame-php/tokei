@@ -272,7 +272,7 @@ final class TaskSetTest extends TestCase
             $this->basicTaskSet()
                 ->duration()
                 ->equals(
-                    IntervalSet::fromTasks($this->basicTaskSet())
+                    IntervalSet::chronological($this->basicTaskSet())
                         ->duration()
                 )
         );

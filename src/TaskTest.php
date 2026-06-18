@@ -19,7 +19,7 @@ final class TaskTest extends TestCase
         $interval = Interval::between(Time::at(10), Time::at(12));
         $task = Task::for($interval);
 
-        self::assertSame($interval, $task->period);
+        self::assertSame($interval, $task->interval);
         self::assertTrue($task->identifiers->isEmpty());
     }
 
@@ -47,7 +47,7 @@ final class TaskTest extends TestCase
         $shifted = $task->during($other);
 
         self::assertNotSame($task, $shifted);
-        self::assertEquals($other, $shifted->period);
+        self::assertEquals($other, $shifted->interval);
         self::assertSame($task->identifiers, $shifted->identifiers);
     }
 
@@ -68,7 +68,7 @@ final class TaskTest extends TestCase
 
         self::assertNotSame($task, $updated);
         self::assertSame(['John'], $updated->identifiers->all());
-        self::assertEquals($task->period, $updated->period);
+        self::assertEquals($task->interval, $updated->interval);
     }
 
     public function test_duration_can_be_serialized_and_unserialized(): void

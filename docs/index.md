@@ -1,4 +1,7 @@
-![tokei](.github/tokei-logo.jpg?raw=true)
+---
+layout: default
+title: Tokei
+---
 
 # Tokei
 
@@ -13,16 +16,16 @@
 and operating on time, durations, including, circular 24-hour intervals, and interval sets, offering
 expressive temporal modeling without timezone handling.
 
-The framework-agnostic package offers a consistent and expressive way to work with temporal values in a safe
-and predictable manner.
+Once installed you will be able to do the following:
 
 ```php
+
 use Bakame\Tokei\Duration;
 use Bakame\Tokei\DurationFormat;
 use Bakame\Tokei\Time;
 
-$target = Duration::of(hours: 9, minutes: 33);
-$alreadyDone = Duration::of(hours: 7, minutes: 20);
+$target = Duration::of(hours: 7, minutes: 33);
+$alreadyDone = Duration::of(hours: 5, minutes: 17);
 $remaining = $target->sum($alreadyDone->negated());
 $startedNewShiftAt = Time::at(hour: 21, minute: 31);
 $shouldStopAt = $startedNewShiftAt->shift($remaining);
@@ -32,60 +35,55 @@ echo "I have already worked for ", $alreadyDone->format(DurationFormat::Compact)
 echo "I still have to work ", $remaining->format(DurationFormat::Compact), PHP_EOL;
 echo "If I start working again at ", $startedNewShiftAt->format(), PHP_EOL;
 echo "I will end today's shit at ", $shouldStopAt->format(), PHP_EOL;
-
-// Gives the following:
-
-/**
- * I have to work 7h33m today
- * I have already worked for 5h17m
- * I still have to work 2h16m
- * If I start working again at 21:31:00
- * I will end today's shit at 23:47:00
- */
 ```
-
-## Installation
-
-~~~
-composer require bakame/tokei
-~~~
-
-You need:
-
-- **PHP >= 8.4** but the latest stable version of PHP is recommended
-- to be able to get the locale string version of the time you need the `ext-intl` extension or use a polyfill for `IntlDateFormatter`.
-
-## Documentation
-
-Full documentation can be found at [https://bakame-php.github.io/tokei](//bakame-php.github.io/tokei)
-
-## Testing
-
-The library has:
-
-- a [PHPUnit](https://phpunit.de) test suite.
-- a coding style compliance test suite using [PHP CS Fixer](https://cs.symfony.com/).
-- a code analysis compliance test suite using [PHPStan](https://github.com/phpstan/phpstan).
-
-To run the tests, run the following command from the project folder.
+    
+will output the following:
 
 ```bash
-composer test
+I have to work 7h33m today
+I have already worked for 5h17m
+I still have to work 2h16m
+If I start working again at 21:31:00
+I will end today's shit at 23:47:00
 ```
 
-## Contributing
+The framework-agnostic package offers a consistent and expressive way to work with temporal values in a safe
+and predictable manner.
 
-Contributions are welcome and will be fully credited. Please see [CONTRIBUTING](.github/CONTRIBUTING.md) and [CONDUCT](.github/CODE_OF_CONDUCT.md) for details.
+The package comes with the following Temporal classes under the `Bakame\Tokei` namespace:
 
-## Security
+**Temporal Values**
 
-If you discover any security related issues, please email nyamsprod@gmail.com instead of using the issue tracker.
+- [Time](1.0/time.md)
+- [Duration](1.0/duration.md)
+- [Interval](1.0/interval.md)
+- [IntervalSet](1.0/intervalset.md)
 
-## Changelog
+**Annotation Values**
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+- [Identifiers](identifiers.md)
 
-## Credits
+**Annotated Temporal Values**
 
-- [ignace nyamagana butera](https://github.com/nyamsprod)
-- [All Contributors](https://github.com/bakame-php/tokei/graphs/contributors)
+- [Event](1.0/event.md)
+- [Task](1.0/task.md)
+- [EventSet](eventset.md)
+- [TaskSet](1.0/taskset.md)
+
+See also: [Accepted Input Types](1.0/accepted-input-types.md) for how values are converted
+between temporal representations.
+
+Annotated temporal values extend the core temporal primitives by associating identifiers with them
+while preserving the same temporal semantics.
+
+| Primitives  | Annotated Values |
+|-------------|------------------|
+| Time        | Event            |
+| Interval    | Task             |
+| IntervalSet | TaskSet          |
+
+- Learn `Time`, `Duration`, `Interval`, `IntervalSet` first. 
+- `Event`, `Task` and `TaskSet` are enrichments, not separate models. 
+- Temporal logic lives in the primitives. 
+- Annotated values mostly add identification and context.
+

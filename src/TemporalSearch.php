@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bakame\Tokei;
 
 use Closure;
+use DateTimeInterface;
 
 use function count;
 
@@ -45,7 +46,7 @@ final readonly class TemporalSearch
      */
     public static function forIntervals(TemporalSet $items, Bound $using): self
     {
-        $extractInterval = fn (Interval|Task $item): Interval => $item instanceof Task ? $item->period : $item;
+        $extractInterval = fn (Interval|Task $item): Interval => $item instanceof Task ? $item->interval : $item;
 
         return new self(
             $items,
@@ -55,15 +56,20 @@ final readonly class TemporalSearch
         );
     }
 
-    private static function extractTime(Time|Event $time): Time
+    private static function extractTime(Time|Event|NativeEvent|DateTimeInterface $time): Time
     {
-        return $time instanceof Event ? $time->at : $time;
+        return match (true) {
+            $time instanceof Event => $time->at,
+            $time instanceof NativeEvent => Event::fromNative($time)->at,
+            $time instanceof DateTimeInterface => Time::fromDateTime($time),
+            default => $time,
+        };
     }
 
     /**
      * @return iterable<non-negative-int, TItem>
      */
-    public function next(Time|Event $atOrAfter, SearchMode $mode): iterable
+    public function next(Time|Event|NativeEvent|DateTimeInterface $atOrAfter, SearchMode $mode): iterable
     {
         return SearchMode::Linear === $mode
             ? $this->forwardSearch(fn ($item): bool => ($this->resolver)($item)->isAfterOrEqual($atOrAfter))
@@ -83,7 +89,7 @@ final readonly class TemporalSearch
     /**
      * @return iterable<non-negative-int, TItem>
      */
-    public function previous(Time|Event $before, SearchMode $mode): iterable
+    public function previous(Time|Event|NativeEvent|DateTimeInterface $before, SearchMode $mode): iterable
     {
         return SearchMode::Linear === $mode
             ? $this->forwardSearch(fn ($item): bool => ($this->resolver)($item)->isBefore($before))
@@ -103,7 +109,7 @@ final readonly class TemporalSearch
     /**
      * @return iterable<non-negative-int, TItem>
      */
-    public function nearest(Time|Event $around): iterable
+    public function nearest(Time|Event|NativeEvent|DateTimeInterface $around): iterable
     {
         return $this->circularSearch(
             (int) self::extractTime($around)->toOffset(Unit::Microsecond),

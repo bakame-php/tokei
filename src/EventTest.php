@@ -75,7 +75,7 @@ final class EventTest extends TestCase
         $event = Event::fromFormat($input);
 
         self::assertSame($expectedTime, $event->at->format());
-        self::assertSame($expectedIdentifier, $event->identifiers->asCommaSeparated());
+        self::assertSame($expectedIdentifier, $event->identifiers->toCommaSeparated());
     }
 
     /**

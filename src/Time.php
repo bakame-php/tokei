@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
+use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
@@ -34,6 +35,14 @@ final readonly class Time implements JsonSerializable
         $microseconds = UnitTransformer::remainder($microseconds, Unit::Minute);
         $this->second = UnitTransformer::whole($microseconds, Unit::Second);
         $this->microsecond = UnitTransformer::remainder($microseconds, Unit::Second);
+    }
+
+    private static function extractDuration(Duration|DateInterval $period): Duration
+    {
+        return match (true) {
+            $period instanceof Duration => $period,
+            $period instanceof DateInterval => Duration::fromDateInterval($period),
+        };
     }
 
     /**
@@ -76,9 +85,14 @@ final readonly class Time implements JsonSerializable
         }
     }
 
-    private static function extractTime(Time|Event $time): self
+    private static function extractTime(Time|Event|NativeEvent|DateTimeInterface $time): self
     {
-        return $time instanceof Event ? $time->at : $time;
+        return match (true) {
+            $time instanceof Event => $time->at,
+            $time instanceof NativeEvent => Event::fromNative($time)->at,
+            $time instanceof DateTimeInterface => Time::fromDateTime($time),
+            default => $time,
+        };
     }
 
     /**
@@ -253,7 +267,7 @@ final readonly class Time implements JsonSerializable
      *
      * @return int<-1, 1> If this time is before, on, or after the given time.
      */
-    public function compareTo(Time|Event $other): int
+    public function compareTo(Time|Event|NativeEvent|DateTimeInterface $other): int
     {
         $other = self::extractTime($other);
 
@@ -263,7 +277,7 @@ final readonly class Time implements JsonSerializable
     /**
      * Tells whether this instance is less than the specified time.
      */
-    public function isBefore(Time|Event $other): bool
+    public function isBefore(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
         return 0 > $this->compareTo($other);
     }
@@ -271,22 +285,22 @@ final readonly class Time implements JsonSerializable
     /**
      * Tells whether this instance is less than or equal the specified time.
      */
-    public function isBeforeOrEqual(Time|Event $other): bool
+    public function isBeforeOrEqual(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
         return 0 >= $this->compareTo($other);
     }
 
-    public function isAfter(Time|Event $other): bool
+    public function isAfter(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
         return 0 < $this->compareTo($other);
     }
 
-    public function isAfterOrEqual(Time|Event $other): bool
+    public function isAfterOrEqual(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
         return 0 <= $this->compareTo($other);
     }
 
-    public function equals(Time|Event $other): bool
+    public function equals(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
         return 0 === $this->compareTo($other);
     }
@@ -298,7 +312,7 @@ final readonly class Time implements JsonSerializable
      *
      * @throws InvalidTime
      */
-    public function clamp(Time|Event $min, Time|Event $max): self
+    public function clamp(Time|Event|NativeEvent|DateTimeInterface $min, Time|Event|NativeEvent|DateTimeInterface $max): self
     {
         $min = self::extractTime($min);
         $max = self::extractTime($max);
@@ -318,8 +332,9 @@ final readonly class Time implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public function shift(Duration $duration): self
+    public function shift(Duration|DateInterval $duration): self
     {
+        $duration = self::extractDuration($duration);
         if ($duration->isZero()) {
             return $this;
         }
@@ -380,7 +395,7 @@ final readonly class Time implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public function diff(Time|Event $other): Duration
+    public function diff(Time|Event|NativeEvent|DateTimeInterface $other): Duration
     {
         $duration = self::extractTime($other)->value - $this->value;
 
@@ -394,7 +409,7 @@ final readonly class Time implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public function distance(Time|Event $other): Duration
+    public function distance(Time|Event|NativeEvent|DateTimeInterface $other): Duration
     {
         /** @var non-negative-int $duration */
         $duration = UnitTransformer::wrap(self::extractTime($other)->value - $this->value, Unit::Day);
