@@ -31,12 +31,6 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(weeks:5, days:6, hours: 2, minutes: 15, seconds: 42, microseconds: 123_456);
 
-        self::assertSame(5, $duration->weeksCount);
-        self::assertSame(41, $duration->daysCount);
-        self::assertSame(2 + (41 * 24), $duration->hours);
-        self::assertSame(15, $duration->minutes);
-        self::assertSame(42, $duration->seconds);
-        self::assertSame(123_456, $duration->microseconds);
         self::assertSame(1, $duration->sign);
         self::assertSame(3_550_542_123_456, $duration->total(Unit::Microsecond));
         self::assertSame('5w6d2h15m42s123456µs', $duration->format(DurationFormat::Compact));
@@ -46,10 +40,6 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(microseconds: 1_500_000)->negated();
 
-        self::assertSame(0, $duration->hours);
-        self::assertSame(0, $duration->minutes);
-        self::assertSame(1, $duration->seconds);
-        self::assertSame(500_000, $duration->microseconds);
         self::assertSame(-1, $duration->sign);
         self::assertSame('-1s500000µs', $duration->format(DurationFormat::Compact));
     }
@@ -121,13 +111,8 @@ final class DurationTest extends TestCase
         $duration = Duration::of();
 
         self::assertSame('00:00:00', $duration->format(DurationFormat::Timer));
-        self::assertSame(0, $duration->hours);
-        self::assertSame(0, $duration->minutes);
-        self::assertSame(0, $duration->seconds);
-        self::assertSame(0, $duration->microseconds);
-        self::assertSame(0, $duration->daysCount);
-        self::assertSame(0, $duration->weeksCount);
         self::assertSame(0, $duration->sign);
+        self::assertSame(0, $duration->value);
         self::assertSame('0s', $duration->format(DurationFormat::Compact));
         self::assertTrue($duration->isZero());
         self::assertEquals($duration, Duration::zero());
@@ -588,7 +573,6 @@ final class DurationTest extends TestCase
 
         self::assertNotSame($rawIso8601, $duration->format());
         self::assertSame('-P1DT1H0.5S', $duration->format());
-        self::assertSame(1, $duration->daysCount);
     }
 
     public function testItRejectsYears(): void
@@ -631,7 +615,6 @@ final class DurationTest extends TestCase
         $duration = Duration::fromFormat('P1W2D', DurationFormat::Iso8601);
 
         self::assertSame('P9D', $duration->format());
-        self::assertSame(9, $duration->daysCount);
     }
 
     public function testItParsesNegativeWeeks(): void

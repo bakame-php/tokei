@@ -180,10 +180,20 @@ enum DurationFormat
      */
     private static function toTimer(Duration $duration): string
     {
+        $value = $duration->value;
+
+        $abs = $value < 0 ? -$value : $value;
+        $hours = UnitTransformer::whole($abs, Unit::Hour);
+        $abs = UnitTransformer::remainder($abs, Unit::Hour);
+        $minutes = UnitTransformer::whole($abs, Unit::Minute);
+        $abs = UnitTransformer::remainder($abs, Unit::Minute);
+        $seconds = UnitTransformer::whole($abs, Unit::Second);
+        $microseconds = UnitTransformer::remainder($abs, Unit::Second);
+
         $pad = static fn (int $value, int $length): string => str_pad((string) $value, $length, '0', STR_PAD_LEFT);
-        $formatted = $pad($duration->hours, 2).':'.$pad($duration->minutes, 2).':'.$pad($duration->seconds, 2);
-        if (0 !== $duration->microseconds) {
-            $formatted .= '.'.$pad($duration->microseconds, 6);
+        $formatted = $pad($hours, 2).':'.$pad($minutes, 2).':'.$pad($seconds, 2);
+        if (0 !== $microseconds) {
+            $formatted .= '.'.$pad($microseconds, 6);
         }
 
         return -1 === $duration->sign ? '-'.$formatted : $formatted;
@@ -200,28 +210,45 @@ enum DurationFormat
      */
     private static function toIso8601(Duration $duration): string
     {
+        $value = $duration->value;
+        $sign = -1 === $duration->sign ? '-' : '';
+
+        $abs = $value < 0 ? -$value : $value;
+        $days = UnitTransformer::whole($abs, Unit::Day);
+        $abs = UnitTransformer::remainder($abs, Unit::Day);
+        $hours = UnitTransformer::whole($abs, Unit::Hour);
+        $abs = UnitTransformer::remainder($abs, Unit::Hour);
+        $minutes = UnitTransformer::whole($abs, Unit::Minute);
+        $abs = UnitTransformer::remainder($abs, Unit::Minute);
+        $seconds = UnitTransformer::whole($abs, Unit::Second);
+        $microseconds = UnitTransformer::remainder($abs, Unit::Second);
+
         $time = '';
-        $hours = $duration->hours % 24;
-        if (0 !== $hours) {
-            $time .= $hours.'H';
+        if (0 < $hours || 0 < $minutes || 0 < $seconds || 0 < $microseconds) {
+            $time = 'T';
+            if (0 < $hours) {
+                $time .= $hours.'H';
+            }
+
+            if (0 < $minutes) {
+                $time .= $minutes.'M';
+            }
+
+            if (0 < $seconds || 0 < $microseconds) {
+                $time .= $seconds;
+                if (0 !== $microseconds) {
+                    $time .= '.'.rtrim(str_pad((string) $microseconds, 6, '0', STR_PAD_LEFT), '0');
+                }
+
+                $time .= 'S';
+            }
         }
 
-        if (0 !== $duration->minutes) {
-            $time .= $duration->minutes.'M';
-        }
+        $date = 0 !== $days ? $days.'D' : '';
 
-        $seconds = (string) $duration->seconds;
-        if (0 !== $duration->microseconds) {
-            $seconds .= '.'.rtrim(str_pad((string) $duration->microseconds, 6, '0', STR_PAD_LEFT), '0');
-        }
-
-        if ('0' !== $seconds) {
-            $time .= $seconds.'S';
-        }
-
-        return  (0 === $duration->daysCount && '' === $time)
+        return ('' === $date && '' === $time)
             ? 'PT0S'
-            : (-1 === $duration->sign ? '-' : '').'P'.(0 !== $duration->daysCount ? $duration->daysCount.'D' : '').('' !== $time ? 'T'.$time : '');
+            : $sign.'P'.$date.$time;
     }
 
     /**
@@ -230,33 +257,34 @@ enum DurationFormat
      */
     private static function toCompact(Duration $duration): string
     {
+        $parsed = UnitTransformer::decompose($duration->value);
         $time = [];
-        if (0 !== $duration->weeksCount) {
-            $time[] = $duration->weeksCount.'w';
+        if (0 !== $parsed->weeksCount) {
+            $time[] = $parsed->weeksCount.'w';
         }
 
-        $days = $duration->daysCount % 7;
+        $days = $parsed->daysCount % 7;
         if (0 !== $days) {
             $time[] = $days.'d';
         }
 
-        $hours = $duration->hours % 24;
+        $hours = $parsed->hours % 24;
         if (0 !== $hours) {
             $time[] = $hours.'h';
         }
 
-        if (0 !== $duration->minutes) {
-            $time[] = $duration->minutes.'m';
+        if (0 !== $parsed->minutes) {
+            $time[] = $parsed->minutes.'m';
         }
 
-        if (0 !== $duration->seconds) {
-            $time[] = $duration->seconds.'s';
+        if (0 !== $parsed->seconds) {
+            $time[] = $parsed->seconds.'s';
         }
 
-        if (0 !== $duration->microseconds) {
-            $time[] = $duration->microseconds.'µs';
+        if (0 !== $parsed->microseconds) {
+            $time[] = $parsed->microseconds.'µs';
         }
 
-        return [] === $time ? '0s' : (-1 === $duration->sign ? '-' : '').implode('', $time);
+        return [] === $time ? '0s' : (-1 === $parsed->sign ? '-' : '').implode('', $time);
     }
 }

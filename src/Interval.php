@@ -29,7 +29,7 @@ final readonly class Interval implements JsonSerializable
         $this->start = $start;
         $this->duration = $duration;
         $this->linearStart = (int) $this->start->toOffset(Unit::Microsecond);
-        $this->linearEnd = $this->linearStart + (int) $duration->total(Unit::Microsecond);
+        $this->linearEnd = $this->linearStart + $duration->value;
         $this->end = Time::fromOffset($this->linearEnd, Unit::Microsecond);
         $this->type = $this->setType();
     }
@@ -379,7 +379,7 @@ final readonly class Interval implements JsonSerializable
             return new IntervalSet();
         }
 
-        $step = $duration->total(Unit::Microsecond);
+        $step = $duration->value;
         $start = $this->start->toOffset(Unit::Microsecond);
         $end = $this->end->toOffset(Unit::Microsecond);
         $forward = Bound::Start === $from;
@@ -429,32 +429,32 @@ final readonly class Interval implements JsonSerializable
         return new IntervalSet(...$result);
     }
 
-    public function compareDurationTo(self $other): int
+    public function compareDurationTo(Duration|Interval|Task|NativeInterval|NativeTask $other): int
     {
         return Duration::compare($this, $other);
     }
 
-    public function sameDurationAs(self $other): bool
+    public function sameDurationAs(Duration|Interval|Task|NativeInterval|NativeTask $other): bool
     {
         return 0 === $this->compareDurationTo($other);
     }
 
-    public function longerThan(self $other): bool
+    public function longerThan(Duration|Interval|Task|NativeInterval|NativeTask $other): bool
     {
         return 0 < $this->compareDurationTo($other);
     }
 
-    public function longerThanOrEqual(self $other): bool
+    public function longerThanOrEqual(Duration|Interval|Task|NativeInterval|NativeTask $other): bool
     {
         return 0 <= $this->compareDurationTo($other);
     }
 
-    public function shorterThan(self $other): bool
+    public function shorterThan(Duration|Interval|Task|NativeInterval|NativeTask $other): bool
     {
         return 0 > $this->compareDurationTo($other);
     }
 
-    public function shorterThanOrEqual(self $other): bool
+    public function shorterThanOrEqual(Duration|Interval|Task|NativeInterval|NativeTask $other): bool
     {
         return 0 >= $this->compareDurationTo($other);
     }

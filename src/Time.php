@@ -271,10 +271,7 @@ final readonly class Time implements JsonSerializable
         Time|Event|NativeEvent|DateTimeInterface $that,
         Time|Event|NativeEvent|DateTimeInterface $other
     ): int {
-        $that = self::extractTime($that);
-        $other = self::extractTime($other);
-
-        return $that->value <=> $other->value;
+        return self::extractTime($that)->value <=> self::extractTime($other)->value;
     }
 
     /**
@@ -342,8 +339,8 @@ final readonly class Time implements JsonSerializable
             return $this;
         }
 
-        $value = $this->value + $duration->total(Unit::Microsecond);
-        is_int($value) || throw InvalidDuration::dueToOverflow();
+        $value = $this->value + $duration->value;
+        is_int($value) || throw InvalidDuration::dueToOverflow(); /* @phpstan-ignore-line */
 
         return new self($value);
     }
