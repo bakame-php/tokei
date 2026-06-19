@@ -65,7 +65,7 @@ final class EventSet implements TemporalSet
             $res[] = $item instanceof NativeEvent ? Event::fromNative($item) : $item;
         }
 
-        usort($res, static fn (Event $a, Event $b): int => $a->at->compareTo($b->at));
+        usort($res, Time::compare(...));
 
         return $res;
     }

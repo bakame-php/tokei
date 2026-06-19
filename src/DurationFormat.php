@@ -95,12 +95,13 @@ enum DurationFormat
         ($microseconds >= 0 && $microseconds < 1_000_000) || throw InvalidDuration::dueToMalformedMicrosecond($microseconds);
 
         /** @var non-negative-int $microseconds */
-        $microseconds = self::toMicroseconds(
+        $microseconds = UnitTransformer::compose(
             days: 0,
             hours: (int) $parts['hours'],
             minutes: $minutes,
             seconds: $seconds,
             microseconds: $microseconds,
+            sign: 1
         );
 
         $duration = Duration::of(microseconds: $microseconds);
@@ -120,12 +121,13 @@ enum DurationFormat
         ('' !== $data && 1 === preg_match(self::REGEXP_COMPACT, $data, $parts)) || throw new InvalidDuration('Unknown or bad format `'.$data.'`.');
 
         /** @var non-negative-int $microseconds */
-        $microseconds = self::toMicroseconds(
+        $microseconds = UnitTransformer::compose(
             days: (((int) ($parts['weeks'] ?? 0) * 7) + (int) ($parts['days'] ?? 0)),
             hours: (int) ($parts['hours'] ?? 0),
             minutes: (int) ($parts['minutes'] ?? 0),
             seconds: (int) ($parts['seconds'] ?? 0),
             microseconds: (int) ($parts['microseconds'] ?? 0),
+            sign: 1
         );
 
         $duration = Duration::of(microseconds: $microseconds);
@@ -152,31 +154,18 @@ enum DurationFormat
         1 === preg_match(self::REGEXP_ISO8601, $data, $parts) || throw InvalidDuration::dueToMalformedIso8601($data);
 
         /** @var non-negative-int $microseconds */
-        $microseconds = self::toMicroseconds(
+        $microseconds = UnitTransformer::compose(
             days: (((int) ($parts['weeks'] ?? 0) * 7) + (int) ($parts['days'] ?? 0)),
             hours: (int) ($parts['hours'] ?? 0),
             minutes: (int) ($parts['minutes'] ?? 0),
             seconds: (float) ($parts['seconds'] ?? 0),
-            microseconds: 0
+            microseconds: 0,
+            sign: 1,
         );
 
         $duration = Duration::of(microseconds: $microseconds);
 
         return '-' === ($parts['sign'] ?? '') ? $duration->negated() : $duration;
-    }
-
-    private static function toMicroseconds(
-        int $days,
-        int $hours,
-        int $minutes,
-        int|float $seconds,
-        int $microseconds
-    ): int {
-        return UnitTransformer::toMicroseconds($days, Unit::Day)
-            + UnitTransformer::toMicroseconds($hours, Unit::Hour)
-            + UnitTransformer::toMicroseconds($minutes, Unit::Minute)
-            + UnitTransformer::toMicroseconds($seconds, Unit::Second)
-            + $microseconds;
     }
 
     /**

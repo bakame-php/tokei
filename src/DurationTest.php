@@ -343,7 +343,7 @@ final class DurationTest extends TestCase
         Duration $right,
         int $expected,
     ): void {
-        self::assertSame($expected, $left->compareTo($right));
+        self::assertSame($expected, Duration::compare($left, $right));
     }
 
     /**
@@ -678,7 +678,7 @@ final class DurationTest extends TestCase
     {
         $this->expectException(InvalidDuration::class);
 
-        Duration::max()->dividedBy(0);
+        Duration::max()->dividedBy(0); /* @phpstan-ignore-line */
     }
 
     public function testItMultiplyTheDuration(): void

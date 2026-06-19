@@ -701,12 +701,10 @@ final class IntervalSet implements TemporalSet
             Bound::End => static fn (Interval $i): int => $i->linearEnd,
         };
 
-        $durationComparator = static fn (Interval $a, Interval $b): int => $a->duration->compareTo($b->duration);
-
-        return static function (Interval $a, Interval $b) use ($keyExtractor, $directionFactor, $durationComparator): int {
+        return static function (Interval $a, Interval $b) use ($keyExtractor, $directionFactor): int {
             $result = ($keyExtractor($a) <=> $keyExtractor($b)) * $directionFactor;
 
-            return 0 !== $result ? $result : $durationComparator($a, $b);
+            return 0 !== $result ? $result : Duration::compare($a, $b);
         };
     }
 

@@ -64,7 +64,7 @@ final readonly class Interval implements JsonSerializable
 
     private function setType(): IntervalType
     {
-        return match ($this->start->compareTo($this->end)) {
+        return match (Time::compare($this->start, $this->end)) {
             1 => IntervalType::Overflow,
             -1 => IntervalType::Linear,
             0 => 0 === $this->duration->sign ? IntervalType::Collapsed : IntervalType::Circular,
@@ -410,7 +410,7 @@ final readonly class Interval implements JsonSerializable
     {
         $res = array_map(self::extractTime(...), $steps);
         $res = array_filter($res, fn ($step): bool => $this->includes($step));
-        usort($res, fn (Time $a, Time $b): int => $this->start->distance($a)->compareTo($this->start->distance($b)));
+        usort($res, fn (Time $a, Time $b): int => Duration::compare($this->start->distance($a), $this->start->distance($b)));
 
         $result = [];
         $cursor = $this->start;
@@ -431,7 +431,7 @@ final readonly class Interval implements JsonSerializable
 
     public function compareDurationTo(self $other): int
     {
-        return $this->duration->compareTo($other->duration);
+        return Duration::compare($this, $other);
     }
 
     public function sameDurationAs(self $other): bool

@@ -28,13 +28,11 @@ final readonly class Time implements JsonSerializable
     private function __construct(int $value)
     {
         $this->value = UnitTransformer::wrap($value, Unit::Day);
-        $microseconds = $this->value;
-        $this->hour = UnitTransformer::whole($microseconds, Unit::Hour);
-        $microseconds = UnitTransformer::remainder($microseconds, Unit::Hour);
-        $this->minute = UnitTransformer::whole($microseconds, Unit::Minute);
-        $microseconds = UnitTransformer::remainder($microseconds, Unit::Minute);
-        $this->second = UnitTransformer::whole($microseconds, Unit::Second);
-        $this->microsecond = UnitTransformer::remainder($microseconds, Unit::Second);
+        $parts = UnitTransformer::decompose($this->value);
+        $this->hour = $parts->hours;
+        $this->minute = $parts->minutes;
+        $this->second = $parts->seconds;
+        $this->microsecond = $parts->microseconds;
     }
 
     private static function extractDuration(Duration|DateInterval $period): Duration
@@ -59,12 +57,14 @@ final readonly class Time implements JsonSerializable
         ($second >= 0 && $second < 60) || throw InvalidTime::dueToMalformedSecond($second);
         ($microsecond >= 0 && $microsecond < 1_000_000) || throw InvalidTime::dueToMalformedMicrosecond($microsecond);
 
-        return new self(
-            UnitTransformer::toMicroseconds($hour, Unit::Hour)
-            + UnitTransformer::toMicroseconds($minute, Unit::Minute)
-            + UnitTransformer::toMicroseconds($second, Unit::Second)
-            + $microsecond
-        );
+        return new self(UnitTransformer::compose(
+            days: 0,
+            hours: $hour,
+            minutes: $minute,
+            seconds: $second,
+            microseconds: $microsecond,
+            sign: 1
+        ));
     }
 
     /**
@@ -267,11 +267,14 @@ final readonly class Time implements JsonSerializable
      *
      * @return int<-1, 1> If this time is before, on, or after the given time.
      */
-    public function compareTo(Time|Event|NativeEvent|DateTimeInterface $other): int
-    {
+    public static function compare(
+        Time|Event|NativeEvent|DateTimeInterface $that,
+        Time|Event|NativeEvent|DateTimeInterface $other
+    ): int {
+        $that = self::extractTime($that);
         $other = self::extractTime($other);
 
-        return $this->value <=> $other->value;
+        return $that->value <=> $other->value;
     }
 
     /**
@@ -279,7 +282,7 @@ final readonly class Time implements JsonSerializable
      */
     public function isBefore(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
-        return 0 > $this->compareTo($other);
+        return 0 > Time::compare($this, $other);
     }
 
     /**
@@ -287,22 +290,22 @@ final readonly class Time implements JsonSerializable
      */
     public function isBeforeOrEqual(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
-        return 0 >= $this->compareTo($other);
+        return 0 >= Time::compare($this, $other);
     }
 
     public function isAfter(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
-        return 0 < $this->compareTo($other);
+        return 0 < Time::compare($this, $other);
     }
 
     public function isAfterOrEqual(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
-        return 0 <= $this->compareTo($other);
+        return 0 <= Time::compare($this, $other);
     }
 
     public function equals(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
-        return 0 === $this->compareTo($other);
+        return 0 === Time::compare($this, $other);
     }
 
     /**

@@ -84,9 +84,9 @@ final class TaskSet implements TemporalSet
         usort(
             $res,
             static fn (Task $a, Task $b): int =>
-            0 !== ($cmp = $a->interval->start->compareTo($b->interval->start))
+            0 !== ($cmp = Time::compare($a->interval->start, $b->interval->start))
                 ? $cmp
-                : $a->interval->duration->compareTo($b->interval->duration)
+                : Duration::compare($a, $b)
         );
 
         return $res;
@@ -466,9 +466,8 @@ final class TaskSet implements TemporalSet
          */
         $sortEvents = static function (array $a, array $b): int {
             /* @phpstan-ignore-next-line */
-            $cmp = $a['event']->at->compareTo($b['event']);
+            $cmp = Time::compare($a['event'], $b['event']);
 
-            /* @phpstan-ignore-next-line */
             return 0 !== $cmp ? $cmp : (Bound::End === $a['type'] ? -1 : 1);
         };
 

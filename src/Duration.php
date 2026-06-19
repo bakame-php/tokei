@@ -37,16 +37,15 @@ final readonly class Duration implements JsonSerializable
     {
         ($value > PHP_INT_MIN + 1 && $value < PHP_INT_MAX) || throw InvalidDuration::dueToOverflow();
 
-        $this->sign = $this->value <=> 0 ;
-        $microseconds = 0 > $this->value ? -$this->value : $this->value;
-        $this->weeksCount = UnitTransformer::whole($microseconds, Unit::Week);
-        $this->daysCount = UnitTransformer::whole($microseconds, Unit::Day);
-        $this->hours = UnitTransformer::whole($microseconds, Unit::Hour);
-        $microseconds = UnitTransformer::remainder($microseconds, Unit::Hour);
-        $this->minutes = UnitTransformer::whole($microseconds, Unit::Minute);
-        $microseconds = UnitTransformer::remainder($microseconds, Unit::Minute);
-        $this->seconds = UnitTransformer::whole($microseconds, Unit::Second);
-        $this->microseconds = UnitTransformer::remainder($microseconds, Unit::Second);
+        $parts = UnitTransformer::decompose($this->value);
+
+        $this->weeksCount = $parts->weeksCount;
+        $this->daysCount = $parts->daysCount;
+        $this->hours = $parts->hours;
+        $this->minutes = $parts->minutes;
+        $this->seconds = $parts->seconds;
+        $this->microseconds = $parts->microseconds;
+        $this->sign = $parts->sign;
     }
 
     /**
@@ -72,27 +71,14 @@ final readonly class Duration implements JsonSerializable
         /* @phpstan-ignore-next-line */
         (0 <= $weeks && 0 <= $days && 0 <= $hours && 0 <= $minutes && 0 <= $seconds && 0 <= $milliseconds && 0 <= $microseconds) || throw new InvalidDuration('No duration part can be expressed with a negative number.');
 
-        return new self(self::toMicroseconds(
+        return new self(UnitTransformer::compose(
             days: ($weeks * 7) + $days,
             hours: $hours,
             minutes: $minutes,
             seconds: $seconds,
-            microseconds: UnitTransformer::toMicroseconds($milliseconds, Unit::Millisecond) + $microseconds
+            microseconds: UnitTransformer::toMicroseconds($milliseconds, Unit::Millisecond) + $microseconds,
+            sign: 1
         ));
-    }
-
-    private static function toMicroseconds(
-        int $days,
-        int $hours,
-        int $minutes,
-        int|float $seconds,
-        int $microseconds
-    ): int {
-        return UnitTransformer::toMicroseconds($days, Unit::Day)
-            + UnitTransformer::toMicroseconds($hours, Unit::Hour)
-            + UnitTransformer::toMicroseconds($minutes, Unit::Minute)
-            + UnitTransformer::toMicroseconds($seconds, Unit::Second)
-            + $microseconds;
     }
 
     /**
@@ -110,15 +96,14 @@ final readonly class Duration implements JsonSerializable
         false !== $interval->days || (0 === $interval->y && 0 === $interval->m) || throw new InvalidDuration('fromDateInterval() does not handle non deterministic DateInterval properties like months and years.');
         (0.0 <= $interval->f && 1.0 > $interval->f) || throw new InvalidDuration('Invalid fractional seconds in DateInterval.');
 
-        $microseconds = self::toMicroseconds(
+        return new self(UnitTransformer::compose(
             days: false === $interval->days ? $interval->d : $interval->days,
             hours: $interval->h,
             minutes: $interval->i,
             seconds: $interval->s,
             microseconds: UnitTransformer::toMicroseconds($interval->f, Unit::Second),
-        );
-
-        return new self(1 === $interval->invert ? -$microseconds : $microseconds);
+            sign: 1 === $interval->invert ? -1 : 1
+        ));
     }
 
     /**
@@ -361,14 +346,27 @@ final readonly class Duration implements JsonSerializable
         )->negated());
     }
 
+    private static function extractDuration(self|Interval|Task|NativeInterval|NativeTask $that): self
+    {
+        return match (true) {
+            $that instanceof NativeInterval => Interval::fromNative($that)->duration,
+            $that instanceof NativeTask => Task::fromNative($that)->interval->duration,
+            $that instanceof Task => $that->interval->duration,
+            $that instanceof Interval => $that->duration,
+            $that instanceof self => $that,
+        };
+    }
+
     /**
      *  Compare this instance with another.
      *
      * @return int<-1, 1> If this duration is shorter, equal, or longer than the given duration.
      */
-    public function compareTo(self $other): int
-    {
-        return $this->value <=> $other->value;
+    public static function compare(
+        self|Interval|Task|NativeInterval|NativeTask $that,
+        self|Interval|Task|NativeInterval|NativeTask $other
+    ): int {
+        return self::extractDuration($that)->value <=> self::extractDuration($other)->value;
     }
 
     /**
@@ -376,26 +374,26 @@ final readonly class Duration implements JsonSerializable
      */
     public function equals(self $other): bool
     {
-        return 0 === $this->compareTo($other);
+        return 0 === self::compare($this, $other);
     }
 
     public function isLongerThan(self $other): bool
     {
-        return 0 < $this->compareTo($other);
+        return 0 < self::compare($this, $other);
     }
 
     public function isLongerThanOrEqual(self $other): bool
     {
-        return 0 <= $this->compareTo($other);
+        return 0 <= self::compare($this, $other);
     }
     public function isShorterThan(self $other): bool
     {
-        return 0 > $this->compareTo($other);
+        return 0 > self::compare($this, $other);
     }
 
     public function isShorterThanOrEqual(self $other): bool
     {
-        return 0 >= $this->compareTo($other);
+        return 0 >= self::compare($this, $other);
     }
 
     /**
@@ -417,10 +415,14 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
+     * @param non-negative-int $factor
+     *
      * @throws InvalidDuration if value overflow
      */
     public function multipliedBy(int $factor): self
     {
+        0 <= $factor || throw new InvalidDuration('factor must be a non negative integer.');  /* @phpstan-ignore-line */
+
         $result = $this->value * $factor;
 
         is_int($result) || throw InvalidDuration::dueToOverflow(); /* @phpstan-ignore-line */
@@ -433,11 +435,13 @@ final readonly class Duration implements JsonSerializable
      *
      * The result is rounded toward zero.
      *
+     * @param positive-int $factor
+     *
      * @throws InvalidDuration if the factor is zero
      */
     public function dividedBy(int $factor): self
     {
-        0 !== $factor || throw new InvalidDuration('Unable to divide by zero.');
+        0 < $factor || throw new InvalidDuration('factor must be a positive integer.');  /* @phpstan-ignore-line */
 
         return new self(intdiv($this->value, $factor));
     }
