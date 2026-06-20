@@ -19,7 +19,6 @@ use function is_int;
 use function preg_match;
 use function rtrim;
 use function str_pad;
-use function trim;
 
 use const PHP_INT_MAX;
 use const PHP_INT_MIN;
@@ -135,12 +134,12 @@ final readonly class Duration implements JsonSerializable
     /**
      * @throws InvalidDuration
      */
-    public static function fromFormat(string $value, DurationFormat $format = DurationFormat::Iso8601): self
+    public static function fromFormat(string $notation, DurationFormat $format = DurationFormat::Iso8601): self
     {
         return match ($format) {
-            DurationFormat::Iso8601 => self::fromIso8601($value),
-            DurationFormat::Timer => self::fromTimer($value),
-            DurationFormat::Compact => self::fromCompact($value),
+            DurationFormat::Iso8601 => self::fromIso8601($notation),
+            DurationFormat::Timer => self::fromTimer($notation),
+            DurationFormat::Compact => self::fromCompact($notation),
         };
     }
 
@@ -149,9 +148,9 @@ final readonly class Duration implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    private static function fromTimer(string $duration): Duration
+    private static function fromTimer(string $notation): Duration
     {
-        1 === preg_match(self::REGEXP_TIMER, $duration, $parts) || throw new InvalidDuration('Unknown or bad format `'.$duration.'`.');
+        1 === preg_match(self::REGEXP_TIMER, $notation, $parts) || throw new InvalidDuration('Unknown or bad format `'.$notation.'`.');
 
         $minutes = (int) $parts['minutes'];
         $seconds = (int) $parts['seconds'];
@@ -161,19 +160,14 @@ final readonly class Duration implements JsonSerializable
         ($seconds >= 0 && $seconds < 60) || throw InvalidDuration::dueToMalformedSecond($seconds);
         ($microseconds >= 0 && $microseconds < 1_000_000) || throw InvalidDuration::dueToMalformedMicrosecond($microseconds);
 
-        /** @var non-negative-int $microseconds */
-        $microseconds = UnitTransformer::compose(
+        return new self(UnitTransformer::compose(
             days: 0,
             hours: (int) $parts['hours'],
             minutes: $minutes,
             seconds: $seconds,
             microseconds: $microseconds,
-            sign: 1
-        );
-
-        $duration = self::of(microseconds: $microseconds);
-
-        return '-' === $parts['sign'] ? $duration->negated() : $duration;
+            sign: '-' === $parts['sign'] ? -1 : 1,
+        ));
     }
 
     /**
@@ -181,25 +175,18 @@ final readonly class Duration implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    private static function fromCompact(string $data): Duration
+    private static function fromCompact(string $notation): Duration
     {
-        $data = trim($data);
+        ('' !== $notation && 1 === preg_match(self::REGEXP_COMPACT, $notation, $parts)) || throw new InvalidDuration('Unknown or bad format `'.$notation.'`.');
 
-        ('' !== $data && 1 === preg_match(self::REGEXP_COMPACT, $data, $parts)) || throw new InvalidDuration('Unknown or bad format `'.$data.'`.');
-
-        /** @var non-negative-int $microseconds */
-        $microseconds = UnitTransformer::compose(
+        return new self(UnitTransformer::compose(
             days: (((int) ($parts['weeks'] ?? 0) * 7) + (int) ($parts['days'] ?? 0)),
             hours: (int) ($parts['hours'] ?? 0),
             minutes: (int) ($parts['minutes'] ?? 0),
             seconds: (int) ($parts['seconds'] ?? 0),
             microseconds: (int) ($parts['microseconds'] ?? 0),
-            sign: 1
-        );
-
-        $duration = self::of(microseconds: $microseconds);
-
-        return '-' === ($parts['sign'] ?? '') ? $duration->negated() : $duration;
+            sign: '-' === ($parts['sign'] ?? '') ? -1 : 1
+        ));
     }
 
     /**
@@ -216,23 +203,18 @@ final readonly class Duration implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    private static function fromIso8601(string $data): Duration
+    private static function fromIso8601(string $notation): Duration
     {
-        1 === preg_match(self::REGEXP_ISO8601, $data, $parts) || throw InvalidDuration::dueToMalformedIso8601($data);
+        1 === preg_match(self::REGEXP_ISO8601, $notation, $parts) || throw InvalidDuration::dueToMalformedIso8601($notation);
 
-        /** @var non-negative-int $microseconds */
-        $microseconds = UnitTransformer::compose(
+        return new self(UnitTransformer::compose(
             days: (((int) ($parts['weeks'] ?? 0) * 7) + (int) ($parts['days'] ?? 0)),
             hours: (int) ($parts['hours'] ?? 0),
             minutes: (int) ($parts['minutes'] ?? 0),
             seconds: (float) ($parts['seconds'] ?? 0),
             microseconds: 0,
-            sign: 1,
-        );
-
-        $duration = self::of(microseconds: $microseconds);
-
-        return '-' === ($parts['sign'] ?? '') ? $duration->negated() : $duration;
+            sign: '-' === ($parts['sign'] ?? '') ? -1 : 1,
+        ));
     }
 
 

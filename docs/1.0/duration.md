@@ -18,7 +18,7 @@ The `Duration` class can be instantiated either by providing:
 use Bakame\Tokei\Duration;
 
 $durationA = Duration::of(hours: 2, seconds:59);
-$durationB = Duration::fromFormat(value: 'P2WT3H', format: DurationFormat::Iso8601); //2 weeks and 3 hours
+$durationB = Duration::fromFormat(notation: 'P2WT3H', format: DurationFormat::Iso8601); //2 weeks and 3 hours
 $durationC = Duration::fromDateInterval(new DateInterval('PT23M3S'));
 ```
 
