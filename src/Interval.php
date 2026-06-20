@@ -43,7 +43,7 @@ final readonly class Interval implements JsonSerializable
         $this->duration = $duration;
         $this->linearStart = $this->start->ticks;
         $this->linearEnd = $this->linearStart + $duration->microseconds;
-        $this->end = Time::fromOffset($this->linearEnd, Unit::Microsecond);
+        $this->end = Time::sinceMidnight($this->linearEnd, Unit::Microsecond);
         $this->type = $this->setType();
     }
 
@@ -95,8 +95,10 @@ final readonly class Interval implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public static function around(Time|Event|NativeEvent $midRange, Duration|DateInterval $duration): self
-    {
+    public static function around(
+        Time|Event|NativeEvent|DateTimeInterface $midRange,
+        Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration
+    ): self {
         $midRange = InputNormalizer::time($midRange);
         $duration = InputNormalizer::duration($duration);
 
@@ -126,32 +128,32 @@ final readonly class Interval implements JsonSerializable
      * @throws InvalidInterval
      */
     public static function fromFormat(
-        string $value,
+        string $notation,
         IntervalFormat $format = IntervalFormat::Iso8601StartDuration,
         ?Unit $unit = null
     ): self {
-        $trimmedData = trim($value);
+        $trimmedData = trim($notation);
         $pattern = match ($format) {
             IntervalFormat::Bourbaki => self::REGEXP_BOURBAKI,
             IntervalFormat::Iso80000 => self::REGEXP_ISO80000,
             default => self::REGEXP_ISO8601,
         };
 
-        1 === preg_match($pattern, $trimmedData, $found) || throw InvalidInterval::dueToMalformedFormat($value, $format);
+        1 === preg_match($pattern, $trimmedData, $found) || throw InvalidInterval::dueToMalformedFormat($notation, $format);
 
         $start = trim($found['start']);
         $end = trim($found['end']);
 
-        '' !== $start || '' !== $end || throw InvalidInterval::dueToMalformedFormat($value, $format);
+        '' !== $start || '' !== $end || throw InvalidInterval::dueToMalformedFormat($notation, $format);
 
         try {
             return match ($format) {
                 IntervalFormat::Bourbaki,
-                IntervalFormat::Iso80000 => self::parseMathInterval($start, $end, $value, $unit, $format),
-                default => self::parseIso8601Interval($start, $end, $value, $format),
+                IntervalFormat::Iso80000 => self::parseMathInterval($start, $end, $notation, $unit, $format),
+                default => self::parseIso8601Interval($start, $end, $notation, $format),
             };
         } catch (TimeException $exception) {
-            $exception instanceof InvalidInterval ? throw $exception : throw InvalidInterval::dueToMalformedFormat($value, $format, $exception);
+            $exception instanceof InvalidInterval ? throw $exception : throw InvalidInterval::dueToMalformedFormat($notation, $format, $exception);
         }
     }
 
@@ -202,7 +204,7 @@ final readonly class Interval implements JsonSerializable
     private static function createTime(int|string|float $value, ?Unit $unit, string $data, IntervalFormat $format): Time
     {
         return match (true) {
-            null !== $unit && !is_string($value) => Time::fromOffset($value, $unit),
+            null !== $unit && !is_string($value) => Time::sinceMidnight($value, $unit),
             is_string($value) => Time::fromFormat($value),
             default => throw InvalidInterval::dueToMalformedFormat($data, $format),
         };
@@ -237,7 +239,7 @@ final readonly class Interval implements JsonSerializable
 
         0 <= $duration || throw new InvalidInterval('Invalid linear span: the start must be shorter or equal to the end linear span.');
 
-        return new self(Time::fromOffset($linearStart, Unit::Microsecond), Duration::of(microseconds: $duration));
+        return new self(Time::sinceMidnight($linearStart, Unit::Microsecond), Duration::of(microseconds: $duration));
     }
 
     public static function fromNative(NativeInterval $period): self
@@ -276,8 +278,20 @@ final readonly class Interval implements JsonSerializable
      */
     public function format(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): string
     {
-        $start = self::formatTime($this->start, $unit, $format);
-        $end = self::formatTime($this->end, $unit, $format);
+        $formatTime = static function (Time $time, ?Unit $unit, IntervalFormat $format): string {
+            if (null === $unit || !$format->supportsUnit()) {
+                return $time->format();
+            }
+
+            $value = $time->in($unit);
+
+            return is_int($value)
+                ? (string) $value
+                : number_format(num: $value, decimals: 6, decimal_separator: '.', thousands_separator: '');
+        };
+
+        $start = $formatTime($this->start, $unit, $format);
+        $end = $formatTime($this->end, $unit, $format);
 
         return match ($format) {
             IntervalFormat::Iso8601StartDuration => $start.'/'.$this->duration->format(),
@@ -286,19 +300,6 @@ final readonly class Interval implements JsonSerializable
             IntervalFormat::Iso80000 => '['.$start.','.$end.')',
             IntervalFormat::Bourbaki => '['.$start.','.$end.'[',
         };
-    }
-
-    private static function formatTime(Time $time, ?Unit $unit, IntervalFormat $format): string
-    {
-        if (null === $unit || !$format->supportsUnit()) {
-            return $time->format();
-        }
-
-        $value = $time->in($unit);
-
-        return is_int($value)
-            ? (string) $value
-            : number_format(num: $value, decimals: 6, decimal_separator: '.', thousands_separator: '');
     }
 
     /**
@@ -495,8 +496,8 @@ final readonly class Interval implements JsonSerializable
             /** @var int $next */
             $next = $forward ? min($cursor + $step, $limit) : max($cursor - $step, $limit);
             $result[] = $forward
-                ? self::between(Time::fromOffset($cursor, Unit::Microsecond), Time::fromOffset($next, Unit::Microsecond))
-                : self::between(Time::fromOffset($next, Unit::Microsecond), Time::fromOffset($cursor, Unit::Microsecond));
+                ? self::between(Time::sinceMidnight($cursor, Unit::Microsecond), Time::sinceMidnight($next, Unit::Microsecond))
+                : self::between(Time::sinceMidnight($next, Unit::Microsecond), Time::sinceMidnight($cursor, Unit::Microsecond));
 
             $cursor = $next;
         }
@@ -534,34 +535,29 @@ final readonly class Interval implements JsonSerializable
         return new IntervalSet(...$result);
     }
 
-    public function compareDurationTo(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): int
-    {
-        return Duration::compare($this, $other);
-    }
-
     public function sameDurationAs(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
     {
-        return 0 === $this->compareDurationTo($other);
+        return 0 === Duration::compare($this, $other);
     }
 
     public function isLongerThan(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
     {
-        return 0 < $this->compareDurationTo($other);
+        return 0 < Duration::compare($this, $other);
     }
 
     public function isLongerThanOrEqual(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
     {
-        return 0 <= $this->compareDurationTo($other);
+        return 0 <= Duration::compare($this, $other);
     }
 
     public function isShorterThan(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
     {
-        return 0 > $this->compareDurationTo($other);
+        return 0 > Duration::compare($this, $other);
     }
 
     public function isShorterThanOrEqual(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
     {
-        return 0 >= $this->compareDurationTo($other);
+        return 0 >= Duration::compare($this, $other);
     }
 
     public function equals(Interval|Task|NativeInterval|NativeTask $other): bool
@@ -671,7 +667,7 @@ final readonly class Interval implements JsonSerializable
         $this->duration = $properties['duration'];
         $this->linearStart = $this->start->ticks;
         $this->linearEnd = $this->linearStart + $properties['duration']->microseconds;
-        $this->end = Time::fromOffset($this->linearEnd, Unit::Microsecond);
+        $this->end = Time::sinceMidnight($this->linearEnd, Unit::Microsecond);
         $this->type = $this->setType();
     }
 }

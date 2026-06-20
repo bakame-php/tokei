@@ -43,9 +43,18 @@ The object exposes a `sign` property which indicates if the original value was n
 And provides a `toMicro` method to get the microseconds based representation of the duration.
 
 ```php
-$durationB->microseconds; // returns 234_000
-$durationB->sign;         // returns 1
-$durationB->isZero()      // returns true when the duration is zero, false otherwise 
+$duration->microseconds; 
+// returns 234_000
+$duration->sign;        
+ // returns 1
+$duration->isZero()       
+ // returns true when the duration is zero, false otherwise 
+$parts = $duration->parts() 
+// the parts method returns a DurationParts class with each
+// populated Duration component
+$parts->hours;
+$parts->seconds;
+$parts->microseconds;
 ```
 
 ## Formatting
@@ -97,8 +106,8 @@ instance while preserving its sign (inverted intervals are supported).
 ```php
 $duration = Duration::of(microseconds: 3_661_234_000);
 $duration->toDateInterval();          // returns DateInterval
-$durationB->total(Unit::Microsecond); // returns the full duration in microseconds
-$durationB->total(Unit::Hours);       // returns the full duration in hours
+$durationB->in(Unit::Microsecond); // returns the full duration in microseconds
+$durationB->in(Unit::Hours);       // returns the full duration in hours
 ```
 
 ## Modifying duration
@@ -111,8 +120,7 @@ Duration::decrease(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes =
 Duration::sum(Duration ...$duration): Duration
 Duration::multipliedBy(int $factor): Duration
 Duration::dividedBy(int $factor): Duration
-Duration::countOf(Duration $factor): int
-Duration::remainder(Duration $factor): Duration
+Duration::chunkBy(Duration $factor): ChunkResult
 Duration::roundTo(Unit $precision, RoundingStrategy $strategy): Duration
 Duration::clamp(Duration $min, Duration $max): Duration
 ```

@@ -49,23 +49,11 @@ final readonly class Time implements JsonSerializable
     private function __construct(int $ticks)
     {
         $this->ticks = UnitTransformer::wrap($ticks, Unit::Day);
-        $parts = UnitTransformer::decompose($this->ticks);
+        $parts = DurationParts::parse($this->ticks);
         $this->hour = $parts->hours;
         $this->minute = $parts->minutes;
         $this->second = $parts->seconds;
         $this->microsecond = $parts->microseconds;
-    }
-
-    private static function extractDuration(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $that): Duration
-    {
-        return match (true) {
-            $that instanceof DateInterval => Duration::fromDateInterval($that),
-            $that instanceof NativeInterval => Interval::fromNative($that)->duration,
-            $that instanceof NativeTask => Task::fromNative($that)->interval->duration,
-            $that instanceof Task => $that->interval->duration,
-            $that instanceof Interval => $that->duration,
-            $that instanceof Duration => $that,
-        };
     }
 
     /**
@@ -82,14 +70,13 @@ final readonly class Time implements JsonSerializable
         ($second >= 0 && $second < 60) || throw InvalidTime::dueToMalformedSecond($second);
         ($microsecond >= 0 && $microsecond < 1_000_000) || throw InvalidTime::dueToMalformedMicrosecond($microsecond);
 
-        return new self(UnitTransformer::compose(
-            days: 0,
+        return new self(new DurationParts(
             hours: $hour,
             minutes: $minute,
             seconds: $second,
             microseconds: $microsecond,
-            sign: 1
-        ));
+            sign: 1,
+        )->build());
     }
 
     /**
@@ -108,16 +95,6 @@ final readonly class Time implements JsonSerializable
         } catch (Throwable $exception) {
             throw TimeException::dueToInvalidTimezone(timezone: $timezone, previous: $exception);
         }
-    }
-
-    private static function extractTime(Time|Event|NativeEvent|DateTimeInterface $time): self
-    {
-        return match (true) {
-            $time instanceof Event => $time->at,
-            $time instanceof NativeEvent => Event::fromNative($time)->at,
-            $time instanceof DateTimeInterface => Time::fromDateTime($time),
-            default => $time,
-        };
     }
 
     /**
@@ -159,7 +136,7 @@ final readonly class Time implements JsonSerializable
     /**
      * Returns a new instance from a number of unit of time since midnight.
      */
-    public static function fromOffset(int|float $value, Unit $unit): self
+    public static function sinceMidnight(int|float $value, Unit $unit): self
     {
         return new self(UnitTransformer::toMicroseconds($value, $unit));
     }
@@ -227,8 +204,6 @@ final readonly class Time implements JsonSerializable
 
     /**
      * Returns the highest instances among the given values.
-     *
-     * @throws InvalidTime
      */
     public static function maxOf(self ...$times): self
     {
@@ -346,13 +321,15 @@ final readonly class Time implements JsonSerializable
     /**
      * Compare this instance with another.
      *
+     * @throws InvalidTime
+     *
      * @return int<-1, 1> If this time is before, on, or after the given time.
      */
     public static function compare(
         Time|Event|NativeEvent|DateTimeInterface $that,
         Time|Event|NativeEvent|DateTimeInterface $other
     ): int {
-        return self::extractTime($that)->ticks <=> self::extractTime($other)->ticks;
+        return InputNormalizer::time($that)->ticks <=> InputNormalizer::time($other)->ticks;
     }
 
     /**
@@ -395,8 +372,8 @@ final readonly class Time implements JsonSerializable
      */
     public function clamp(Time|Event|NativeEvent|DateTimeInterface $min, Time|Event|NativeEvent|DateTimeInterface $max): self
     {
-        $min = self::extractTime($min);
-        $max = self::extractTime($max);
+        $min = InputNormalizer::time($min);
+        $max = InputNormalizer::time($max);
         $max->isAfterOrEqual($min) || throw new InvalidTime('The maximum time must be after or equal to the minimum time.');
 
         return match (true) {
@@ -415,7 +392,7 @@ final readonly class Time implements JsonSerializable
      */
     public function shift(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
     {
-        $duration = self::extractDuration($duration);
+        $duration = InputNormalizer::duration($duration);
         if ($duration->isZero()) {
             return $this;
         }
@@ -474,11 +451,11 @@ final readonly class Time implements JsonSerializable
     /**
      * Returns the signed difference between this instance and a specified time.
      *
-     * @throws InvalidDuration
+     * @throws InvalidDuration|TimeException
      */
     public function diff(Time|Event|NativeEvent|DateTimeInterface $other): Duration
     {
-        $duration = self::extractTime($other)->ticks - $this->ticks;
+        $duration = InputNormalizer::time($other)->ticks - $this->ticks;
 
         return 0 > $duration
             ? Duration::of(microseconds: -$duration)->negated()
@@ -488,12 +465,12 @@ final readonly class Time implements JsonSerializable
     /**
      * Returns the forward cyclic difference (24 wrap) between this instance and a specified time.
      *
-     * @throws InvalidDuration
+     * @throws InvalidDuration|TimeException
      */
     public function distance(Time|Event|NativeEvent|DateTimeInterface $other): Duration
     {
         /** @var non-negative-int $duration */
-        $duration = UnitTransformer::wrap(self::extractTime($other)->ticks - $this->ticks, Unit::Day);
+        $duration = UnitTransformer::wrap(InputNormalizer::time($other)->ticks - $this->ticks, Unit::Day);
 
         return Duration::of(microseconds: $duration);
     }

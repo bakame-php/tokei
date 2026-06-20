@@ -21,7 +21,7 @@ use function unserialize;
 #[CoversClass(Time::class)]
 #[CoversClass(TimeFormat::class)]
 #[CoversClass(Unit::class)]
-#[CoversClass(UnitTransformer::class)]
+#[CoversClass(DurationParts::class)]
 #[CoversClass(LocaleTimeFormatter::class)]
 #[CoversClass(InputNormalizer::class)]
 final class TimeTest extends TestCase
@@ -89,16 +89,16 @@ final class TimeTest extends TestCase
 
     public function testFromMicrosecondsWrapsCorrectly(): void
     {
-        $time = Time::fromOffset(25 * 3_600_500_000, Unit::Microsecond);
+        $time = Time::sinceMidnight(25 * 3_600_500_000, Unit::Microsecond);
         self::assertSame('01:00:12.500000', $time->format());
 
-        $time = Time::fromOffset(25 * 3_600_500, Unit::Millisecond);
+        $time = Time::sinceMidnight(25 * 3_600_500, Unit::Millisecond);
         self::assertSame('01:00:12.500000', $time->format());
 
-        $time = Time::fromOffset(25 * 3_600, Unit::Second);
+        $time = Time::sinceMidnight(25 * 3_600, Unit::Second);
         self::assertSame('01:00:00', $time->format());
 
-        $time = Time::fromOffset(25 * 60, Unit::Minute);
+        $time = Time::sinceMidnight(25 * 60, Unit::Minute);
         self::assertSame('01:00:00', $time->format());
     }
 
@@ -463,7 +463,7 @@ final class TimeTest extends TestCase
         int $expectedRound,
         int $expectedCeil,
     ): void {
-        $time = Time::fromOffset($input, Unit::Microsecond);
+        $time = Time::sinceMidnight($input, Unit::Microsecond);
 
         self::assertSame($expectedTruncate, $time->roundTo($precision, SnapMode::Floor)->ticks);
         self::assertSame($expectedRound, $time->roundTo($precision)->ticks);

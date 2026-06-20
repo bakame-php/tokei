@@ -13,7 +13,7 @@ You can create a `Time` instance:
 
 - using its time components via the `Time::at` method;
 - by parsing a time string using the `Time::fromFormat` method;
-- using `Time::fromOffset`; The value will represent respectively a quantity in a specified base Unit from midnight.
+- using `Time::sinceMidnight`; The value will represent respectively a quantity in a specified base Unit from midnight.
 
 ```php
 Time::at(
@@ -28,7 +28,7 @@ Time::fromFormat(
     TimeFormat $format = TimeFormat::Iso8601
 ): Time
 
-Time::fromOffset(
+Time::sinceMidnight(
     int $value,
     Unit $unit
 ): Time
@@ -42,10 +42,10 @@ use Bakame\Tokei\Time;
 $time = Time::at(hour: 10, minute: 30, second: 15);
 $time = Time::fromFormat("10:30:15.123456", TimeFormat::Iso8601);
 $time = Time::fromFormat("10h30m15s123456µs", TimeFormat::Compact);
-$time = Time::fromOffset(123_456_789, Unit::Microsecond);
-$time = Time::fromOffset(123_456, Unit::Millisecond);
-$time = Time::fromOffset(123, Unit::Second);
-$time = Time::fromOffset(-1, Unit::Minute); // returns "23:59:00"
+$time = Time::sinceMidnight(123_456_789, Unit::Microsecond);
+$time = Time::sinceMidnight(123_456, Unit::Millisecond);
+$time = Time::sinceMidnight(123, Unit::Second);
+$time = Time::sinceMidnight(-1, Unit::Minute); // returns "23:59:00"
 ```
 
 To ease instantiation, predefined instances can be obtained with the following methods:

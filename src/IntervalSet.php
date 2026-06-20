@@ -9,7 +9,6 @@ use DateInterval;
 use DateTimeInterface;
 use Traversable;
 
-use function array_column;
 use function array_key_last;
 use function array_map;
 use function array_pop;
@@ -37,7 +36,7 @@ final class IntervalSet implements TemporalSet
     public function __construct(Interval|NativeInterval|IntervalSet|Task|NativeTask|TaskSet ...$items)
     {
         $this->items = self::flatten(...$items);
-        $this->duration = Duration::zero()->sum(...$this->items);
+        $this->duration = Duration::sum(...$this->items);
     }
 
     /**
@@ -501,7 +500,7 @@ final class IntervalSet implements TemporalSet
 
             $current = IntervalType::Circular !== $item->type
                 ? [[$item->linearStart, $item->linearEnd]]
-                : [[0, UnitTransformer::toMicroseconds(1, Unit::Day)]];
+                : [[0, Unit::Day->inMicroseconds()]];
 
             foreach ($otherIntervals as $otherInterval) {
                 if (IntervalType::Collapsed === $otherInterval->type) {
@@ -717,6 +716,6 @@ final class IntervalSet implements TemporalSet
     {
         [$properties] = $data;
         $this->items = $properties['intervals'];
-        $this->duration = Duration::zero()->sum(...array_column($this->items, 'duration'));
+        $this->duration = Duration::sum(...$this->items);
     }
 }

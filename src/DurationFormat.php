@@ -7,6 +7,6 @@ namespace Bakame\Tokei;
 enum DurationFormat
 {
     case Iso8601;
-    case Compact;
     case Timer;
+    case Compact;
 }

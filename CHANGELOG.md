@@ -25,13 +25,15 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Duration::format`
 - `Duration::increase`
 - `Duration::decrease`
+- `Duration::chunkBy`
 - `Duration::isZero`
+- `Duration::parts`
 - `Time::fromDateTime`
 - `Time::toDateTime`
 - `Time::fromFormat`
 - `Time::format`
-- `Time::fromOffset`
-- `Time::toOffset`
+- `Time::sinceMidnight`
+- `Time::in`
 - `Time::shift`
 - `Time::utc`
 - `Time::roundTo`
@@ -69,7 +71,10 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC BREAK:** `Duration::toCompact` is removed and replaced by `Duration::format` with the `DurationFormat::Compact` argument
 - **BC BREAK:** `Duration::increment` is removed use `Duration::increase` instead
 - **BC BREAK:** `Duration::isEmpty` is removed use `Duration::isZero` instead
+- **BC BREAK:** `Duration::total` is removed and replaced by `Duration::in`
+- **BC BREAK:** all `Duration` public properties excepts `microseconds` and `sign`
 - **BC BREAK:** `Interval::fromIso8601` is removed and replaced by `Interval::fromFormat` with the `IntervalFormat::Iso8601StartDuration` argument
+- **BC BREAK:** `Interval::compareDurationTo` is removed use `Duration::compare` instead
 - **BC BREAK:** `SubSecondDisplay` is removed with no remplacement use rounding with the `Rounding::Floor` mode
 - **BC BREAK:** `truncateTo` is removed use `roundTo` instead with the new `Rounding:Floor` mode
 - **BC BREAK:** `Time::add` is removed use `Time::shift` instead

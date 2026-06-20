@@ -36,7 +36,7 @@ final readonly class TemporalSearch
      */
     public static function forTimes(TemporalSet $items): self
     {
-        return new self($items, self::extractTime(...));
+        return new self($items, InputNormalizer::time(...));
     }
 
     /**
@@ -46,24 +46,12 @@ final readonly class TemporalSearch
      */
     public static function forIntervals(TemporalSet $items, Bound $using): self
     {
-        $extractInterval = fn (Interval|Task $item): Interval => $item instanceof Task ? $item->interval : $item;
-
         return new self(
             $items,
             static fn (Task|Interval $item): Time => Bound::Start === $using
-                ? $extractInterval($item)->start
-                : $extractInterval($item)->end
+                ? InputNormalizer::interval($item)->start
+                : InputNormalizer::interval($item)->end
         );
-    }
-
-    private static function extractTime(Time|Event|NativeEvent|DateTimeInterface $time): Time
-    {
-        return match (true) {
-            $time instanceof Event => $time->at,
-            $time instanceof NativeEvent => Event::fromNative($time)->at,
-            $time instanceof DateTimeInterface => Time::fromDateTime($time),
-            default => $time,
-        };
     }
 
     /**
@@ -74,7 +62,7 @@ final readonly class TemporalSearch
         return SearchMode::Linear === $mode
             ? $this->forwardSearch(fn ($item): bool => ($this->resolver)($item)->isAfterOrEqual($atOrAfter))
             : $this->circularSearch(
-                self::extractTime($atOrAfter)->ticks,
+                InputNormalizer::time($atOrAfter)->ticks,
                 static function (int $at, int $reference): int {
                     $delta = $at - $reference;
                     if ($delta <= 0) {
@@ -94,7 +82,7 @@ final readonly class TemporalSearch
         return SearchMode::Linear === $mode
             ? $this->forwardSearch(fn ($item): bool => ($this->resolver)($item)->isBefore($before))
             : $this->circularSearch(
-                self::extractTime($before)->ticks,
+                InputNormalizer::time($before)->ticks,
                 static function (int $at, int $reference): int {
                     $delta = $reference - $at;
                     if ($delta < 0) {
@@ -112,7 +100,7 @@ final readonly class TemporalSearch
     public function nearest(Time|Event|NativeEvent|DateTimeInterface $around): iterable
     {
         return $this->circularSearch(
-            self::extractTime($around)->ticks,
+            InputNormalizer::time($around)->ticks,
             static function (int $at, int $reference): int {
                 $calculate = static fn (int $value): int => ($value + self::CYCLE) % self::CYCLE;
 

@@ -80,7 +80,7 @@ final class IntervalTest extends TestCase
         $a = Interval::between(Time::at(10), Time::at(11));
         $b = Interval::between(Time::at(20), Time::at(21));
 
-        self::assertTrue($a->sameDurationAs($b));
+        self::assertTrue(0 === Duration::compare($a, $b));
     }
 
     public function test_longer_and_shorter(): void
@@ -88,10 +88,8 @@ final class IntervalTest extends TestCase
         $a = Interval::between(Time::at(10), Time::at(12));
         $b = Interval::between(Time::at(10), Time::at(11));
 
-        self::assertTrue($a->isLongerThan($b));
-        self::assertTrue($a->isLongerThanOrEqual($b));
-        self::assertTrue($b->isShorterThan($a));
-        self::assertTrue($b->isShorterThanOrEqual($a));
+        self::assertTrue(1 === Duration::compare($a, $b));
+        self::assertTrue(-1 === Duration::compare($b, $a));
     }
 
     /* -------------------------------------------------
@@ -240,8 +238,6 @@ final class IntervalTest extends TestCase
         $rangebis = Interval::since(Time::at(10), Duration::of(hours: 2));
 
         self::assertTrue($range->equals($rangebis));
-        self::assertTrue($range->isShorterThanOrEqual($rangebis));
-        self::assertTrue($range->isLongerThanOrEqual($rangebis));
     }
 
     public function test_contains_time_range_fully_inside(): void
@@ -605,9 +601,7 @@ final class IntervalTest extends TestCase
             Time::at(2),
         );
 
-        $total = $range
-            ->duration
-            ->sum($range->complement()->duration);
+        $total = Duration::sum($range, $range->complement());
 
         self::assertTrue(
             $total->equals(Duration::of(hours: 24))

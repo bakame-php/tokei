@@ -6,6 +6,6 @@ namespace Bakame\Tokei;
 
 enum TimeFormat
 {
-    case Compact;
     case Iso8601;
+    case Compact;
 }

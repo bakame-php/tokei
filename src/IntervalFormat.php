@@ -10,17 +10,17 @@ namespace Bakame\Tokei;
  */
 enum IntervalFormat
 {
-    case Bourbaki;
-    case Iso80000;
     case Iso8601StartDuration;
     case Iso8601DurationEnd;
     case Iso8601StartEnd;
+    case Iso80000;
+    case Bourbaki;
 
     public function supportsUnit(): bool
     {
         return match ($this) {
-            self::Bourbaki,
-            self::Iso80000 => true,
+            self::Iso80000,
+            self::Bourbaki => true,
             default => false,
         };
     }
