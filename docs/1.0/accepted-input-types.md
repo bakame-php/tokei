@@ -46,6 +46,10 @@ A duration can be expressed using any of the following types:
 
 - `Duration`
 - `DateInterval`
+- `Interval`
+- `Task`
+- `NativeInterval`
+- `NativeTask`
 
 Example:
 
@@ -60,6 +64,8 @@ Interval::since(
     Duration::of(hours: 3),
 );
 ```
+
+For Interval types, the interval `duration` property will be used.
 
 > [!IMPORTANT]
 > `DateInterval` instances which do not use deterministic component will 
@@ -101,12 +107,12 @@ Identifiers can be expressed using:
 
 ## Argument rules
 
-| Concept      | 	Accepted representations                             |
-|--------------|-------------------------------------------------------|
-| Time	        | `Time`, `Event`, `DateTimeInterface`, `NativeEvent`   | 
-| Duration     | 	`Duration`, `DateInterval`                           |       
-| Interval     | 	`Interval`, `Task`, `NativeInterval`, `NativeTask`   |   
-| Identifiers  | `Identifiers`, `HasIdentifiers`, `string`, `iterable` |
+| Concept     | 	Accepted representations                                                       |
+|-------------|---------------------------------------------------------------------------------|
+| Time	       | `Time`, `Event`, `DateTimeInterface`, `NativeEvent`                             | 
+| Duration    | 	`Duration`, `DateInterval`, `Interval`, `Task`, `NativeInterval`, `NativeTask` |       
+| Interval    | 	`Interval`, `Task`, `NativeInterval`, `NativeTask`                             |   
+| Identifiers | `Identifiers`, `HasIdentifiers`, `string`, `iterable`                           |
 
 Unless stated otherwise, any method accepting a temporal
 primitive also accepts any compatible representation of that primitive.

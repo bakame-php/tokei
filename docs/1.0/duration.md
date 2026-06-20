@@ -116,6 +116,8 @@ Duration::decrease(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes =
 Duration::sum(Duration ...$duration): Duration
 Duration::multipliedBy(int $factor): Duration
 Duration::dividedBy(int $factor): Duration
+Duration::countOf(Duration $factor): int
+Duration::remainder(Duration $factor): Duration
 Duration::roundTo(Unit $precision, RoundingStrategy $strategy): Duration
 Duration::clamp(Duration $min, Duration $max): Duration
 ```
@@ -159,8 +161,10 @@ $a->roundTo(Unit::Minute, SnapMode::Ceil)->format(DurationFormat::Timer);  // re
 It is possible to compare duration using common methods terminology
 
 ```php
-Duration::compareTo(Duration $other): int;
+Duration::compare(Duration $that, Duration $other): int;
 ```
+> [!IMPORTANT]
+> The method is static to allow broader usage with other PHP sorting functions.
 
 Returns:
 
@@ -168,7 +172,7 @@ Returns:
 - `0` if equal
 - `1` if longer
 
-Convenient methods based on `Duration::compareTo` are also available:
+Convenient methods based on `Duration::compare` are also available:
 
 ```php
 $duration = Duration::of(microseconds: 3_661_500_000);
