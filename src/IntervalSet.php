@@ -55,14 +55,6 @@ final class IntervalSet implements TemporalSet
         return $this->engine[$using->name];
     }
 
-    private static function extractDuration(Duration|DateInterval $period): Duration
-    {
-        return match (true) {
-            $period instanceof Duration => $period,
-            $period instanceof DateInterval => Duration::fromDateInterval($period),
-        };
-    }
-
     /**
      * Returns a new instance with its intervals ordered by ascending start time.
      *
@@ -351,9 +343,9 @@ final class IntervalSet implements TemporalSet
         return $this->filter(fn (Interval $item): bool => $item->contains($interval));
     }
 
-    public function shift(Duration|DateInterval $duration): self
+    public function shift(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
     {
-        $duration = self::extractDuration($duration);
+        $duration = InputNormalizer::duration($duration);
 
         return $duration->isZero()
             ? $this
@@ -681,8 +673,8 @@ final class IntervalSet implements TemporalSet
         $boundaries = [];
 
         foreach ($this->sorted() as $interval) {
-            $boundaries[(int) $interval->start->toOffset(Unit::Microsecond)] = $interval->start;
-            $boundaries[(int) $interval->end->toOffset(Unit::Microsecond)] = $interval->end;
+            $boundaries[$interval->start->ticks] = $interval->start;
+            $boundaries[$interval->end->ticks] = $interval->end;
         }
 
         ksort($boundaries);

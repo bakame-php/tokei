@@ -32,7 +32,7 @@ final class DurationTest extends TestCase
         $duration = Duration::of(weeks:5, days:6, hours: 2, minutes: 15, seconds: 42, microseconds: 123_456);
 
         self::assertSame(1, $duration->sign);
-        self::assertSame(3_550_542_123_456, $duration->total(Unit::Microsecond));
+        self::assertSame(3_550_542_123_456, $duration->microseconds);
         self::assertSame('5w6d2h15m42s123456µs', $duration->format(DurationFormat::Compact));
     }
 
@@ -112,7 +112,7 @@ final class DurationTest extends TestCase
 
         self::assertSame('00:00:00', $duration->format(DurationFormat::Timer));
         self::assertSame(0, $duration->sign);
-        self::assertSame(0, $duration->value);
+        self::assertSame(0, $duration->microseconds);
         self::assertSame('0s', $duration->format(DurationFormat::Compact));
         self::assertTrue($duration->isZero());
         self::assertEquals($duration, Duration::zero());
@@ -228,7 +228,7 @@ final class DurationTest extends TestCase
             $expectedMicroseconds,
             $duration
                 ->roundTo($unit, SnapMode::Floor)
-                ->total(Unit::Microsecond),
+                ->microseconds,
         );
     }
 
@@ -307,8 +307,8 @@ final class DurationTest extends TestCase
         $positive = Duration::of(microseconds:3_661_500_000);
         $negative = Duration::of(microseconds:3_661_500_000)->negated();
 
-        self::assertTrue($positive->roundTo(Unit::Minute, SnapMode::Floor)->total(Unit::Microsecond) > 0);
-        self::assertTrue($negative->roundTo(Unit::Minute, SnapMode::Floor)->total(Unit::Microsecond) < 0);
+        self::assertTrue($positive->roundTo(Unit::Minute, SnapMode::Floor)->microseconds > 0);
+        self::assertTrue($negative->roundTo(Unit::Minute, SnapMode::Floor)->microseconds < 0);
     }
 
     public function test_it_can_not_invert_php_int_max(): void
@@ -693,7 +693,7 @@ final class DurationTest extends TestCase
             ? Duration::of(microseconds:  -$input)->negated()
             : Duration::of(microseconds:  $input);
 
-        self::assertSame($expected, $duration->roundTo($precision)->total(Unit::Microsecond));
+        self::assertSame($expected, $duration->roundTo($precision)->microseconds);
     }
 
     /**
@@ -841,7 +841,7 @@ final class DurationTest extends TestCase
     #[DataProvider('validIntervalsProvider')]
     public function testFromDateIntervalConvertsCorrectly(DateInterval $interval, int $expectedMicroseconds): void
     {
-        self::assertSame($expectedMicroseconds, Duration::fromDateInterval($interval)->total(Unit::Microsecond));
+        self::assertSame($expectedMicroseconds, Duration::fromDateInterval($interval)->microseconds);
     }
 
     /**

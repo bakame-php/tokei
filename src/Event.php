@@ -25,12 +25,7 @@ final class Event implements HasIdentifiers, JsonSerializable
     public static function at(Time|NativeEvent|DateTimeInterface|Event $time, Identifiers|HasIdentifiers|string $identifier = new Identifiers()): self
     {
         return new self(
-            match (true) {
-                $time instanceof DateTimeInterface => Time::fromDateTime($time),
-                $time instanceof NativeEvent => Event::fromNative($time)->at,
-                $time instanceof Event => $time->at,
-                default => $time,
-            },
+            InputNormalizer::time($time),
             match (true) {
                 $identifier instanceof HasIdentifiers => $identifier->identifiers,
                 $identifier instanceof Identifiers => $identifier,
@@ -87,12 +82,7 @@ final class Event implements HasIdentifiers, JsonSerializable
 
     public function occursOn(Time|NativeEvent|DateTimeInterface|Event $at): self
     {
-        $at = match (true) {
-            $at instanceof DateTimeInterface => Time::fromDateTime($at),
-            $at instanceof NativeEvent => Event::fromNative($at)->at,
-            $at instanceof Event => $at->at,
-            default => $at,
-        };
+        $at = InputNormalizer::time($at);
 
         return $at->equals($this->at) ? $this : new self($at, $this->identifiers);
     }

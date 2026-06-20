@@ -21,20 +21,20 @@ use const PHP_INT_MIN;
 
 final readonly class Duration implements JsonSerializable
 {
-    public int $value;
+    public int $microseconds;
     public int $sign;
 
     /**
-     * @param int $value expressed in microseconds
+     * @param int $microseconds expressed in microseconds
      *
      * @throws InvalidDuration
      */
-    private function __construct(int $value)
+    private function __construct(int $microseconds)
     {
-        ($value > PHP_INT_MIN + 1 && $value < PHP_INT_MAX) || throw InvalidDuration::dueToOverflow();
+        ($microseconds > PHP_INT_MIN + 1 && $microseconds < PHP_INT_MAX) || throw InvalidDuration::dueToOverflow();
 
-        $this->value = $value;
-        $this->sign = $this->value <=> 0;
+        $this->microseconds = $microseconds;
+        $this->sign = $this->microseconds <=> 0;
     }
 
     /**
@@ -172,27 +172,16 @@ final readonly class Duration implements JsonSerializable
         return null !== $value ? $value : throw new ValueError('maxOf() expects at least one duration');
     }
 
-    private static function extractDuration(self|Interval|Task|NativeInterval|NativeTask $that): self
-    {
-        return match (true) {
-            $that instanceof NativeInterval => Interval::fromNative($that)->duration,
-            $that instanceof NativeTask => Task::fromNative($that)->interval->duration,
-            $that instanceof Task => $that->interval->duration,
-            $that instanceof Interval => $that->duration,
-            $that instanceof self => $that,
-        };
-    }
-
     /**
      *  Compare this instance with another.
      *
      * @return int<-1, 1> If this duration is shorter, equal, or longer than the given duration.
      */
     public static function compare(
-        self|Interval|Task|NativeInterval|NativeTask $that,
-        self|Interval|Task|NativeInterval|NativeTask $other
+        Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $that,
+        Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other
     ): int {
-        return self::extractDuration($that)->value <=> self::extractDuration($other)->value;
+        return InputNormalizer::duration($that)->microseconds <=> InputNormalizer::duration($other)->microseconds;
     }
 
     /**
@@ -210,7 +199,7 @@ final readonly class Duration implements JsonSerializable
      */
     public function toDateInterval(?DateTimeInterface $relativeTo = null): DateInterval
     {
-        $parsed = UnitTransformer::decompose($this->value);
+        $parsed = UnitTransformer::decompose($this->microseconds);
         $interval = new DateInterval('PT0S');
         $interval->d = $parsed->daysCount;
         $interval->h = $parsed->hours % 24;
@@ -234,9 +223,9 @@ final readonly class Duration implements JsonSerializable
     /**
      * Returns the Duration as expressed in the specified Unit of time.
      */
-    public function total(Unit $unit): int|float
+    public function in(Unit $unit): int|float
     {
-        return UnitTransformer::fromMicroseconds($this->value, $unit);
+        return UnitTransformer::fromMicroseconds($this->microseconds, $unit);
     }
 
     /**
@@ -254,7 +243,7 @@ final readonly class Duration implements JsonSerializable
      */
     public function isZero(): bool
     {
-        return 0 === $this->value;
+        return 0 === $this->microseconds;
     }
 
     /**
@@ -264,7 +253,7 @@ final readonly class Duration implements JsonSerializable
      */
     public function negated(): self
     {
-        return new self(-$this->value);
+        return new self(-$this->microseconds);
     }
 
     /**
@@ -272,7 +261,7 @@ final readonly class Duration implements JsonSerializable
      */
     public function abs(): self
     {
-        return $this->value < 0 ? $this->negated() : $this;
+        return $this->microseconds < 0 ? $this->negated() : $this;
     }
 
     /**
@@ -280,22 +269,22 @@ final readonly class Duration implements JsonSerializable
      */
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
-        $rounded = UnitTransformer::round($this->value, $unit, $mode);
+        $rounded = UnitTransformer::round($this->microseconds, $unit, $mode);
 
-        return $this->value === $rounded ? $this : new self($rounded);
+        return $this->microseconds === $rounded ? $this : new self($rounded);
     }
 
     /**
      * @throws InvalidDuration
      */
-    public function sum(self|Interval|Task|NativeInterval|NativeTask ...$other): self
+    public function sum(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$other): self
     {
-        $other = array_map(self::extractDuration(...), $other);
+        $other = array_map(InputNormalizer::duration(...), $other);
         $other[] = $this;
-        $value = array_sum(array_column($other, 'value'));
-        is_int($value) || throw InvalidDuration::dueToOverflow(); /* @phpstan-ignore-line */
+        $microseconds = array_sum(array_column($other, 'microseconds'));
+        is_int($microseconds) || throw InvalidDuration::dueToOverflow(); /* @phpstan-ignore-line */
 
-        return $this->value === $value ? $this : new self($value);
+        return $this->microseconds === $microseconds ? $this : new self($microseconds);
     }
 
     /**
@@ -363,26 +352,26 @@ final readonly class Duration implements JsonSerializable
     /**
      * Tells whether this instance is equal to the specified duration.
      */
-    public function equals(self $other): bool
+    public function equals(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
     {
         return 0 === self::compare($this, $other);
     }
 
-    public function isLongerThan(self $other): bool
+    public function isLongerThan(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
     {
         return 0 < self::compare($this, $other);
     }
 
-    public function isLongerThanOrEqual(self $other): bool
+    public function isLongerThanOrEqual(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
     {
         return 0 <= self::compare($this, $other);
     }
-    public function isShorterThan(self $other): bool
+    public function isShorterThan(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
     {
         return 0 > self::compare($this, $other);
     }
 
-    public function isShorterThanOrEqual(self $other): bool
+    public function isShorterThanOrEqual(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
     {
         return 0 >= self::compare($this, $other);
     }
@@ -395,11 +384,11 @@ final readonly class Duration implements JsonSerializable
      * @throws InvalidDuration
      */
     public function clamp(
-        self|Interval|Task|NativeInterval|NativeTask $min,
-        self|Interval|Task|NativeInterval|NativeTask $max
+        Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $min,
+        Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $max
     ): self {
-        $max = self::extractDuration($max);
-        $min = self::extractDuration($min);
+        $max = InputNormalizer::duration($max);
+        $min = InputNormalizer::duration($min);
 
         $max->isLongerThanOrEqual($min) || throw new InvalidDuration('The maximum duration must be longer or equal to the minimum duration.');
 
@@ -419,7 +408,7 @@ final readonly class Duration implements JsonSerializable
     {
         0 <= $factor || throw new InvalidDuration('factor must be a non negative integer.');  /* @phpstan-ignore-line */
 
-        $result = $this->value * $factor;
+        $result = $this->microseconds * $factor;
 
         is_int($result) || throw InvalidDuration::dueToOverflow(); /* @phpstan-ignore-line */
 
@@ -439,15 +428,15 @@ final readonly class Duration implements JsonSerializable
     {
         0 < $factor || throw new InvalidDuration('factor must be a positive integer.');  /* @phpstan-ignore-line */
 
-        return new self(intdiv($this->value, $factor));
+        return new self(intdiv($this->microseconds, $factor));
     }
 
-    public function times(self|Interval|Task|NativeInterval|NativeTask $other): int
+    public function countOf(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): int
     {
-        $other = self::extractDuration($other);
+        $other = InputNormalizer::duration($other);
 
         return !$other->isZero()
-            ? intdiv($this->value, $other->value)
+            ? intdiv($this->microseconds, $other->microseconds)
             : throw new InvalidDuration('Cannot divide by zero duration.');
     }
 
@@ -456,7 +445,7 @@ final readonly class Duration implements JsonSerializable
      */
     public function __serialize(): array
     {
-        return [['microseconds' => $this->value], []];
+        return [['microseconds' => $this->microseconds], []];
     }
 
     /**
@@ -468,7 +457,7 @@ final readonly class Duration implements JsonSerializable
     {
         [$properties] = $data;
         $duration = new self($properties['microseconds']);
-        $this->value = $duration->value;
+        $this->microseconds = $duration->microseconds;
         $this->sign = $duration->sign;
     }
 }

@@ -16,30 +16,34 @@ use function is_int;
 
 final readonly class Time implements JsonSerializable
 {
-    private int $value;
+    public int $ticks;
     public int $hour;
     public int $minute;
     public int $second;
     public int $microsecond;
 
     /**
-     * @param int $value represents the microseconds from midnight
+     * @param int $ticks represents the microseconds from midnight
      */
-    private function __construct(int $value)
+    private function __construct(int $ticks)
     {
-        $this->value = UnitTransformer::wrap($value, Unit::Day);
-        $parts = UnitTransformer::decompose($this->value);
+        $this->ticks = UnitTransformer::wrap($ticks, Unit::Day);
+        $parts = UnitTransformer::decompose($this->ticks);
         $this->hour = $parts->hours;
         $this->minute = $parts->minutes;
         $this->second = $parts->seconds;
         $this->microsecond = $parts->microseconds;
     }
 
-    private static function extractDuration(Duration|DateInterval $period): Duration
+    private static function extractDuration(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $that): Duration
     {
         return match (true) {
-            $period instanceof Duration => $period,
-            $period instanceof DateInterval => Duration::fromDateInterval($period),
+            $that instanceof DateInterval => Duration::fromDateInterval($that),
+            $that instanceof NativeInterval => Interval::fromNative($that)->duration,
+            $that instanceof NativeTask => Task::fromNative($that)->interval->duration,
+            $that instanceof Task => $that->interval->duration,
+            $that instanceof Interval => $that->duration,
+            $that instanceof Duration => $that,
         };
     }
 
@@ -209,9 +213,9 @@ final readonly class Time implements JsonSerializable
     /**
      * Returns the time as the number of unit of time since midnight.
      */
-    public function toOffset(Unit $unit): int|float
+    public function in(Unit $unit): int|float
     {
-        return UnitTransformer::fromMicroseconds($this->value, $unit);
+        return UnitTransformer::fromMicroseconds($this->ticks, $unit);
     }
 
     /**
@@ -271,7 +275,7 @@ final readonly class Time implements JsonSerializable
         Time|Event|NativeEvent|DateTimeInterface $that,
         Time|Event|NativeEvent|DateTimeInterface $other
     ): int {
-        return self::extractTime($that)->value <=> self::extractTime($other)->value;
+        return self::extractTime($that)->ticks <=> self::extractTime($other)->ticks;
     }
 
     /**
@@ -332,14 +336,14 @@ final readonly class Time implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public function shift(Duration|DateInterval $duration): self
+    public function shift(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
     {
         $duration = self::extractDuration($duration);
         if ($duration->isZero()) {
             return $this;
         }
 
-        $value = $this->value + $duration->value;
+        $value = $this->ticks + $duration->microseconds;
         is_int($value) || throw InvalidDuration::dueToOverflow(); /* @phpstan-ignore-line */
 
         return new self($value);
@@ -373,9 +377,9 @@ final readonly class Time implements JsonSerializable
      */
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
-        $rounded = UnitTransformer::round($this->value, $unit, $mode);
+        $rounded = UnitTransformer::round($this->ticks, $unit, $mode);
 
-        return $this->value === $rounded ? $this : new self($rounded);
+        return $this->ticks === $rounded ? $this : new self($rounded);
     }
 
     /**
@@ -397,7 +401,7 @@ final readonly class Time implements JsonSerializable
      */
     public function diff(Time|Event|NativeEvent|DateTimeInterface $other): Duration
     {
-        $duration = self::extractTime($other)->value - $this->value;
+        $duration = self::extractTime($other)->ticks - $this->ticks;
 
         return 0 > $duration
             ? Duration::of(microseconds: -$duration)->negated()
@@ -412,7 +416,7 @@ final readonly class Time implements JsonSerializable
     public function distance(Time|Event|NativeEvent|DateTimeInterface $other): Duration
     {
         /** @var non-negative-int $duration */
-        $duration = UnitTransformer::wrap(self::extractTime($other)->value - $this->value, Unit::Day);
+        $duration = UnitTransformer::wrap(self::extractTime($other)->ticks - $this->ticks, Unit::Day);
 
         return Duration::of(microseconds: $duration);
     }
@@ -422,7 +426,7 @@ final readonly class Time implements JsonSerializable
      */
     public function __serialize(): array
     {
-        return [['microseconds' => (int) $this->toOffset(Unit::Microsecond)], []];
+        return [['microseconds' => $this->ticks], []];
     }
 
     /**
@@ -432,7 +436,7 @@ final readonly class Time implements JsonSerializable
     {
         [$properties] = $data;
         $time = new self($properties['microseconds']);
-        $this->value = $time->value;
+        $this->ticks = $time->ticks;
         $this->hour = $time->hour;
         $this->minute = $time->minute;
         $this->second = $time->second;

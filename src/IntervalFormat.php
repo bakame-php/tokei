@@ -83,7 +83,7 @@ enum IntervalFormat
             return $time->format();
         }
 
-        $value = $time->toOffset($unit);
+        $value = $time->in($unit);
 
         return is_int($value)
             ? (string) $value

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
+use DateInterval;
 use DateTimeInterface;
 use Traversable;
 
@@ -288,7 +289,7 @@ final class EventSet implements TemporalSet
 
         $itemList = [];
         foreach ($items as $item) {
-            if ($item instanceof self) {
+            if ($item instanceof EventSet) {
                 $itemList = [...$itemList, ...$item];
                 continue;
             }
@@ -387,60 +388,54 @@ final class EventSet implements TemporalSet
         return $result;
     }
 
-    public function inside(Interval|Task $interval): self
+    public function inside(Interval|Task|NativeTask|NativeInterval $interval): self
     {
-        if ($interval instanceof Task) {
-            $interval = $interval->interval;
-        }
+        $interval = InputNormalizer::interval($interval);
 
         return $this->filter(fn (Event $event): bool => $interval->includes($event));
     }
 
-    public function outside(Interval|Task $interval): self
+    public function outside(Interval|Task|NativeTask|NativeInterval $interval): self
     {
-        if ($interval instanceof Task) {
-            $interval = $interval->interval;
-        }
+        $interval = InputNormalizer::interval($interval);
 
         return $this->filter(fn (Event $event): bool => !$interval->includes($event));
     }
 
-    public function at(Time|Event|NativeEvent $time): self
+    public function at(Time|Event|NativeEvent|DateTimeInterface $time): self
     {
         return $this->filter(fn (Event $event): bool => $event->at->equals($time));
     }
 
-    public function before(Time|Event $before): self
+    public function before(Time|Event|NativeEvent|DateTimeInterface $time): self
     {
-        $before = $before instanceof Event ? $before->at : $before;
-
-        return $this->filter(fn (Event $event): bool => $event->at->isBefore($before));
+        return $this->filter(fn (Event $event): bool => $event->at->isBefore($time));
     }
 
-    public function after(Time|Event $before): self
+    public function after(Time|Event|NativeEvent|DateTimeInterface  $time): self
     {
-        $before = $before instanceof Event ? $before->at : $before;
-
-        return $this->filter(fn (Event $event): bool => $event->at->isAfter($before));
+        return $this->filter(fn (Event $event): bool => $event->at->isAfter($time));
     }
 
-    public function next(Time|Event $atOrAfter, SearchMode $mode): self
+    public function next(Time|Event|NativeEvent|DateTimeInterface $atOrAfter, SearchMode $mode): self
     {
         return new self(...$this->engine()->next($atOrAfter, $mode));
     }
 
-    public function previous(Time|Event $before, SearchMode $mode): self
+    public function previous(Time|Event|NativeEvent|DateTimeInterface $before, SearchMode $mode): self
     {
         return new self(...$this->engine()->previous($before, $mode));
     }
 
-    public function nearest(Time|Event $around): self
+    public function nearest(Time|Event|NativeEvent|DateTimeInterface $around): self
     {
         return new self(...$this->engine()->nearest($around));
     }
 
-    public function shift(Duration $duration): self
+    public function shift(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
     {
+        $duration = InputNormalizer::duration($duration);
+
         return $duration->isZero()
             ? $this
             : $this->transform(fn (Event $event): Event => $event->occursOn($event->at->shift($duration)));

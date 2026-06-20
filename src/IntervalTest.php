@@ -88,10 +88,10 @@ final class IntervalTest extends TestCase
         $a = Interval::between(Time::at(10), Time::at(12));
         $b = Interval::between(Time::at(10), Time::at(11));
 
-        self::assertTrue($a->longerThan($b));
-        self::assertTrue($a->longerThanOrEqual($b));
-        self::assertTrue($b->shorterThan($a));
-        self::assertTrue($b->shorterThanOrEqual($a));
+        self::assertTrue($a->isLongerThan($b));
+        self::assertTrue($a->isLongerThanOrEqual($b));
+        self::assertTrue($b->isShorterThan($a));
+        self::assertTrue($b->isShorterThanOrEqual($a));
     }
 
     /* -------------------------------------------------
@@ -240,8 +240,8 @@ final class IntervalTest extends TestCase
         $rangebis = Interval::since(Time::at(10), Duration::of(hours: 2));
 
         self::assertTrue($range->equals($rangebis));
-        self::assertTrue($range->shorterThanOrEqual($rangebis));
-        self::assertTrue($range->longerThanOrEqual($rangebis));
+        self::assertTrue($range->isShorterThanOrEqual($rangebis));
+        self::assertTrue($range->isLongerThanOrEqual($rangebis));
     }
 
     public function test_contains_time_range_fully_inside(): void

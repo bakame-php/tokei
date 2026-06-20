@@ -180,7 +180,7 @@ enum DurationFormat
      */
     private static function toTimer(Duration $duration): string
     {
-        $value = $duration->value;
+        $value = $duration->microseconds;
 
         $abs = $value < 0 ? -$value : $value;
         $hours = UnitTransformer::whole($abs, Unit::Hour);
@@ -210,7 +210,7 @@ enum DurationFormat
      */
     private static function toIso8601(Duration $duration): string
     {
-        $value = $duration->value;
+        $value = $duration->microseconds;
         $sign = -1 === $duration->sign ? '-' : '';
 
         $abs = $value < 0 ? -$value : $value;
@@ -257,7 +257,7 @@ enum DurationFormat
      */
     private static function toCompact(Duration $duration): string
     {
-        $parsed = UnitTransformer::decompose($duration->value);
+        $parsed = UnitTransformer::decompose($duration->microseconds);
         $time = [];
         if (0 !== $parsed->weeksCount) {
             $time[] = $parsed->weeksCount.'w';

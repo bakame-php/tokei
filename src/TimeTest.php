@@ -230,8 +230,8 @@ final class TimeTest extends TestCase
         $a = Time::at(8);
         $b = Time::at(10);
 
-        self::assertSame(7_200_000_000, $a->diff($b)->total(Unit::Microsecond));
-        self::assertSame(-7_200_000_000, $b->diff($a)->total(Unit::Microsecond));
+        self::assertSame(7_200_000_000, $a->diff($b)->microseconds);
+        self::assertSame(-7_200_000_000, $b->diff($a)->microseconds);
     }
 
     public function testDiffForwardWraps(): void
@@ -239,7 +239,7 @@ final class TimeTest extends TestCase
         $a = Time::at(23);
         $b = Time::at(1);
 
-        self::assertSame(7_200_000_000, $a->distance($b)->total(Unit::Microsecond));
+        self::assertSame(7_200_000_000, $a->distance($b)->microseconds);
     }
 
     /* -------------------------------------------------
@@ -255,7 +255,7 @@ final class TimeTest extends TestCase
 
     public function testMicroseconds(): void
     {
-        self::assertSame(36_000_000_000, Time::at(10)->toOffset(Unit::Microsecond));
+        self::assertSame(36_000_000_000, Time::at(10)->ticks);
     }
 
     public function test_apply_to_datetime_immutable(): void
@@ -464,9 +464,9 @@ final class TimeTest extends TestCase
     ): void {
         $time = Time::fromOffset($input, Unit::Microsecond);
 
-        self::assertSame($expectedTruncate, $time->roundTo($precision, SnapMode::Floor)->toOffset(Unit::Microsecond));
-        self::assertSame($expectedRound, $time->roundTo($precision)->toOffset(Unit::Microsecond));
-        self::assertSame($expectedCeil, $time->roundTo($precision, SnapMode::Ceil)->toOffset(Unit::Microsecond));
+        self::assertSame($expectedTruncate, $time->roundTo($precision, SnapMode::Floor)->ticks);
+        self::assertSame($expectedRound, $time->roundTo($precision)->ticks);
+        self::assertSame($expectedCeil, $time->roundTo($precision, SnapMode::Ceil)->ticks);
     }
 
     /**

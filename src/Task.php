@@ -26,12 +26,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     public static function for(Interval|NativeInterval|Task|NativeTask $interval, Identifiers|HasIdentifiers|string $identifier = new Identifiers()): self
     {
         return new self(
-            match (true) {
-                $interval instanceof Interval => $interval,
-                $interval instanceof NativeInterval => Interval::fromNative($interval),
-                $interval instanceof NativeTask => Task::fromNative($interval)->interval,
-                $interval instanceof Task => $interval->interval,
-            },
+            InputNormalizer::interval($interval),
             match (true) {
                 $identifier instanceof HasIdentifiers => $identifier->identifiers,
                 $identifier instanceof Identifiers => $identifier,
@@ -88,7 +83,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
 
     public function during(Task|Interval|NativeInterval|NativeTask $interval): self
     {
-        $interval = $interval instanceof Task ? $interval->interval : $interval;
+        $interval = InputNormalizer::interval($interval);
 
         return $this->interval->equals($interval) ? $this : self::for($interval, $this->identifiers);
     }
