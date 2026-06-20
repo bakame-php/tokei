@@ -43,13 +43,8 @@ The object exposes a `sign` property which indicates if the original value was n
 And provides a `toMicro` method to get the microseconds based representation of the duration.
 
 ```php
-$durationB->hours;        // returns 1
-$durationB->minutes;      // returns 1
-$durationB->seconds;      // returns 1
 $durationB->microseconds; // returns 234_000
 $durationB->sign;         // returns 1
-$durationB->daysCount;    // returns the absolute number of complete 24-hour days contained in the duration
-$durationB->weeksCount;   // returns the absolute number of complete weeks contained in the duration
 $durationB->isZero()      // returns true when the duration is zero, false otherwise 
 ```
 
@@ -58,7 +53,7 @@ $durationB->isZero()      // returns true when the duration is zero, false other
 ```php
 Duration::format(DurationFormat $format = DurationFormat::Iso8601): string
 Duration::toDateInterval(): DateInterval
-Duration::total(Unit $unit = Unit::Microseconds): int|float
+Duration::in(Unit $unit = Unit::Microseconds): int|float
 ```
 
 Formatting the duration string representation is returned by the `Duration::format` with the help of the `DurationFormat` Enum
@@ -178,6 +173,7 @@ Convenient methods based on `Duration::compare` are also available:
 $duration = Duration::of(microseconds: 3_661_500_000);
 $other = Duration::fromFormat('PT1H1S');
 
+Duration::compare($duration, $other);    //returns 1
 $duration->isShorterThan($other);        // returns false
 $duration->isShorterThanOrEqual($other); // returns false
 $duration->equals($other);               // returns false

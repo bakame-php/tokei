@@ -86,7 +86,7 @@ $time->microsecond;
 
 ```php
 Time::format(TimeFormat $format = TimeFormat::Iso8601): string
-Time::toOffset(Unit $unit): int|float; // returns the time value according to the provided
+Time::in(Unit $unit): int|float; // returns the time value according to the provided
 Time::toLocaleString(
     string $locale,
     DateTimeZone|string|null $timezone = null,
@@ -105,7 +105,7 @@ echo $time->format();
 // 10:30:15.123456
 echo $time->format(TimeFormat::Compact);
 // 10h30m15s123456µs
-echo $time->toOffset(Unit::Second);
+echo $time->in(Unit::Second);
 // 37815.123456
 echo $time->toLocaleString('en-US');
 // 10:30:15 AM
@@ -175,8 +175,11 @@ $t->roundTo(Unit::Minutes, SnapMode::Nearest)->format();  // returns "00:53:00"
 It is possible to compare two `Time` instances using the `Time::compareTo` method.
 
 ```php
-Time::compareTo(Time $other): int;
+Time::compare(Time $that, Time $other): int;
 ```
+> [!IMPORTANT]
+> The method is static to allow broader usage with other PHP sorting functions.
+
 
 the method returns:
 
@@ -190,6 +193,7 @@ Convenient methods derived from `Time::compareTo` are also available to ease usa
 $time = Time::at(hour: 10);
 $other = Time::noon();
 
+Time::compare($time, $other);    // returns -1
 $time->isBefore($other);         // returns true
 $time->isAfter($other);          // returns false
 $time->isBeforeOrEqual($other);  // returns true
