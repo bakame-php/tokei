@@ -13,14 +13,51 @@ use ValueError;
 use function array_column;
 use function array_map;
 use function array_sum;
+use function implode;
 use function intdiv;
 use function is_int;
+use function preg_match;
+use function rtrim;
+use function str_pad;
+use function trim;
 
 use const PHP_INT_MAX;
 use const PHP_INT_MIN;
+use const STR_PAD_LEFT;
 
 final readonly class Duration implements JsonSerializable
 {
+    private const string REGEXP_TIMER = '@^
+        (?<sign>-)?\s*
+        (?<hours>\d+):
+        (?<minutes>\d{1,2}):
+        (?<seconds>\d{1,2})
+        (\.(?<microseconds>\d+))?
+    $@x';
+
+    private const string REGEXP_COMPACT = '@^
+        (?<sign>-)?\s*
+        (?:(?<weeks>\d+)\s*w\s*)?
+        (?:(?<days>\d+)\s*d\s*)?
+        (?:(?<hours>\d+)\s*h\s*)?
+        (?:(?<minutes>\d+)\s*m\s*)?
+        (?:(?<seconds>\d+)\s*s\s*)?
+        (?:(?<microseconds>\d+)\s*(µs|us)\s*)?
+    $@x';
+
+    private const string REGEXP_ISO8601 = '@^
+        (?<sign>[+-])?
+        P
+        (?=.*?(?:\d+W|\d+D|T\d+H|T\d+M|T\d+(?:\.\d+)?S)) # look-ahead to restrict support for ISO8601 formats
+        (?:(?<weeks>\d+)W)?
+        (?:(?<days>\d+)D)?
+        (?:T
+            (?:(?<hours>\d+)H)?
+            (?:(?<minutes>\d+)M)?
+            (?:(?<seconds>\d+(?:\.\d+)?)S)?
+        )?
+    $@x';
+
     public int $microseconds;
     public int $sign;
 
@@ -96,14 +133,108 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @see DurationFormat::decode()
-     *
      * @throws InvalidDuration
      */
     public static function fromFormat(string $value, DurationFormat $format = DurationFormat::Iso8601): self
     {
-        return $format->decode($value);
+        return match ($format) {
+            DurationFormat::Iso8601 => self::fromIso8601($value),
+            DurationFormat::Timer => self::fromTimer($value),
+            DurationFormat::Compact => self::fromCompact($value),
+        };
     }
+
+    /**
+     * Creates a new instance from a timer string representation.
+     *
+     * @throws InvalidDuration
+     */
+    private static function fromTimer(string $duration): Duration
+    {
+        1 === preg_match(self::REGEXP_TIMER, $duration, $parts) || throw new InvalidDuration('Unknown or bad format `'.$duration.'`.');
+
+        $minutes = (int) $parts['minutes'];
+        $seconds = (int) $parts['seconds'];
+        $microseconds = (int) ($parts['microseconds'] ?? '0');
+
+        ($minutes >= 0 && $minutes < 60) || throw InvalidDuration::dueToMalformedMinute($minutes);
+        ($seconds >= 0 && $seconds < 60) || throw InvalidDuration::dueToMalformedSecond($seconds);
+        ($microseconds >= 0 && $microseconds < 1_000_000) || throw InvalidDuration::dueToMalformedMicrosecond($microseconds);
+
+        /** @var non-negative-int $microseconds */
+        $microseconds = UnitTransformer::compose(
+            days: 0,
+            hours: (int) $parts['hours'],
+            minutes: $minutes,
+            seconds: $seconds,
+            microseconds: $microseconds,
+            sign: 1
+        );
+
+        $duration = self::of(microseconds: $microseconds);
+
+        return '-' === $parts['sign'] ? $duration->negated() : $duration;
+    }
+
+    /**
+     * Creates a new instance from a timer string representation.
+     *
+     * @throws InvalidDuration
+     */
+    private static function fromCompact(string $data): Duration
+    {
+        $data = trim($data);
+
+        ('' !== $data && 1 === preg_match(self::REGEXP_COMPACT, $data, $parts)) || throw new InvalidDuration('Unknown or bad format `'.$data.'`.');
+
+        /** @var non-negative-int $microseconds */
+        $microseconds = UnitTransformer::compose(
+            days: (((int) ($parts['weeks'] ?? 0) * 7) + (int) ($parts['days'] ?? 0)),
+            hours: (int) ($parts['hours'] ?? 0),
+            minutes: (int) ($parts['minutes'] ?? 0),
+            seconds: (int) ($parts['seconds'] ?? 0),
+            microseconds: (int) ($parts['microseconds'] ?? 0),
+            sign: 1
+        );
+
+        $duration = self::of(microseconds: $microseconds);
+
+        return '-' === ($parts['sign'] ?? '') ? $duration->negated() : $duration;
+    }
+
+    /**
+     * Parses and returns a new instance from ISO8601 string representation.
+     *  Because the duration does not handle in a deterministic way month and year components
+     * the following restrictions apply:
+     *
+     * - only W, D, H, S are allowed
+     * - Y is rejected
+     * - M is only allowed in the time section (PT30M) to represents minutes
+     * - fractional values are only allowed on seconds
+     * - at least one unit must exist
+     * - negative marker is allowed in front of the expression
+     *
+     * @throws InvalidDuration
+     */
+    private static function fromIso8601(string $data): Duration
+    {
+        1 === preg_match(self::REGEXP_ISO8601, $data, $parts) || throw InvalidDuration::dueToMalformedIso8601($data);
+
+        /** @var non-negative-int $microseconds */
+        $microseconds = UnitTransformer::compose(
+            days: (((int) ($parts['weeks'] ?? 0) * 7) + (int) ($parts['days'] ?? 0)),
+            hours: (int) ($parts['hours'] ?? 0),
+            minutes: (int) ($parts['minutes'] ?? 0),
+            seconds: (float) ($parts['seconds'] ?? 0),
+            microseconds: 0,
+            sign: 1,
+        );
+
+        $duration = self::of(microseconds: $microseconds);
+
+        return '-' === ($parts['sign'] ?? '') ? $duration->negated() : $duration;
+    }
+
 
     /**
      * Returns an instance with 0s duration.
@@ -185,14 +316,117 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @see DurationFormat::encode()
+     * Encodes a Duration into a specified string notation representation.
      *
      * @return non-empty-string
      */
     public function format(DurationFormat $format = DurationFormat::Iso8601): string
     {
-        return $format->encode($this);
+        return match ($format) {
+            DurationFormat::Iso8601 => $this->toIso8601(),
+            DurationFormat::Timer => $this->toTimer(),
+            DurationFormat::Compact => $this->toCompact(),
+        };
     }
+
+    /**
+     * Returns the string representation of the Duration.
+     *
+     * The following format is used [-]HH:MM:SS[.mmmmmm]
+     * the fraction and the signed are only display if
+     * they duration is negative and/or the sub seconds
+     * fraction is different from 0
+     *
+     * @return non-empty-string
+     */
+    private function toTimer(): string
+    {
+        $parsed = UnitTransformer::decompose($this->microseconds);
+        $pad = static fn (int $value, int $length): string => str_pad((string) $value, $length, '0', STR_PAD_LEFT);
+
+        $formatted = $pad($parsed->hours, 2).':'.$pad($parsed->minutes, 2).':'.$pad($parsed->seconds, 2);
+        if (0 !== $parsed->microseconds) {
+            $formatted .= '.'.$pad($parsed->microseconds, 6);
+        }
+
+        return -1 === $parsed->sign ? '-'.$formatted : $formatted;
+    }
+
+    /**
+     * Returns the ISO8601 string representation of the duration.
+     *
+     * - fractional values are only allowed on seconds
+     * - only D, H, M and S are allowed; M represents the minutes
+     * - negative marker is allowed in front of the expression
+     *
+     * @return non-empty-string
+     */
+    private function toIso8601(): string
+    {
+        $parsed = UnitTransformer::decompose($this->microseconds);
+        $time = '';
+        if (0 < $parsed->hours || 0 < $parsed->minutes || 0 < $parsed->seconds || 0 < $parsed->microseconds) {
+            $time = 'T';
+            if (0 < $parsed->hours) {
+                $time .= $parsed->hours.'H';
+            }
+
+            if (0 < $parsed->minutes) {
+                $time .= $parsed->minutes.'M';
+            }
+
+            if (0 < $parsed->seconds || 0 < $parsed->microseconds) {
+                $time .= $parsed->seconds;
+                if (0 !== $parsed->microseconds) {
+                    $time .= '.'.rtrim(str_pad((string) $parsed->microseconds, 6, '0', STR_PAD_LEFT), '0');
+                }
+
+                $time .= 'S';
+            }
+        }
+
+        return '' === $time
+            ? 'PT0S'
+            : (-1 === $parsed->sign ? '-' : '').'P'.$time;
+    }
+
+    /**
+     * Format [-]xw xd xh xm xs xµs where x is a number.
+     * @return non-empty-string
+     */
+    private function toCompact(): string
+    {
+        $parsed = UnitTransformer::decompose($this->microseconds);
+        $time = [];
+        if (0 !== $parsed->weeksCount) {
+            $time[] = $parsed->weeksCount.'w';
+        }
+
+        $days = $parsed->daysCount % 7;
+        if (0 !== $days) {
+            $time[] = $days.'d';
+        }
+
+        $hours = $parsed->hours % 24;
+        if (0 !== $hours) {
+            $time[] = $hours.'h';
+        }
+
+        if (0 !== $parsed->minutes) {
+            $time[] = $parsed->minutes.'m';
+        }
+
+        if (0 !== $parsed->seconds) {
+            $time[] = $parsed->seconds.'s';
+        }
+
+        if (0 !== $parsed->microseconds) {
+            $time[] = $parsed->microseconds.'µs';
+        }
+
+        return [] === $time ? '0s' : (-1 === $parsed->sign ? '-' : '').implode('', $time);
+    }
+
 
     /**
      * Converts the instance to an DateInterval object.

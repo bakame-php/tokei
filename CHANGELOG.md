@@ -37,8 +37,6 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Time::roundTo`
 - `LocaleTimeFormatter`to improve time string localization using `ext-intl`
 - `IntervalFormat::encode` and `IntervalFormat::decode` to improve `Interval` encoding and decoding from and to string representation.
-- `DurationFormat::encode` and `DurationFormat::decode` to improve `Duration` encoding and decoding from and to string representation.
-- `TimeFormat` added to improve `Time` encoding and decoding from and to string representation.
 - `Direction` to unify sorting
 - `SnapMode` to unify rounding
 - `SearchMode` to unify search type (linear or circular)

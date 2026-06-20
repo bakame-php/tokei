@@ -12,10 +12,31 @@ use JsonSerializable;
 use Throwable;
 use ValueError;
 
+use function implode;
 use function is_int;
+use function preg_match;
+use function str_pad;
+use function substr;
+use function trim;
+
+use const STR_PAD_LEFT;
 
 final readonly class Time implements JsonSerializable
 {
+    private const string REGEXP_ISO8601 = '@^
+        (?<hour>\d{1,2}):
+        (?<minute>\d{1,2})
+        (:(?<second>\d{1,2}))?
+        (?:\.(?<microsecond>\d{1,6}))?
+    $@x';
+
+    private const string REGEXP_COMPACT = '@^
+        (?<hour>\d{1,2})\s*h\s*
+        (?<minute>\d{1,2})\s*m\s*
+        (?:(?<second>\d{1,2})\s*s\s*)?
+        (?:(?<microsecond>\d{1,6})\s*(µs|us)\s*)?
+    $@x';
+
     public int $ticks;
     public int $hour;
     public int $minute;
@@ -115,13 +136,24 @@ final readonly class Time implements JsonSerializable
     }
 
     /**
-     * @see TimeFormat::decode()
-     *
      * @throws InvalidTime
      */
     public static function fromFormat(string $value, TimeFormat $format = TimeFormat::Iso8601): self
     {
-        return $format->decode($value);
+        $regexp = match ($format) {
+            TimeFormat::Iso8601 => self::REGEXP_ISO8601,
+            TimeFormat::Compact => self::REGEXP_COMPACT,
+        };
+
+        $notation = trim($value);
+        1 === preg_match($regexp, $notation, $parts) || throw new InvalidTime('Unknown or bad format `'.$value.'`'.'`.');
+
+        return Time::at(
+            hour: (int) $parts['hour'],
+            minute: (int) $parts['minute'],
+            second: (int) ($parts['second'] ?? 0),
+            microsecond: (int) str_pad(substr($parts['microsecond'] ?? '0', 0, 6), 6, '0'),
+        );
     }
 
     /**
@@ -219,13 +251,58 @@ final readonly class Time implements JsonSerializable
     }
 
     /**
-     * @see TimeFormat::encode()
+     *  Encodes a Time into a specified string notation representation.
      *
      * @return non-empty-string
      */
     public function format(TimeFormat $format = TimeFormat::Iso8601): string
     {
-        return $format->encode($this);
+        return match ($format) {
+            TimeFormat::Iso8601 => $this->toIso8601(),
+            TimeFormat::Compact => $this->toCompact(),
+        };
+    }
+
+    /**
+     * Returns the string representation of the Duration.
+     *
+     * The following format is used [-]HH:MM:SS[.mmmmmm]
+     * the fraction and the signed are only display if
+     * they duration is negative and/or the sub seconds
+     * fraction is different from 0
+     *
+     * @return non-empty-string
+     */
+    private function toIso8601(): string
+    {
+        $pad = static fn (int $value, int $length): string => str_pad((string) $value, $length, '0', STR_PAD_LEFT);
+        $formatted = $pad($this->hour, 2).':'.$pad($this->minute, 2).':'.$pad($this->second, 2);
+        if (0 !== $this->microsecond) {
+            $formatted .= '.'.$pad($this->microsecond, 6);
+        }
+
+        return $formatted;
+    }
+
+    /**
+     * Format xhxmxsxµs where x is a number.
+     *
+     * @return non-empty-string
+     */
+    private function toCompact(): string
+    {
+        $parts = [];
+        $parts[] = $this->hour.'h';
+        $parts[] = $this->minute.'m';
+        if (0 !== $this->second || 0 !== $this->microsecond) {
+            $parts[] = $this->second.'s';
+        }
+
+        if (0 !== $this->microsecond) {
+            $parts[] = $this->microsecond.'µs';
+        }
+
+        return implode('', $parts);
     }
 
     /**

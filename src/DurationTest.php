@@ -211,7 +211,7 @@ final class DurationTest extends TestCase
         yield 'trim trailing zeros' => [1_500_000, 'PT1.5S'];
         yield 'negative fractional duration' => [-1_500_000, '-PT1.5S'];
         yield 'negative complex duration' => [-3_661_000_123, '-PT1H1M1.000123S'];
-        yield '24 hours duration' => [86_400_000_000, 'P1D'];
+        yield '24 hours duration' => [86_400_000_000, 'PT24H'];
     }
 
     #[DataProvider('truncateProvider')]
@@ -557,7 +557,7 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::fromFormat('P2DT3H', DurationFormat::Iso8601);
 
-        self::assertSame('P2DT3H', $duration->format());
+        self::assertSame('PT51H', $duration->format());
     }
 
     public function testItParsesNegativeDuration(): void
@@ -570,17 +570,16 @@ final class DurationTest extends TestCase
     public function testItParseAndNormalizeDuration(): void
     {
         $rawIso8601 = '-PT25H0.5S';
-        $duration = Duration::fromFormat($rawIso8601, DurationFormat::Iso8601);
+        $duration = Duration::fromFormat($rawIso8601);
 
-        self::assertNotSame($rawIso8601, $duration->format());
-        self::assertSame('-P1DT1H0.5S', $duration->format());
+        self::assertSame($rawIso8601, $duration->format());
     }
 
     public function testItRejectsYears(): void
     {
         $this->expectException(InvalidDuration::class);
 
-        Duration::fromFormat('P1Y', DurationFormat::Iso8601);
+        Duration::fromFormat('P1Y');
     }
 
     public function testItRejectsMonths(): void
@@ -608,28 +607,28 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::fromFormat('P2W', DurationFormat::Iso8601);
 
-        self::assertSame('P14D', $duration->format());
+        self::assertSame('PT336H', $duration->format());
     }
 
     public function testItParsesWeeksAndDays(): void
     {
         $duration = Duration::fromFormat('P1W2D', DurationFormat::Iso8601);
 
-        self::assertSame('P9D', $duration->format());
+        self::assertSame('PT216H', $duration->format());
     }
 
     public function testItParsesNegativeWeeks(): void
     {
         $duration = Duration::fromFormat('-P3W', DurationFormat::Iso8601);
 
-        self::assertSame('-P21D', $duration->format());
+        self::assertSame('-PT504H', $duration->format());
     }
 
     public function testItParsesWeeksWithTimeComponents(): void
     {
         $duration = Duration::fromFormat('P1WT2H30M', DurationFormat::Iso8601);
 
-        self::assertSame('P7DT2H30M', $duration->format());
+        self::assertSame('PT170H30M', $duration->format());
     }
 
     public function testItRejectsEmptyWeekNotation(): void

@@ -9,12 +9,25 @@ use DateTimeInterface;
 use JsonSerializable;
 
 use function array_map;
+use function filter_var;
+use function is_int;
+use function is_string;
+use function number_format;
+use function preg_match;
+use function trim;
+
+use const FILTER_VALIDATE_FLOAT;
+use const FILTER_VALIDATE_INT;
 
 /**
  * Represents a start-inclusive, end-exclusive interval between two times on a 24-hour circular clock.
  */
 final readonly class Interval implements JsonSerializable
 {
+    private const string REGEXP_ISO80000 = '/^\[(?<start>[^,)]*),(?<end>[^,)]*)\)$/';
+    private const string REGEXP_BOURBAKI = '/^\[(?<start>[^,\[]*),(?<end>[^,\[]*)\[$/';
+    private const string REGEXP_ISO8601 = '/^(?<start>[^\/]+)\/(?<end>[^\/]+)$/';
+
     public Time $start;
     public Time $end;
     public Duration $duration;
@@ -117,7 +130,97 @@ final readonly class Interval implements JsonSerializable
         IntervalFormat $format = IntervalFormat::Iso8601StartDuration,
         ?Unit $unit = null
     ): self {
-        return $format->decode($value, $unit);
+        $trimmedData = trim($value);
+        $pattern = match ($format) {
+            IntervalFormat::Bourbaki => self::REGEXP_BOURBAKI,
+            IntervalFormat::Iso80000 => self::REGEXP_ISO80000,
+            default => self::REGEXP_ISO8601,
+        };
+
+        1 === preg_match($pattern, $trimmedData, $found) || throw InvalidInterval::dueToMalformedFormat($value, $format);
+
+        $start = trim($found['start']);
+        $end = trim($found['end']);
+
+        '' !== $start || '' !== $end || throw InvalidInterval::dueToMalformedFormat($value, $format);
+
+        try {
+            return match ($format) {
+                IntervalFormat::Bourbaki,
+                IntervalFormat::Iso80000 => self::parseMathInterval($start, $end, $value, $unit, $format),
+                default => self::parseIso8601Interval($start, $end, $value, $format),
+            };
+        } catch (TimeException $exception) {
+            $exception instanceof InvalidInterval ? throw $exception : throw InvalidInterval::dueToMalformedFormat($value, $format, $exception);
+        }
+    }
+
+    /**
+     * @throws InvalidInterval|InvalidTime|InvalidDuration
+     */
+    private static function parseMathInterval(string $start, string $end, string $data, ?Unit $unit, IntervalFormat $format): Interval
+    {
+        $start = self::normalizeMathIntervalValue($start);
+        $end = self::normalizeMathIntervalValue($end);
+
+        $start ??= is_string($end) ? '00:00' : 0;
+        $end ??= is_string($start) ? '00:00' : 0;
+
+        (get_debug_type($start) === get_debug_type($end))
+        || is_string($start)
+        || null !== $unit
+        || throw InvalidInterval::dueToMalformedFormat($data, $format);
+
+        return Interval::between(
+            self::createTime($start, $unit, $data, $format),
+            self::createTime($end, $unit, $data, $format),
+        );
+    }
+
+    private static function normalizeMathIntervalValue(string $value): int|float|string|null
+    {
+        if ('' === $value) {
+            return null;
+        }
+
+        $intValue = filter_var($value, FILTER_VALIDATE_INT);
+        if (false !== $intValue) {
+            return $intValue;
+        }
+
+        $floatValue = filter_var($value, FILTER_VALIDATE_FLOAT);
+        if (false !== $floatValue) {
+            return $floatValue;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @throws InvalidInterval|InvalidTime
+     */
+    private static function createTime(int|string|float $value, ?Unit $unit, string $data, IntervalFormat $format): Time
+    {
+        return match (true) {
+            null !== $unit && !is_string($value) => Time::fromOffset($value, $unit),
+            is_string($value) => Time::fromFormat($value),
+            default => throw InvalidInterval::dueToMalformedFormat($data, $format),
+        };
+    }
+
+    /**
+     * @throws InvalidInterval|InvalidTime|InvalidDuration
+     */
+    private static function parseIso8601Interval(string $start, string $end, string $notation, IntervalFormat $format): Interval
+    {
+        $isDurationFormat = static fn (string $str): bool => str_starts_with($str, 'P') || str_starts_with($str, '-P');
+
+        return match (true) {
+            IntervalFormat::Iso8601DurationEnd === $format && $isDurationFormat($start) => Interval::until(Time::fromFormat($end), Duration::fromFormat($start)),
+            IntervalFormat::Iso8601StartDuration === $format && $isDurationFormat($end) => Interval::since(Time::fromFormat($start), Duration::fromFormat($end)),
+            IntervalFormat::Iso8601StartEnd === $format => Interval::between(Time::fromFormat($start), Time::fromFormat($end)),
+            default => throw InvalidInterval::dueToMalformedFormat($notation, $format),
+        };
     }
 
     /**
@@ -173,7 +276,29 @@ final readonly class Interval implements JsonSerializable
      */
     public function format(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): string
     {
-        return $format->encode($this, $unit);
+        $start = self::formatTime($this->start, $unit, $format);
+        $end = self::formatTime($this->end, $unit, $format);
+
+        return match ($format) {
+            IntervalFormat::Iso8601StartDuration => $start.'/'.$this->duration->format(),
+            IntervalFormat::Iso8601DurationEnd => $this->duration->format().'/'.$end,
+            IntervalFormat::Iso8601StartEnd => $start.'/'.$end,
+            IntervalFormat::Iso80000 => '['.$start.','.$end.')',
+            IntervalFormat::Bourbaki => '['.$start.','.$end.'[',
+        };
+    }
+
+    private static function formatTime(Time $time, ?Unit $unit, IntervalFormat $format): string
+    {
+        if (null === $unit || !$format->supportsUnit()) {
+            return $time->format();
+        }
+
+        $value = $time->in($unit);
+
+        return is_int($value)
+            ? (string) $value
+            : number_format(num: $value, decimals: 6, decimal_separator: '.', thousands_separator: '');
     }
 
     /**

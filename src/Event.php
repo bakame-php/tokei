@@ -35,8 +35,6 @@ final class Event implements HasIdentifiers, JsonSerializable
     }
 
     /**
-     * @see TimeFormat::decode()
-     *
      * @throws InvalidTime|TemporalException
      */
     public static function fromFormat(string $value, TimeFormat $format = TimeFormat::Iso8601): self
@@ -71,7 +69,7 @@ final class Event implements HasIdentifiers, JsonSerializable
      */
     public function format(TimeFormat $format = TimeFormat::Iso8601): string
     {
-        return $format->encode($this->at).';'.$this->identifiers->toCommaSeparated();
+        return $this->at->format($format).';'.$this->identifiers->toCommaSeparated();
     }
 
     public function equals(Event $other): bool

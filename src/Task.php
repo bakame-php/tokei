@@ -72,7 +72,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
      */
     public function format(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): string
     {
-        return $format->encode($this->interval, $unit).';'.$this->identifiers->toCommaSeparated();
+        return $this->interval->format($format, $unit).';'.$this->identifiers->toCommaSeparated();
     }
 
     public function equals(Task $other): bool
