@@ -24,6 +24,7 @@ use const JSON_UNESCAPED_SLASHES;
 #[CoversClass(IntervalSet::class)]
 #[CoversClass(TemporalSearch::class)]
 #[CoversClass(TokeiException::class)]
+#[CoversClass(InputNormalizer::class)]
 final class IntervalSetTest extends TestCase
 {
     public function test_it_can_be_empty(): void

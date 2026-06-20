@@ -23,6 +23,7 @@ use function unserialize;
 #[CoversClass(Unit::class)]
 #[CoversClass(UnitTransformer::class)]
 #[CoversClass(LocaleTimeFormatter::class)]
+#[CoversClass(InputNormalizer::class)]
 final class TimeTest extends TestCase
 {
     /* -------------------------------------------------

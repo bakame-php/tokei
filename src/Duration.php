@@ -400,14 +400,10 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @param non-negative-int $factor
-     *
      * @throws InvalidDuration if value overflow
      */
     public function multipliedBy(int $factor): self
     {
-        0 <= $factor || throw new InvalidDuration('factor must be a non negative integer.');  /* @phpstan-ignore-line */
-
         $result = $this->microseconds * $factor;
 
         is_int($result) || throw InvalidDuration::dueToOverflow(); /* @phpstan-ignore-line */
@@ -420,13 +416,11 @@ final readonly class Duration implements JsonSerializable
      *
      * The result is rounded toward zero.
      *
-     * @param positive-int $factor
-     *
      * @throws InvalidDuration if the factor is zero
      */
     public function dividedBy(int $factor): self
     {
-        0 < $factor || throw new InvalidDuration('factor must be a positive integer.');  /* @phpstan-ignore-line */
+        0 !== $factor || throw new InvalidDuration('factor must be a positive integer.');
 
         return new self(intdiv($this->microseconds, $factor));
     }
@@ -437,6 +431,15 @@ final readonly class Duration implements JsonSerializable
 
         return !$other->isZero()
             ? intdiv($this->microseconds, $other->microseconds)
+            : throw new InvalidDuration('Cannot divide by zero duration.');
+    }
+
+    public function remainder(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): self
+    {
+        $other = InputNormalizer::duration($other);
+
+        return !$other->isZero()
+            ? new self($this->microseconds % $other->microseconds)
             : throw new InvalidDuration('Cannot divide by zero duration.');
     }
 

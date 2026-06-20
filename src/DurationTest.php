@@ -25,6 +25,7 @@ use const PHP_INT_MAX;
 #[CoversClass(DurationFormat::class)]
 #[CoversClass(Unit::class)]
 #[CoversClass(UnitTransformer::class)]
+#[CoversClass(InputNormalizer::class)]
 final class DurationTest extends TestCase
 {
     public function testParseMicroseconds(): void
@@ -661,7 +662,7 @@ final class DurationTest extends TestCase
     {
         $this->expectException(InvalidDuration::class);
 
-        Duration::max()->dividedBy(0); /* @phpstan-ignore-line */
+        Duration::max()->dividedBy(0);
     }
 
     public function testItMultiplyTheDuration(): void
@@ -1060,5 +1061,80 @@ final class DurationTest extends TestCase
             'missing number' => ['h 10m'],
             'bad spacing unit' => ['10 ms'],
         ];
+    }
+
+    public function testCountOfReturnsWholeOccurrences(): void
+    {
+        $duration = Duration::of(hours: 5);
+        $other = Duration::of(hours: 2);
+
+        self::assertSame(2, $duration->countOf($other));
+    }
+
+    public function testCountOfReturnsZeroWhenDurationIsSmaller(): void
+    {
+        $duration = Duration::of(minutes: 30);
+        $other = Duration::of(hours: 1);
+
+        self::assertSame(0, $duration->countOf($other));
+    }
+
+    public function testCountOfHandlesExactDivision(): void
+    {
+        $duration = Duration::of(hours: 6);
+        $other = Duration::of(hours: 2);
+
+        self::assertSame(3, $duration->countOf($other));
+    }
+
+    public function testCountOfThrowsWhenDividingByZeroDuration(): void
+    {
+        $this->expectException(InvalidDuration::class);
+        $this->expectExceptionMessageIsOrContains('Cannot divide by zero duration.');
+
+        Duration::of(hours: 1)->countOf(Duration::of());
+    }
+
+    public function testRemainderReturnsRemainingDuration(): void
+    {
+        $duration = Duration::of(hours: 5);
+        $other = Duration::of(hours: 2);
+
+        self::assertEquals(Duration::of(hours: 1), $duration->remainder($other));
+    }
+
+    public function testRemainderReturnsZeroForExactDivision(): void
+    {
+        $duration = Duration::of(hours: 6);
+        $other = Duration::of(hours: 2);
+
+        self::assertTrue($duration->remainder($other)->isZero());
+    }
+
+    public function testRemainderReturnsOriginalDurationWhenSmaller(): void
+    {
+        $duration = Duration::of(minutes: 30);
+        $other = Duration::of(hours: 1);
+
+        self::assertEquals(Duration::of(minutes: 30), $duration->remainder($other));
+    }
+
+    public function testRemainderThrowsWhenDividingByZeroDuration(): void
+    {
+        $this->expectException(InvalidDuration::class);
+        $this->expectExceptionMessageIsOrContains('Cannot divide by zero duration.');
+
+        Duration::of(hours: 1)->remainder(Duration::of());
+    }
+
+    public function testCountOfAndRemainderRespectDivisionIdentity(): void
+    {
+        $duration = Duration::of(hours: 5);
+        $other = Duration::of(hours: 2)->negated();
+
+        $count = $duration->countOf($other);
+        $remainder = $duration->remainder($other);
+
+        self::assertEquals($duration, $other->multipliedBy($count)->sum($remainder));
     }
 }
