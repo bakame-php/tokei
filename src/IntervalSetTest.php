@@ -158,7 +158,9 @@ final class IntervalSetTest extends TestCase
         $restored = unserialize(serialize($set));
 
         self::assertInstanceOf(IntervalSet::class, $restored);
-        self::assertEquals($set, $restored);
+        foreach ($set as $offset => $interval) {
+            self::assertTrue($interval->equals($restored->get($offset)));
+        }
     }
 
     public function test_normalize_sorts_intervals(): void

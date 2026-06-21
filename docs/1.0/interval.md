@@ -73,6 +73,8 @@ $interval->type;      // returns IntervalType::Linear
 
 ## Interval Type
 
+There are 4 types of interval as defined by the relative position of their endpoints and their duration.
+
 ```php
 enum IntervalType
 {
@@ -100,11 +102,14 @@ enum IntervalFormat
 
 Out of the box, to following formatting algorithm are possible:
 
-- `Iso8601StartDuration` returns a string representation based on the starting time and the interval duration;
-- `Iso8601DurationEnd` returns a string representation based on the interval duration and the ending time;
-- `Iso8601StartEnd` returns a string representation based on the interval starting and ending times;
-- `Iso80000` returns a string representation based on the interval starting and ending times and the half-open bound;
-- `Bourbaki` returns a string representation based on the interval starting and ending times and the half-open bound, with different boundary markers;
+| Format                 | String representation based on                                                                 |
+|------------------------|------------------------------------------------------------------------------------------------|
+| `Iso8601StartDuration` | the starting time and the interval duration                                                    |
+| `Iso8601DurationEnd`   | the interval duration and the ending time                                                      |
+| `Iso8601StartEnd`      | the interval starting and ending times                                                         |
+| `Iso80000`             | the interval starting and ending times and the half-open bound, with ISO-8000 boundary markers |
+| `Bourbaki`             | the interval starting and ending times and the half-open bound, with Bourbaki boundary markers |
+
 
 ```php
 $interval = Interval::between(Time::midnight(), Time::noon());
@@ -115,11 +120,9 @@ $interval->format(IntervalFormat::Iso80000);             // returns [00:00:00,12
 $interval->format(IntervalFormat::Bourbaki);             // returns [00:00:00,12:00:00[
 ```
 
-> [!IMPORTANT]
-> The `IntervalFormat::Iso8601StartDuration` version is the one used for JSON string representation
-> via `JsonSerialize`; the boundaries information IS NOT transferred.
-
 ## Iterations
+
+The `Bound` enum allow defining an anchor from which an operation can be processed in regard to intervals .
 
 ```php
 enum Bound
@@ -159,8 +162,10 @@ Interval::equals(Interval $other): bool
 
 ## Duration based comparison
 
+You can use the `Duration::compare` static method to compare `Interval` instances based on their respective duration.
+But the package also provide convenients method to ease instance comparison:
+
 ```php
-Interval::compareDurationTo(Interval $other): int
 Interval::sameDurationAs(Interval $other): bool
 Interval::longerThan(Interval $other): bool
 Interval::longerThanOrEqual(Interval $other): bool
@@ -204,10 +209,9 @@ $native->start->format('Y-m-d H:i:s'); // '2026-12-03 23:15:00'
 $native->end->format('Y-m-d H:i:s');   // '2026-12-04 01:30:00'
 ```
 
-> [!NOTE]
-> If the `DateTimeInterface` instance submitted extends the
-> `DateTimeImmutable` class then the return type will be of that same type
-> otherwise PHP's `DateTimeImmutable` is returned
+<p class="message-info">If the <code>DateTimeInterface</code> instance submitted extends the
+<code>DateTimeImmutable</code> class then the return type will be of that same type
+otherwise PHP's `DateTimeImmutable` is returned</p>
 
 It is possible to generate an `Interval` instance from a `NativeInterval` but
 you need to take into account that the `Interval::duration` will be affected
@@ -224,7 +228,3 @@ $native->duration();                         // returns new DateInterval('P1DT22
 $interval->format(IntervalFormat::Iso80000); // returns "[13:03:57,11:19:57)
 $interval->duration->format();               // returns "PT22H16M"
 ```
-
-> [!IMPORTANT]
-> Whenever an API expects an `Interval` instance, a `NativeInterval` instance can be used.
-> It will be converted to a `Interval` instance using the `Interval::fromNative` method.

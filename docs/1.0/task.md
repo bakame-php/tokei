@@ -108,9 +108,8 @@ $native->identifiers::class;
 // 'Bakame\Tokei\Identifiers'
 ```
 
-> [!NOTE]
-> The supplied `DateTimeInterface` object provides the date component
-> used when converting the task interval into native PHP date objects.
+<p class="message-info">The supplied <code>DateTimeInterface</code> object provides the date
+component used when converting the task interval into native PHP date objects.</p>
 
 A `Task` instance can also be created from a `NativeTask`.
 

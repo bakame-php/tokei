@@ -47,6 +47,28 @@ final readonly class Interval implements JsonSerializable
         $this->type = $this->setType();
     }
 
+    /**
+     * @return array{0: array{start: Time, duration: Duration}, 1: array{}}
+     */
+    public function __serialize(): array
+    {
+        return [['start' => $this->start, 'duration' => $this->duration], []];
+    }
+
+    /**
+     * @param array{0: array{start: Time, duration: Duration}, 1: array{}} $data
+     */
+    public function __unserialize(array $data): void
+    {
+        [$properties] = $data;
+        $this->start = $properties['start'];
+        $this->duration = $properties['duration'];
+        $this->linearStart = $this->start->ticks;
+        $this->linearEnd = $this->linearStart + $properties['duration']->microseconds;
+        $this->end = Time::sinceMidnight($this->linearEnd, Unit::Microsecond);
+        $this->type = $this->setType();
+    }
+
     private function setType(): IntervalType
     {
         return match (Time::compare($this->start, $this->end)) {
@@ -647,27 +669,5 @@ final readonly class Interval implements JsonSerializable
     public function difference(Interval|Task|NativeInterval|NativeTask $other): IntervalSet
     {
         return new IntervalSet($this)->difference(InputNormalizer::interval($other));
-    }
-
-    /**
-     * @return array{0: array{start: Time, duration: Duration}, 1: array{}}
-     */
-    public function __serialize(): array
-    {
-        return [['start' => $this->start, 'duration' => $this->duration], []];
-    }
-
-    /**
-     * @param array{0: array{start: Time, duration: Duration}, 1: array{}} $data
-     */
-    public function __unserialize(array $data): void
-    {
-        [$properties] = $data;
-        $this->start = $properties['start'];
-        $this->duration = $properties['duration'];
-        $this->linearStart = $this->start->ticks;
-        $this->linearEnd = $this->linearStart + $properties['duration']->microseconds;
-        $this->end = Time::sinceMidnight($this->linearEnd, Unit::Microsecond);
-        $this->type = $this->setType();
     }
 }

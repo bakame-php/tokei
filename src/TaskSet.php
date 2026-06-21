@@ -29,6 +29,23 @@ final class TaskSet implements TemporalSet
         $this->items = self::sortChronologically($items);
     }
 
+    /**
+     * @return array{0: array{tasks: list<Task>}, 1: array{}}
+     */
+    public function __serialize(): array
+    {
+        return [['tasks' => $this->items], []];
+    }
+
+    /**
+     * @param array{0: array{tasks: list<Task>}, 1: array{}} $data
+     */
+    public function __unserialize(array $data): void
+    {
+        [$properties] = $data;
+        $this->items = $properties['tasks'];
+    }
+
     public static function fromEvents(EventSet $items, Duration|DateInterval $duration, Bound $from = Bound::Start): self
     {
         return new self(...$items->map(fn (Event $event): Task => Task::fromEvent($event, $duration, $from)));
@@ -568,22 +585,5 @@ final class TaskSet implements TemporalSet
         }
 
         return array_values($taskList);
-    }
-
-    /**
-     * @return array{0: array{tasks: list<Task>}, 1: array{}}
-     */
-    public function __serialize(): array
-    {
-        return [['tasks' => $this->items], []];
-    }
-
-    /**
-     * @param array{0: array{tasks: list<Task>}, 1: array{}} $data
-     */
-    public function __unserialize(array $data): void
-    {
-        [$properties] = $data;
-        $this->items = $properties['tasks'];
     }
 }

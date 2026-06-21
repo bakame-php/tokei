@@ -164,7 +164,7 @@ To simplify reasoning around time you can also truncate or round its value to on
 the unit declare on the `Bakame\Tokei\Unit` enum
 
 ```php
-$t = Time::fromUnitOfDay(3_150_000_000, Unit::Microsecond);
+$t = Time::sinceMidnight(3_150_000_000, Unit::Microsecond);
 $t->format(); // returns "00:52:30"
 $t->roundTo(Unit::Minutes, SnapMode::Floor)->format(); // returns "00:52:00"
 $t->roundTo(Unit::Minutes, SnapMode::Nearest)->format();  // returns "00:53:00"

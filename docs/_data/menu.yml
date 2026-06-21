@@ -7,7 +7,7 @@ version:
             Time: '/1.0/time/'
             Duration: '/1.0/duration/'
             Interval: '/1.0/interval/'
-            IntervalSet: '/1.0/Intervalset/'
+            IntervalSet: '/1.0/intervalset/'
         Annotated Values:
             Event: '/1.0/event/'
             Task: '/1.0/task/'

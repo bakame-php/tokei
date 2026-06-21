@@ -118,7 +118,7 @@ final class DurationTest extends TestCase
         $a = Duration::of(hours: 1);
         $b = Duration::of(minutes: 30);
 
-        self::assertNotSame($a, Duration::sum($a, $b));
+        self::assertNotSame($a, $a->sum($b));
     }
 
     public function test_add_single_duration(): void
@@ -126,25 +126,26 @@ final class DurationTest extends TestCase
         $a = Duration::of(hours: 1);
         $b = Duration::of(minutes: 30);
 
-        self::assertSame('01:30:00', Duration::sum($a, $b)->format(DurationFormat::Timer));
+        self::assertSame('01:30:00', $a->sum($b)->format(DurationFormat::Timer));
     }
 
     public function test_add_multiple_durations(): void
     {
-        $base = Duration::of(hours: 1);
-        $result = Duration::sum(
-            $base,
-            Duration::of(minutes: 30),
-            Duration::of(seconds: 45),
-            Duration::of(microseconds: 123456),
-        );
+        $result = Duration::of(hours: 1)
+            ->sum(
+                Duration::of(minutes: 30),
+                Duration::of(seconds: 45),
+                Duration::of(microseconds: 123456),
+            );
 
         self::assertSame('01:30:45.123456', $result->format(DurationFormat::Timer));
     }
 
     public function test_sum_with_no_arguments(): void
     {
-        self::assertTrue(Duration::sum()->isZero());
+        $duration =  Duration::of(hours: 1);
+
+        self::assertTrue($duration->sum()->equals($duration));
     }
 
     public function test_add_negative_duration(): void
@@ -152,7 +153,7 @@ final class DurationTest extends TestCase
         $a = Duration::of(hours: 5);
         $b = Duration::of(hours: 2)->negated();
 
-        self::assertSame('03:00:00', Duration::sum($a, $b)->format(DurationFormat::Timer));
+        self::assertSame('03:00:00', $a->sum($b)->format(DurationFormat::Timer));
     }
 
     public function test_add_result_can_be_negative(): void
@@ -160,14 +161,7 @@ final class DurationTest extends TestCase
         $a = Duration::of(hours: 1);
         $b = Duration::of(hours: 3)->negated();
 
-        self::assertSame('-02:00:00', Duration::sum($a, $b)->format(DurationFormat::Timer));
-    }
-
-    public function test_add_without_arguments_returns_equal_duration(): void
-    {
-        $duration = Duration::of(hours: 2);
-
-        self::assertEquals($duration, Duration::sum($duration));
+        self::assertSame('-02:00:00', $a->sum($b)->format(DurationFormat::Timer));
     }
 
     public function test_add_preserves_microseconds(): void
@@ -175,7 +169,7 @@ final class DurationTest extends TestCase
         $a = Duration::of(microseconds: 500000);
         $b = Duration::of(microseconds: 250000);
 
-        self::assertSame('00:00:00.750000', Duration::sum($a, $b)->format(DurationFormat::Timer));
+        self::assertSame('00:00:00.750000', $a->sum($b)->format(DurationFormat::Timer));
     }
 
     public function test_abs_negate(): void
@@ -652,7 +646,7 @@ final class DurationTest extends TestCase
 
     public function testItRejectsDivideByZero(): void
     {
-        $this->expectException(InvalidDuration::class);
+        $this->expectException(DivisionByZeroError::class);
 
         Duration::max()->dividedBy(0);
     }
@@ -1128,8 +1122,13 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(hours: 5);
         $other = Duration::of(hours: 2)->negated();
-
         $result = $duration->chunkBy($other);
-        self::assertEquals($duration, Duration::sum($other->multipliedBy($result->count), $result->remainder));
+
+        self::assertEquals(
+            $duration,
+            $other
+                ->multipliedBy($result->count)
+                ->sum($result->remainder)
+        );
     }
 }

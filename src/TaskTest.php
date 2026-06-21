@@ -77,6 +77,6 @@ final class TaskTest extends TestCase
         $restored = unserialize(serialize($task));
 
         self::assertInstanceOf(Task::class, $restored);
-        self::assertEquals($task, $restored);
+        self::assertTrue($task->equals($restored));
     }
 }

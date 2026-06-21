@@ -21,8 +21,8 @@ use Bakame\Tokei\Duration;
 use Bakame\Tokei\DurationFormat;
 use Bakame\Tokei\Time;
 
-$target = Duration::of(hours: 9, minutes: 33);
-$alreadyDone = Duration::of(hours: 7, minutes: 20);
+$target = Duration::of(hours: 7, minutes: 33);
+$alreadyDone = Duration::of(hours: 5, minutes: 17);
 $remaining = $target->sum($alreadyDone->negated());
 $startedNewShiftAt = Time::at(hour: 21, minute: 31);
 $shouldStopAt = $startedNewShiftAt->shift($remaining);
@@ -53,6 +53,7 @@ composer require bakame/tokei
 You need:
 
 - **PHP >= 8.4** but the latest stable version of PHP is recommended
+- **The library does not support 32bit PHP**
 - to be able to get the locale string version of the time you need the `ext-intl` extension or use a polyfill for `IntlDateFormatter`.
 
 ## Documentation

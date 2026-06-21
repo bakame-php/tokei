@@ -19,6 +19,24 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     }
 
     /**
+     * @return array{0: array{interval: Interval, identifiers: Identifiers}, 1: array{}}
+     */
+    public function __serialize(): array
+    {
+        return [['interval' => $this->interval, 'identifiers' => $this->identifiers], []];
+    }
+
+    /**
+     * @param array{0: array{interval: Interval, identifiers: Identifiers}, 1: array{}} $data
+     */
+    public function __unserialize(array $data): void
+    {
+        [$properties] = $data;
+        $this->interval = $properties['interval'];
+        $this->identifiers = $properties['identifiers'];
+    }
+
+    /**
      * @param Identifiers|HasIdentifiers|non-empty-string $identifier
      *
      * @throws TemporalException
@@ -112,23 +130,5 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     public static function fromNative(NativeTask $task): self
     {
         return new self(Interval::fromNative($task->interval), $task->identifiers);
-    }
-
-    /**
-     * @return array{0: array{interval: Interval, identifiers: Identifiers}, 1: array{}}
-     */
-    public function __serialize(): array
-    {
-        return [['interval' => $this->interval, 'identifiers' => $this->identifiers], []];
-    }
-
-    /**
-     * @param array{0: array{interval: Interval, identifiers: Identifiers}, 1: array{}} $data
-     */
-    public function __unserialize(array $data): void
-    {
-        [$properties] = $data;
-        $this->interval = $properties['interval'];
-        $this->identifiers = $properties['identifiers'];
     }
 }

@@ -4,20 +4,23 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
+use ArgumentCountError;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use JsonSerializable;
 use Throwable;
-use ValueError;
 
+use function array_key_first;
+use function array_key_last;
 use function implode;
 use function is_int;
 use function preg_match;
 use function str_pad;
 use function substr;
 use function trim;
+use function usort;
 
 use const STR_PAD_LEFT;
 
@@ -37,6 +40,7 @@ final readonly class Time implements JsonSerializable
         (?:(?<microsecond>\d{1,6})\s*(µs|us)\s*)?
     $@x';
 
+    /** Time since midnight expressed in the library base unit.*/
     public int $ticks;
     public int $hour;
     public int $minute;
@@ -44,7 +48,7 @@ final readonly class Time implements JsonSerializable
     public int $microsecond;
 
     /**
-     * @param int $ticks represents the microseconds from midnight
+     * @param int $ticks Time since midnight expressed in the library base unit
      */
     private function __construct(int $ticks)
     {
@@ -177,8 +181,6 @@ final readonly class Time implements JsonSerializable
      * Returns the current time in the given time-zone.
      *
      * @param DateTimeZone|non-empty-string $timezone
-     *
-     * @throws InvalidTime|TimeException
      */
     public static function now(DateTimeZone|string $timezone): self
     {
@@ -187,19 +189,13 @@ final readonly class Time implements JsonSerializable
 
     /**
      * Returns the smallest instances among the given values.
-     *
-     * @throws ValueError if no value given
      */
     public static function minOf(self ...$times): self
     {
-        $value = null;
-        foreach ($times as $time) {
-            if (null === $value || $time->isBefore($value)) {
-                $value = $time;
-            }
-        }
+        [] !== $times || throw new ArgumentCountError('minOf() expects at least one time');
+        usort($times, Time::compare(...));
 
-        return null !== $value ? $value : throw new ValueError('minOf() expects at least one time');
+        return $times[array_key_first($times)];
     }
 
     /**
@@ -207,14 +203,32 @@ final readonly class Time implements JsonSerializable
      */
     public static function maxOf(self ...$times): self
     {
-        $value = null;
-        foreach ($times as $time) {
-            if (null === $value || $time->isAfter($value)) {
-                $value = $time;
-            }
-        }
+        [] !== $times || throw new ArgumentCountError('maxOf() expects at least one time');
+        usort($times, Time::compare(...));
 
-        return null !== $value ? $value : throw new ValueError('maxOf() expects at least one time');
+        return $times[array_key_last($times)];
+    }
+
+    /**
+     * @return array{0: array{microseconds: int}, 1:array{}}
+     */
+    public function __serialize(): array
+    {
+        return [['microseconds' => $this->ticks], []];
+    }
+
+    /**
+     * @param array{0: array{microseconds: int}, 1:array{}} $data
+     */
+    public function __unserialize(array $data): void
+    {
+        [$properties] = $data;
+        $time = new self($properties['microseconds']);
+        $this->ticks = $time->ticks;
+        $this->hour = $time->hour;
+        $this->minute = $time->minute;
+        $this->second = $time->second;
+        $this->microsecond = $time->microsecond;
     }
 
     /**
@@ -348,9 +362,9 @@ final readonly class Time implements JsonSerializable
         return 0 >= Time::compare($this, $other);
     }
 
-    public function isAfter(Time|Event|NativeEvent|DateTimeInterface $other): bool
+    public function equals(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
-        return 0 < Time::compare($this, $other);
+        return 0 === Time::compare($this, $other);
     }
 
     public function isAfterOrEqual(Time|Event|NativeEvent|DateTimeInterface $other): bool
@@ -358,9 +372,9 @@ final readonly class Time implements JsonSerializable
         return 0 <= Time::compare($this, $other);
     }
 
-    public function equals(Time|Event|NativeEvent|DateTimeInterface $other): bool
+    public function isAfter(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
-        return 0 === Time::compare($this, $other);
+        return 0 < Time::compare($this, $other);
     }
 
     /**
@@ -473,27 +487,5 @@ final readonly class Time implements JsonSerializable
         $duration = UnitTransformer::wrap(InputNormalizer::time($other)->ticks - $this->ticks, Unit::Day);
 
         return Duration::of(microseconds: $duration);
-    }
-
-    /**
-     * @return array{0: array{microseconds: int}, 1:array{}}
-     */
-    public function __serialize(): array
-    {
-        return [['microseconds' => $this->ticks], []];
-    }
-
-    /**
-     * @param array{0: array{microseconds: int}, 1:array{}} $data
-     */
-    public function __unserialize(array $data): void
-    {
-        [$properties] = $data;
-        $time = new self($properties['microseconds']);
-        $this->ticks = $time->ticks;
-        $this->hour = $time->hour;
-        $this->minute = $time->minute;
-        $this->second = $time->second;
-        $this->microsecond = $time->microsecond;
     }
 }

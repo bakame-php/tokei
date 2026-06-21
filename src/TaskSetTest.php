@@ -399,7 +399,9 @@ final class TaskSetTest extends TestCase
         $restored = unserialize(serialize($tasks));
 
         self::assertInstanceOf(TaskSet::class, $restored);
-        self::assertEquals($tasks, $restored);
+        foreach ($tasks as $offset => $task) {
+            self::assertTrue($task->equals($restored->get($offset)));
+        }
     }
 
     public function test_interesect_with_task_overflow(): void

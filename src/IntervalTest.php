@@ -601,10 +601,10 @@ final class IntervalTest extends TestCase
             Time::at(2),
         );
 
-        $total = Duration::sum($range, $range->complement());
-
         self::assertTrue(
-            $total->equals(Duration::of(hours: 24))
+            Duration::zero()
+                ->sum($range, $range->complement())
+                ->equals(Duration::of(hours: 24))
         );
     }
 
@@ -778,7 +778,7 @@ final class IntervalTest extends TestCase
         $restored = unserialize(serialize($interval));
 
         self::assertInstanceOf(Interval::class, $restored);
-        self::assertEquals($interval, $restored);
+        self::assertTrue($interval->equals($restored));
     }
 
     public function test_duration_can_be_json_serialized(): void

@@ -36,7 +36,28 @@ final class IntervalSet implements TemporalSet
     public function __construct(Interval|NativeInterval|IntervalSet|Task|NativeTask|TaskSet ...$items)
     {
         $this->items = self::flatten(...$items);
-        $this->duration = Duration::sum(...$this->items);
+        $this->duration = Duration::zero()->sum(...$this->items);
+    }
+
+    /**
+     * @return array{0: array{intervals: list<Interval>}, 1: array{}}
+     */
+    public function __serialize(): array
+    {
+        return [['intervals' => $this->items], []];
+    }
+
+    /**
+     * @param array{0: array{intervals: list<Interval>}, 1: array{}} $data
+     *
+     * @throws InvalidDuration
+     */
+    public function __unserialize(array $data): void
+    {
+        [$properties] = $data;
+        $new = new self(...$properties['intervals']);
+        $this->items = $new->items;
+        $this->duration = $new->duration;
     }
 
     /**
@@ -697,25 +718,5 @@ final class IntervalSet implements TemporalSet
 
             return 0 !== $result ? $result : Duration::compare($a, $b);
         };
-    }
-
-    /**
-     * @return array{0: array{intervals: list<Interval>}, 1: array{}}
-     */
-    public function __serialize(): array
-    {
-        return [['intervals' => $this->items], []];
-    }
-
-    /**
-     * @param array{0: array{intervals: list<Interval>}, 1: array{}} $data
-     *
-     * @throws InvalidDuration
-     */
-    public function __unserialize(array $data): void
-    {
-        [$properties] = $data;
-        $this->items = $properties['intervals'];
-        $this->duration = Duration::sum(...$this->items);
     }
 }

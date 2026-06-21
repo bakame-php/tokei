@@ -27,9 +27,8 @@ Interval::between(new DateTime('2026-05-23 15:23:16'), Time::endOfDay());
 Interval::between(Event::at(Time::noon(), 'lunch'), new DateTime('2026-05-23 15:23:16'));
 ```
 
-> [!IMPORTANT]
-> The date and timezone components of the `DateTimeInterface` object
-> are ignored when used as a `Time` instance parameter.
+<p class="message-notice">The date and timezone components of the <code>DateTimeInterface</code> object are 
+ignored when used as a <code>Time</code> instance parameter.</p>
 
 ```php
 $interval = Interval::between(
@@ -67,10 +66,9 @@ Interval::since(
 
 For Interval types, the interval `duration` property will be used.
 
-> [!IMPORTANT]
-> `DateInterval` instances which do not use deterministic component will 
-> be rejected and throw an `InvalidDuration` exception if provided 
-> in place of a `Duration` instance.
+<p class="message-warning"><code>DateInterval</code> instances which do not 
+use deterministic component will  be rejected and throw an <code>InvalidDuration</code>
+exception if provided in place of a <code>Duration</code> instance.</p>
 
 ```php
 Interval::since(
@@ -79,10 +77,9 @@ Interval::since(
 );
 //will throw because the month component is used
 ```
-> [!NOTE]
-> When a `DateInterval` instance is generated through `DateTimeInterface::diff`, 
-> intervals containing months or years are still accepted because the 
-> `DateInterval::days` property contains the resolved duration in days.
+<p class="message-info">When a <code>DateInterval</code> instance is generated through <code>DateTimeInterface::diff</code>, 
+intervals containing months or years are still accepted because the <code>DateInterval::days</code> property contains
+the resolved duration in days.</p>
 
 ## Interval values
 

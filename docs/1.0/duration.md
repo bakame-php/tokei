@@ -22,13 +22,12 @@ $durationB = Duration::fromFormat(notation: 'P2WT3H', format: DurationFormat::Is
 $durationC = Duration::fromDateInterval(new DateInterval('PT23M3S'));
 ```
 
-> [!IMPORTANT]
-> Whenever an API expects a `Duration` instance, a `DateInterval` instance can be used.
-> It will be converted to a `Duration` instance using the `Duration::fromDateInterval` method.
+<p class="message-info">Whenever an API expects a `Duration` instance, a <code>DateInterval</code> instance
+can be used. It will be converted to a `Duration` instance using the <code>Duration::fromDateInterval</code> method.</p>
 
-> [!IMPORTANT]
-> `Duration::fromFormat` only parse ISO8601 notations with deterministic part **(ie: years and months are excluded)**
-> `Duration::of` only using non-negative integer otherwise and exception will be thrown
+<p class="message-warning"><code>Duration::fromFormat</code> only parse ISO8601 notations with deterministic part 
+<strong>(ie: years and months are excluded)</strong>. <code>Duration::of</code> only using non-negative integer
+otherwise and exception will be thrown</p>
 
 ```php
 $duration = Duration::fromFormat('P2025Y3DT25s', DurationFormat::Iso8601);
@@ -43,18 +42,19 @@ The object exposes a `sign` property which indicates if the original value was n
 And provides a `toMicro` method to get the microseconds based representation of the duration.
 
 ```php
+$duration = Duration::fromDateInterval(new DateInterval('PT23M3S'))
 $duration->microseconds; 
 // returns 234_000
 $duration->sign;        
  // returns 1
-$duration->isZero()       
- // returns true when the duration is zero, false otherwise 
-$parts = $duration->parts() 
-// the parts method returns a DurationParts class with each
-// populated Duration component
-$parts->hours;
-$parts->seconds;
-$parts->microseconds;
+$duration->isZero() ;      
+// returns true when the duration is zero, false otherwise 
+// the component method returns the duration component
+// for a specific unit
+$duration->component(Unit::Hour);        // 0
+$duration->component(Unit::Minute);      // 23
+$duration->component(Unit::Second);      // 3
+$duration->component(Unit::Microsecond); // 0
 ```
 
 ## Formatting
@@ -105,9 +105,9 @@ instance while preserving its sign (inverted intervals are supported).
 
 ```php
 $duration = Duration::of(microseconds: 3_661_234_000);
-$duration->toDateInterval();          // returns DateInterval
-$durationB->in(Unit::Microsecond); // returns the full duration in microseconds
-$durationB->in(Unit::Hours);       // returns the full duration in hours
+$duration->toDateInterval();      // returns DateInterval
+$durationB->in(Unit::Microsecond); // returns 3_661_234_000   the full duration in microseconds
+$durationB->in(Unit::Hours);       // returns 1.0170094444444 the full duration in hours
 ```
 
 ## Modifying duration
@@ -121,7 +121,7 @@ Duration::sum(Duration ...$duration): Duration
 Duration::multipliedBy(int $factor): Duration
 Duration::dividedBy(int $factor): Duration
 Duration::chunkBy(Duration $factor): ChunkResult
-Duration::roundTo(Unit $precision, RoundingStrategy $strategy): Duration
+Duration::roundTo(Unit $precision, SnapMode $mode): Duration
 Duration::clamp(Duration $min, Duration $max): Duration
 ```
 
@@ -155,9 +155,10 @@ $a->roundTo(Unit::Minute, SnapMode::Floor)->format(DurationFormat::Timer); // re
 $a->roundTo(Unit::Minute, SnapMode::Ceil)->format(DurationFormat::Timer);  // returns "1:03:00"
 ```
 
-> [!IMPORTANT]
-> `Duration::increase` and `Duration::decrease` can only take non-negative arguments otherwise an exception will be
-> throw Use `Duration::sum` to aggregate signed duration objects.
+<p class="message-info">Use <code>Duration::sum</code> to aggregate signed duration objects.</p>
+
+<p class="message-notice"><code>Duration::increase</code> and <code>Duration::decrease</code>  can only take non-negative 
+arguments otherwise an exception will be thrown.</p>
 
 ## Comparing duration
 
@@ -166,8 +167,7 @@ It is possible to compare duration using common methods terminology
 ```php
 Duration::compare(Duration $that, Duration $other): int;
 ```
-> [!IMPORTANT]
-> The method is static to allow broader usage with other PHP sorting functions.
+<p class="message-notice">The method is static to allow broader usage with other PHP sorting functions.</p>
 
 Returns:
 
@@ -175,7 +175,7 @@ Returns:
 - `0` if equal
 - `1` if longer
 
-Convenient methods based on `Duration::compare` are also available:
+Convenient methods based on <code>Duration::compare</code> are also available:
 
 ```php
 $duration = Duration::of(microseconds: 3_661_500_000);
