@@ -89,16 +89,16 @@ final class TimeTest extends TestCase
 
     public function testFromMicrosecondsWrapsCorrectly(): void
     {
-        $time = Time::sinceMidnight(25 * 3_600_500_000, Unit::Microsecond);
+        $time = Time::sinceMidnight(Duration::of(microseconds: 25 * 3_600_500_000));
         self::assertSame('01:00:12.500000', $time->format());
 
-        $time = Time::sinceMidnight(25 * 3_600_500, Unit::Millisecond);
+        $time = Time::sinceMidnight(Duration::of(milliseconds: 25 * 3_600_500));
         self::assertSame('01:00:12.500000', $time->format());
 
-        $time = Time::sinceMidnight(25 * 3_600, Unit::Second);
+        $time = Time::sinceMidnight(Duration::of(seconds: 25 * 3_600));
         self::assertSame('01:00:00', $time->format());
 
-        $time = Time::sinceMidnight(25 * 60, Unit::Minute);
+        $time = Time::sinceMidnight(Duration::of(minutes: 25 * 60));
         self::assertSame('01:00:00', $time->format());
     }
 
@@ -455,6 +455,9 @@ final class TimeTest extends TestCase
         self::assertSame('"12:34:56"', json_encode($time));
     }
 
+    /**
+     * @param non-negative-int $input
+     */
     #[DataProvider('timePrecisionProvider')]
     public function test_truncate_and_round(
         int $input,
@@ -463,7 +466,7 @@ final class TimeTest extends TestCase
         int $expectedRound,
         int $expectedCeil,
     ): void {
-        $time = Time::sinceMidnight($input, Unit::Microsecond);
+        $time = Time::sinceMidnight(Duration::of(microseconds: $input));
 
         self::assertSame($expectedTruncate, $time->roundTo($precision, SnapMode::Floor)->ticks);
         self::assertSame($expectedRound, $time->roundTo($precision)->ticks);

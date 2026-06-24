@@ -40,7 +40,10 @@ final readonly class Time implements JsonSerializable
         (?:(?<microsecond>\d{1,6})\s*(µs|us)\s*)?
     $@x';
 
-    /** Time since midnight expressed in the library base unit.*/
+    /**
+     * Time since midnight expressed in the library base unit.
+     * @var non-negative-int
+     */
     public int $ticks;
     public int $hour;
     public int $minute;
@@ -52,7 +55,9 @@ final readonly class Time implements JsonSerializable
      */
     private function __construct(int $ticks)
     {
-        $this->ticks = UnitTransformer::wrap($ticks, Unit::Day);
+        /** @var non-negative-int $ticks */
+        $ticks = UnitTransformer::wrap($ticks, Unit::Day);
+        $this->ticks = $ticks;
         $parts = DurationParts::parse($this->ticks);
         $this->hour = $parts->hours;
         $this->minute = $parts->minutes;
@@ -140,9 +145,9 @@ final readonly class Time implements JsonSerializable
     /**
      * Returns a new instance from a number of unit of time since midnight.
      */
-    public static function sinceMidnight(int|float $value, Unit $unit): self
+    public static function sinceMidnight(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
     {
-        return new self(UnitTransformer::toMicroseconds($value, $unit));
+        return new self(InputNormalizer::duration($duration)->microseconds);
     }
 
     public static function midnight(): self

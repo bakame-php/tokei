@@ -32,9 +32,9 @@ final readonly class Interval implements JsonSerializable
     public Time $end;
     public Duration $duration;
     public IntervalType $type;
-    /** @var int the linearized start expressed in microseconds */
+    /** @var non-negative-int the linearized start expressed in microseconds */
     public int $linearStart;
-    /** @var int the linearized end expressed in microseconds */
+    /** @var non-negative-int the linearized end expressed in microseconds */
     public int $linearEnd;
 
     private function __construct(Time $start, Duration $duration)
@@ -42,8 +42,10 @@ final readonly class Interval implements JsonSerializable
         $this->start = $start;
         $this->duration = $duration;
         $this->linearStart = $this->start->ticks;
-        $this->linearEnd = $this->linearStart + $duration->microseconds;
-        $this->end = Time::sinceMidnight($this->linearEnd, Unit::Microsecond);
+        /** @var non-negative-int $linearEnd */
+        $linearEnd = $this->linearStart + $duration->microseconds;
+        $this->linearEnd = $linearEnd;
+        $this->end = Time::sinceMidnight(Duration::of(microseconds: $this->linearEnd));
         $this->type = $this->setType();
     }
 
@@ -64,8 +66,10 @@ final readonly class Interval implements JsonSerializable
         $this->start = $properties['start'];
         $this->duration = $properties['duration'];
         $this->linearStart = $this->start->ticks;
-        $this->linearEnd = $this->linearStart + $properties['duration']->microseconds;
-        $this->end = Time::sinceMidnight($this->linearEnd, Unit::Microsecond);
+        /** @var non-negative-int $linearEnd */
+        $linearEnd = $this->linearStart + $properties['duration']->microseconds;
+        $this->linearEnd = $linearEnd;
+        $this->end = Time::sinceMidnight(Duration::of(microseconds: $this->linearEnd));
         $this->type = $this->setType();
     }
 
@@ -225,11 +229,16 @@ final readonly class Interval implements JsonSerializable
      */
     private static function createTime(int|string|float $value, ?Unit $unit, string $data, IntervalFormat $format): Time
     {
-        return match (true) {
-            null !== $unit && !is_string($value) => Time::sinceMidnight($value, $unit),
-            is_string($value) => Time::fromFormat($value),
-            default => throw InvalidInterval::dueToMalformedFormat($data, $format),
-        };
+        if (is_string($value)) {
+            return Time::fromFormat($value);
+        }
+
+        null !== $unit || throw InvalidInterval::dueToMalformedFormat($data, $format);
+
+        /** @var non-negative-int $microseconds */
+        $microseconds = UnitTransformer::toMicroseconds($value, $unit);
+
+        return Time::sinceMidnight(Duration::of(microseconds: $microseconds));
     }
 
     /**
@@ -261,7 +270,9 @@ final readonly class Interval implements JsonSerializable
 
         0 <= $duration || throw new InvalidInterval('Invalid linear span: the start must be shorter or equal to the end linear span.');
 
-        return new self(Time::sinceMidnight($linearStart, Unit::Microsecond), Duration::of(microseconds: $duration));
+        $linearStartDuration = 0 > $linearStart ? Duration::of(microseconds: -$linearStart)->negated() : Duration::of(microseconds: $linearStart);
+
+        return new self(Time::sinceMidnight($linearStartDuration), Duration::of(microseconds: $duration));
     }
 
     public static function fromNative(NativeInterval $period): self
@@ -511,15 +522,18 @@ final readonly class Interval implements JsonSerializable
         $start = $this->start->ticks;
         $end = $this->end->ticks;
         $forward = Bound::Start === $from;
+        /** @var non-negative-int $cursor */
         $cursor = $forward ? $start : $end;
         $limit = $forward ? $end : $start;
         $result = [];
         while ($forward ? $cursor < $limit : $cursor > $limit) {
-            /** @var int $next */
+            /** @var non-negative-int $next */
             $next = $forward ? min($cursor + $step, $limit) : max($cursor - $step, $limit);
+            $nextTime = Time::sinceMidnight(Duration::of(microseconds: $next));
+            $cursorTime = Time::sinceMidnight(Duration::of(microseconds: $cursor));
             $result[] = $forward
-                ? self::between(Time::sinceMidnight($cursor, Unit::Microsecond), Time::sinceMidnight($next, Unit::Microsecond))
-                : self::between(Time::sinceMidnight($next, Unit::Microsecond), Time::sinceMidnight($cursor, Unit::Microsecond));
+                ? self::between($cursorTime, $nextTime)
+                : self::between($nextTime, $cursorTime);
 
             $cursor = $next;
         }

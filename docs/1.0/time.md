@@ -28,10 +28,7 @@ Time::fromFormat(
     TimeFormat $format = TimeFormat::Iso8601
 ): Time
 
-Time::sinceMidnight(
-    int $value,
-    Unit $unit
-): Time
+Time::sinceMidnight(Duration $value): Time
 ```
 
 Here's some usage example.
@@ -42,10 +39,10 @@ use Bakame\Tokei\Time;
 $time = Time::at(hour: 10, minute: 30, second: 15);
 $time = Time::fromFormat("10:30:15.123456", TimeFormat::Iso8601);
 $time = Time::fromFormat("10h30m15s123456µs", TimeFormat::Compact);
-$time = Time::sinceMidnight(123_456_789, Unit::Microsecond);
-$time = Time::sinceMidnight(123_456, Unit::Millisecond);
-$time = Time::sinceMidnight(123, Unit::Second);
-$time = Time::sinceMidnight(-1, Unit::Minute); // returns "23:59:00"
+$time = Time::sinceMidnight(Duration::of(microseconds: 123_456_789));
+$time = Time::sinceMidnight(Duration::of(milliseconds: 123_456));
+$time = Time::sinceMidnight(Duration::of(seconds: 123));
+$time = Time::sinceMidnight(Duration::of(minutes: 1)->negated()); // returns "23:59:00"
 ```
 
 To ease instantiation, predefined instances can be obtained with the following methods:
