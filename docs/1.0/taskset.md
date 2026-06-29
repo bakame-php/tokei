@@ -11,11 +11,11 @@ title: Task
 
 `TaskSet` preserves all temporal behavior from `IntervalSet` while adding identification metadata.
 
-| IntervalSet                     | TaskSet                                    |
-|---------------------------------|--------------------------------------------|
+| IntervalSet            | TaskSet                                    |
+|------------------------|--------------------------------------------|
 | Collection of Interval | Collection of Tasks                        |
-| Temporal methods                | available through `IntervalSet::fromTasks` |
-| Formatting                      | same formatting rules as `IntervalSet`     |
+| Temporal methods       | available through `IntervalSet::fromTasks` |
+| Formatting             | same formatting rules as `IntervalSet`     |
 
 
 ## Instantiation

@@ -45,15 +45,11 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     {
         return new self(
             InputNormalizer::interval($interval),
-            match (true) {
-                $identifier instanceof HasIdentifiers => $identifier->identifiers,
-                $identifier instanceof Identifiers => $identifier,
-                default => new Identifiers($identifier),
-            }
+            InputNormalizer::identifiers($identifier),
         );
     }
 
-    public static function fromEvent(Event $event, Duration|DateInterval $duration, Bound $from): self
+    public static function fromEvent(Event $event, Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration, Bound $from): self
     {
         return self::for(
             Bound::Start === $from
@@ -64,8 +60,6 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     }
 
     /**
-     * @see IntervalFormat::decode()
-     *
      * @throws InvalidInterval|TemporalException
      */
     public static function fromFormat(string $value, IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): self
@@ -84,8 +78,6 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     }
 
     /**
-     * @see IntervalFormat::encode()
-     *
      * @return non-empty-string
      */
     public function format(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): string
@@ -113,11 +105,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
      */
     public function named(Identifiers|HasIdentifiers|string $identifier): static
     {
-        $identifier = match (true) {
-            $identifier instanceof HasIdentifiers => $identifier->identifiers,
-            $identifier instanceof Identifiers => $identifier,
-            default => new Identifiers($identifier),
-        };
+        $identifier = InputNormalizer::identifiers($identifier);
 
         return $identifier->equals($this->identifiers) ? $this : new self($this->interval, $identifier);
     }

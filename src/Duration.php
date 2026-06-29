@@ -696,14 +696,14 @@ final class Duration implements JsonSerializable
      *
      * @throws TokeiException
      */
-    public function chunkBy(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): ChunkResult
+    public function dividedInto(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): DivisionResult
     {
         $duration = InputNormalizer::duration($duration);
 
         !$duration->isZero() || throw new DivisionByZeroError('Cannot divide by zero duration.');
 
-        return new ChunkResult(
-            count: intdiv($this->microseconds, $duration->microseconds),
+        return new DivisionResult(
+            factor: intdiv($this->microseconds, $duration->microseconds),
             remainder: new self($this->microseconds % $duration->microseconds),
         );
     }

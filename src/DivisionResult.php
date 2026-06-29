@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
-final readonly class ChunkResult
+final readonly class DivisionResult
 {
     public function __construct(
-        public int $count,
+        public int $factor,
         public Duration $remainder,
     ) {
     }

@@ -10,7 +10,6 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use JsonSerializable;
-use Throwable;
 
 use function array_key_first;
 use function array_key_last;
@@ -86,24 +85,6 @@ final readonly class Time implements JsonSerializable
             microseconds: $microsecond,
             sign: 1,
         )->build());
-    }
-
-    /**
-     * @param DateTimeZone|non-empty-string $timezone
-     *
-     * @throws TimeException if the timezone identifier is invalid
-     */
-    private static function filterTimezone(DateTimeZone|string $timezone): DateTimeZone
-    {
-        if ($timezone instanceof DateTimeZone) {
-            return $timezone;
-        }
-
-        try {
-            return new DateTimeZone($timezone);
-        } catch (Throwable $exception) {
-            throw TimeException::dueToInvalidTimezone(timezone: $timezone, previous: $exception);
-        }
     }
 
     /**
@@ -187,9 +168,9 @@ final readonly class Time implements JsonSerializable
      *
      * @param DateTimeZone|non-empty-string $timezone
      */
-    public static function now(DateTimeZone|string $timezone): self
+    public static function now(DateTimeInterface|DateTimeZone|string $timezone): self
     {
-        return self::fromDateTime(new DateTimeImmutable(timezone: self::filterTimezone($timezone)));
+        return self::fromDateTime(new DateTimeImmutable(timezone: InputNormalizer::timezone($timezone)));
     }
 
     /**
@@ -300,31 +281,31 @@ final readonly class Time implements JsonSerializable
     }
 
     /**
-     * @see LocaleTimeFormatter::format()
-     *
      * @param non-empty-string $locale
-     * @param DateTimeZone|non-empty-string $timezone
+     * @param DateTimeInterface|DateTimeZone|non-empty-string $timezone
      *
      * @throws TimeException
+     *@see LocaleTimeFormatter::format()
+     *
      */
     public function toLocaleString(
         string $locale,
-        DateTimeZone|string $timezone = 'UTC',
+        DateTimeInterface|DateTimeZone|string $timezone = 'UTC',
         LocaleVerbosity $verbosity = LocaleVerbosity::Medium
     ): string {
-        return (new LocaleTimeFormatter(locale: $locale, timezone: $timezone, verbosity: $verbosity))->format($this);
+        return new LocaleTimeFormatter(locale: $locale, timezone: $timezone, verbosity: $verbosity)->format($this);
     }
 
     /**
      * Returns the DateTimeImmutable instance for the current time in a given timezone.
      *
-     * @param DateTimeZone|non-empty-string $timeZone
+     * @param DateTimeInterface|DateTimeZone|non-empty-string $timeZone
      *
      * @throws TimeException
      */
-    public function toDateTime(DateTimeZone|string $timeZone): DateTimeImmutable
+    public function toDateTime(DateTimeInterface|DateTimeZone|string $timeZone): DateTimeImmutable
     {
-        return $this->applyTo(new DateTimeImmutable(timezone: self::filterTimezone($timeZone)));
+        return $this->applyTo(new DateTimeImmutable(timezone: InputNormalizer::timezone($timeZone)));
     }
 
     /**

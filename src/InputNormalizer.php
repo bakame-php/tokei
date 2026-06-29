@@ -6,6 +6,8 @@ namespace Bakame\Tokei;
 
 use DateInterval;
 use DateTimeInterface;
+use DateTimeZone;
+use Throwable;
 
 /**
  * @internal
@@ -48,6 +50,42 @@ final readonly class InputNormalizer
             $interval instanceof Task => $interval->interval,
             $interval instanceof NativeInterval => Interval::fromNative($interval),
             default => Task::fromNative($interval)->interval,
+        };
+    }
+
+    /**
+     * @param DateTimeInterface|DateTimeZone|non-empty-string $timezone
+     *
+     * @throws TimeException if the timezone identifier is invalid
+     */
+    public static function timezone(DateTimeInterface|DateTimeZone|string $timezone): DateTimeZone
+    {
+        if ($timezone instanceof DateTimeInterface) {
+            return $timezone->getTimezone();
+        }
+
+        if ($timezone instanceof DateTimeZone) {
+            return $timezone;
+        }
+
+        try {
+            return new DateTimeZone($timezone);
+        } catch (Throwable $exception) {
+            throw TimeException::dueToInvalidTimezone(timezone: $timezone, previous: $exception);
+        }
+    }
+
+    /**
+     * @param Identifiers|HasIdentifiers|non-empty-string $identifier
+     *
+     * @throws TemporalException
+     */
+    public static function identifiers(Identifiers|HasIdentifiers|string $identifier = new Identifiers()): Identifiers
+    {
+        return match (true) {
+            $identifier instanceof Identifiers => $identifier,
+            $identifier instanceof HasIdentifiers => $identifier->identifiers,
+            default => new Identifiers($identifier),
         };
     }
 }

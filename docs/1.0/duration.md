@@ -120,7 +120,7 @@ Duration::decrease(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes =
 Duration::sum(Duration ...$duration): Duration
 Duration::multipliedBy(int $factor): Duration
 Duration::dividedBy(int $factor): Duration
-Duration::chunkBy(Duration $factor): ChunkResult
+Duration::dividedInto(Duration $factor): DivisionResult
 Duration::roundTo(Unit $precision, SnapMode $mode): Duration
 Duration::clamp(Duration $min, Duration $max): Duration
 ```
@@ -133,7 +133,7 @@ You can:
 - round its value to one of the unit declare on the `Bakame\Tokei\Unit` enum
 - clamp its value against two other `Duration` instances
 - sum multiple `Duration` instance using the `Duration::sum` method
-- multiply or divide a `Duration` instance using the `Duration::multipliedBy` and `Duration::dividevBy` methods
+- multiply or divide a `Duration` instance using the `Duration::multipliedBy`, `Duration::dividedBy` and  `Duration::dividedInto` methods
 
 ```php
 $microseconds = 3_661_500_000;
@@ -142,17 +142,40 @@ $b = $a->roundTo(Unit::Minute, RoundingStrategy::Ceil);
 $c = $b->negated();
 $d = $c->decrease(minutes: 10);
 
-echo $a->format(DurationFormat::Timer);                  // returns "1:01:01.500000"
-echo $b->format(DurationFormat::Timer);                  // returns "1:01:00"
-echo $c->format(DurationFormat::Timer);                  // returns "-1:01:00"
-echo $c->abs()->format(DurationFormat::Timer);           // returns "1:01:00"
-echo $a->sum($b, $c, $d)->format(DurationFormat::Timer); // returns "-0:09:58.500000"
+echo $a->format(DurationFormat::Timer);
+// returns "1:01:01.500000"
+echo $b->format(DurationFormat::Timer);
+// returns "1:01:00"
+echo $c->format(DurationFormat::Timer);
+// returns "-1:01:00"
+echo $c->abs()->format(DurationFormat::Timer);
+// returns "1:01:00"
+echo $a->sum($b, $c, $d)->format(DurationFormat::Timer);
+// returns "-0:09:58.500000"
 
 $microseconds = 3_761_500_000;
 $a = Duration::of(microseconds: $microseconds);
-$a->format(DurationFormat::Timer);                                         // returns "1:02:41.500000"
-$a->roundTo(Unit::Minute, SnapMode::Floor)->format(DurationFormat::Timer); // returns "1:02:00"
-$a->roundTo(Unit::Minute, SnapMode::Ceil)->format(DurationFormat::Timer);  // returns "1:03:00"
+$a->format(DurationFormat::Timer);
+// returns "1:02:41.500000"
+$a->roundTo(Unit::Minute, SnapMode::Floor)->format(DurationFormat::Timer);
+// returns "1:02:00"
+$a->roundTo(Unit::Minute, SnapMode::Ceil)->format(DurationFormat::Timer);
+// returns "1:03:00"
+
+$duration = Duration::fromFormat('-PT5H30M');
+$delta = Duration::of(hours: 1);
+$result = $duration->dividedInto($delta);
+$duration->format();
+// returns '-PT5H30M'
+$result->factor;
+// returns '-5'
+$result->remainder->format();
+// returns '-PT30M'
+$delta
+    ->multipliedBy($result->factor)
+    ->sum($result->remainder)
+    ->format();
+// returns '-PT5H30M'
 ```
 
 <p class="message-info">Use <code>Duration::sum</code> to aggregate signed duration objects.</p>

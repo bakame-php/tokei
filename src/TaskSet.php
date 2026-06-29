@@ -24,6 +24,9 @@ final class TaskSet implements TemporalSet
     /** @var array<non-empty-string, TemporalSearch<Task>> */
     private array $engine;
 
+    /**
+     * @throws TokeiException
+     */
     public function __construct(Task|NativeTask|TaskSet ...$items)
     {
         $this->items = self::sortChronologically($items);
@@ -46,7 +49,10 @@ final class TaskSet implements TemporalSet
         $this->items = $properties['tasks'];
     }
 
-    public static function fromEvents(EventSet $items, Duration|DateInterval $duration, Bound $from = Bound::Start): self
+    /**
+     * @throws TokeiException
+     */
+    public static function fromEvents(EventSet $items, Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration, Bound $from = Bound::Start): self
     {
         return new self(...$items->map(fn (Event $event): Task => Task::fromEvent($event, $duration, $from)));
     }
@@ -54,7 +60,7 @@ final class TaskSet implements TemporalSet
     /**
      * @param Identifiers|HasIdentifiers|non-empty-string $identifiers
      *
-     * @throws TemporalException
+     * @throws TokeiException
      */
     public static function fromIntervals(IntervalSet $intervals, Identifiers|HasIdentifiers|string $identifiers): self
     {
@@ -78,6 +84,8 @@ final class TaskSet implements TemporalSet
 
     /**
      * @param array<Task|TaskSet|NativeTask> $items
+     *
+     * @throws TokeiException
      *
      * @return list<Task>
      */
@@ -447,7 +455,7 @@ final class TaskSet implements TemporalSet
     /**
      * @param iterable<TaskSet|Task|NativeTask> $sets
      *
-     * @throws InvalidDuration|InvalidInterval|TemporalException
+     * @throws TokeiException
      */
     public function intersect(iterable $sets): self
     {

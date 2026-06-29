@@ -1054,7 +1054,7 @@ final class DurationTest extends TestCase
         $duration = Duration::of(hours: 5);
         $other = Duration::of(hours: 2);
 
-        self::assertSame(2, $duration->chunkBy($other)->count);
+        self::assertSame(2, $duration->dividedInto($other)->factor);
     }
 
     public function testCountOfReturnsZeroWhenDurationIsSmaller(): void
@@ -1062,7 +1062,7 @@ final class DurationTest extends TestCase
         $duration = Duration::of(minutes: 30);
         $other = Duration::of(hours: 1);
 
-        self::assertSame(0, $duration->chunkBy($other)->count);
+        self::assertSame(0, $duration->dividedInto($other)->factor);
     }
 
     public function testCountOfHandlesExactDivision(): void
@@ -1070,9 +1070,9 @@ final class DurationTest extends TestCase
         $duration = Duration::of(hours: 6);
         $other = Duration::of(hours: 2);
 
-        $result = $duration->chunkBy($other);
+        $result = $duration->dividedInto($other);
 
-        self::assertSame(3, $result->count);
+        self::assertSame(3, $result->factor);
         self::assertTrue($result->remainder->isZero());
     }
 
@@ -1081,7 +1081,7 @@ final class DurationTest extends TestCase
         $this->expectException(DivisionByZeroError::class);
         $this->expectExceptionMessageIsOrContains('Cannot divide by zero duration.');
 
-        Duration::of(hours: 1)->chunkBy(Duration::zero());
+        Duration::of(hours: 1)->dividedInto(Duration::zero());
     }
 
     public function testRemainderReturnsRemainingDuration(): void
@@ -1089,8 +1089,8 @@ final class DurationTest extends TestCase
         $duration = Duration::of(hours: 5);
         $other = Duration::of(hours: 2);
 
-        $result = $duration->chunkBy($other);
-        self::assertSame(2, $result->count);
+        $result = $duration->dividedInto($other);
+        self::assertSame(2, $result->factor);
         self::assertEquals(Duration::of(hours: 1), $result->remainder);
     }
 
@@ -1099,7 +1099,7 @@ final class DurationTest extends TestCase
         $duration = Duration::of(hours: 6);
         $other = Duration::of(hours: 2);
 
-        self::assertTrue($duration->chunkBy($other)->remainder->isZero());
+        self::assertTrue($duration->dividedInto($other)->remainder->isZero());
     }
 
     public function testRemainderReturnsOriginalDurationWhenSmaller(): void
@@ -1107,7 +1107,7 @@ final class DurationTest extends TestCase
         $duration = Duration::of(minutes: 30);
         $other = Duration::of(hours: 1);
 
-        self::assertEquals(Duration::of(minutes: 30), $duration->chunkBy($other)->remainder);
+        self::assertEquals(Duration::of(minutes: 30), $duration->dividedInto($other)->remainder);
     }
 
     public function testRemainderThrowsWhenDividingByZeroDuration(): void
@@ -1115,19 +1115,19 @@ final class DurationTest extends TestCase
         $this->expectException(DivisionByZeroError::class);
         $this->expectExceptionMessageIsOrContains('Cannot divide by zero duration.');
 
-        Duration::of(hours: 1)->chunkBy(Duration::zero());
+        Duration::of(hours: 1)->dividedInto(Duration::zero());
     }
 
     public function testCountOfAndRemainderRespectDivisionIdentity(): void
     {
         $duration = Duration::of(hours: 5);
         $other = Duration::of(hours: 2)->negated();
-        $result = $duration->chunkBy($other);
+        $result = $duration->dividedInto($other);
 
         self::assertEquals(
             $duration,
             $other
-                ->multipliedBy($result->count)
+                ->multipliedBy($result->factor)
                 ->sum($result->remainder)
         );
     }

@@ -26,11 +26,7 @@ final class Event implements HasIdentifiers, JsonSerializable
     {
         return new self(
             InputNormalizer::time($time),
-            match (true) {
-                $identifier instanceof HasIdentifiers => $identifier->identifiers,
-                $identifier instanceof Identifiers => $identifier,
-                default => new Identifiers($identifier),
-            }
+            InputNormalizer::identifiers($identifier),
         );
     }
 
@@ -92,11 +88,7 @@ final class Event implements HasIdentifiers, JsonSerializable
      */
     public function named(Identifiers|HasIdentifiers|string $identifier): static
     {
-        $identifier = match (true) {
-            $identifier instanceof HasIdentifiers => $identifier->identifiers,
-            $identifier instanceof Identifiers => $identifier,
-            default => new Identifiers($identifier),
-        };
+        $identifier = InputNormalizer::identifiers($identifier);
 
         return $identifier->equals($this->identifiers) ? $this : new self($this->at, $identifier);
     }
