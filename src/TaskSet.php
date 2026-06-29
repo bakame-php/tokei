@@ -334,6 +334,15 @@ final class TaskSet implements TemporalSet
         return $result;
     }
 
+    public function shift(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    {
+        $duration = InputNormalizer::duration($duration);
+
+        return $duration->isZero()
+            ? $this
+            : $this->transform(static fn (Task $task): Task => $task->during($task->interval->shift($duration)));
+    }
+
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
         return $this->transform(static fn (Task $task): Task => $task->during($task->interval->roundTo($unit, $mode)));
@@ -556,6 +565,11 @@ final class TaskSet implements TemporalSet
                 ->atomic()
                 ->map(fn (Interval $interval): Task => Task::for($interval, new Identifiers($set->overlaps($interval))))
         );
+    }
+
+    public function complement(): IntervalSet
+    {
+        return IntervalSet::chronological($this)->complement();
     }
 
     /**

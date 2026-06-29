@@ -71,20 +71,6 @@ $interval->duration;  // returns Duration::of(hours: 12);
 $interval->type;      // returns IntervalType::Linear
 ```
 
-## Interval Type
-
-There are 4 types of interval as defined by the relative position of their endpoints and their duration.
-
-```php
-enum IntervalType
-{
-    case Linear;    // returns true   (start < end)
-    case Overflow;  // returns false  (start > end)
-    case Circular;  // returns false  (start === end and duration is 'P1D')
-    case Collapsed; // returns false  (start === end and duration is 'PT0S')
-}
-```
-
 ## Formatting
 
 using the following Enum:

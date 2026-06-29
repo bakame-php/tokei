@@ -9,9 +9,9 @@ module.exports = {
       },
       colors: {
         'csv': {
-          light: '#74D492',
-          base: '#38C163',
-          dark: '#278745'
+          light: '#F26A8D',
+          base: '#DD2D4A',
+          dark: '#880D1E'
         },
         'uri': {
           light: '#739AFF',

@@ -4,8 +4,8 @@ version:
             Installation: '/1.0/'
             Accepted Input: '/1.0/accepted-input-types'
         Temporal Primitives:
-            Time: '/1.0/time/'
             Duration: '/1.0/duration/'
+            Time: '/1.0/time/'
             Interval: '/1.0/interval/'
             IntervalSet: '/1.0/intervalset/'
         Annotated Values:
@@ -13,5 +13,8 @@ version:
             Task: '/1.0/task/'
             EventSet: '/1.0/eventset/'
             TaskSet: '/1.0/taskset/'
+        Helpers:
+            Identifiers: '/1.0/identifiers'
+            Enum: '/1.0/enums'
 upgrading:
         Release Notes: '/releases/'

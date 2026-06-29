@@ -1,7 +1,7 @@
 # Documentation website
 title: Tokei
-tagline: "Tokei. Local time, duration and interval primitives without timezone complexity"
-description: "A framework-agnostic PHP library to handle time, duration, circular 24-hour intervals, and interval sets, without timezone handling."
+tagline: "Tokei. Duration, Local time and interval primitives without timezone complexity"
+description: "A framework-agnostic PHP library to handle duration, time, circular 24-hour intervals, and interval sets, without timezone complexity."
 # Github repository
 package: 'bakame/tokei'
 repository_url: 'https://github.com/bakame-php/tokei'

@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Task
+title: TaskSet
 ---
 
 # TaskSet
@@ -11,119 +11,95 @@ title: Task
 
 `TaskSet` preserves all temporal behavior from `IntervalSet` while adding identification metadata.
 
-| IntervalSet            | TaskSet                                    |
-|------------------------|--------------------------------------------|
-| Collection of Interval | Collection of Tasks                        |
-| Temporal methods       | available through `IntervalSet::fromTasks` |
-| Formatting             | same formatting rules as `IntervalSet`     |
+| IntervalSet            | TaskSet                                |
+|------------------------|----------------------------------------|
+| Collection of Interval | Collection of Tasks                    |
+| Temporal methods       | same method as `IntervalSet`           |
+| Formatting             | same formatting rules as `IntervalSet` |
 
 
 ## Instantiation
 
 ```php
-TaskSet::for(Interval $interval, Identifiers|string $identifier = new Identifiers()): self
-Task::fromEvent(Event $event, Duration $duration, Bound $from): self
-Task::fromFormat(string $value, IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): self
+TaskSet::__construct(Task ...$items);
+TaskSet::fromEvents(EventSet $items, Duration $duration, Bound $from = Bound::Start): self
+TaskSet::fromIntervals(IntervalSet $intervals, Identifiers $identifiers): self
 ```
 
 ## Accessors
 
-A `Task` exposes two readonly public properties:
-
-- `Task::interval`: the underlying `Interval`
-- `Task::identifiers`: the associated `Identifiers`
-
-All temporal operations available on `Interval` and all identifier operations available on `Identifiers` can be accessed through these properties.
-
 ```php
-$task = Task::for(
-    Interval::since(
-        Time::noon(),
-        Duration::of(hours: 2, minutes: 30)
-    ),
-    'after-lunch-talks'
-);
-$task->interval;     // returns Interval instance
-$task->identifiers;  // returns Identifiers instance
+TaskSet::duration(): Duration
+TaskSet::count(): int
+TaskSet::getIterator(): Traversable
+TaskSet::jsonSerialize(): array
+TaskSet::all(): array
+TaskSet::isEmpty(): bool
+TaskSet::indexOf(Task $task): ?int
+TaskSet::lastIndexOf(Task $task): ?int
+TaskSet::has(Task ...$items): bool
+TaskSet::get(int $offset): Task
+TaskSet::nth(int $offset): ?Task
+TaskSet::first(): ?Task
+TaskSet::last(): ?Task
 ```
 
 ## Formatting
 
-`Task` uses the same formatting rules as `Interval` but extends the generated representation
-by appending an identifier component separated by a semicolon (`;`). Multiple identifiers
-are represented as comma-separated values.
-
 ```php
-$task = Task::for(
-    Interval::between(Time::noon(), Time::at(hour: 14, minute: 30)),
-    new Idendifiers('after-lunch-talks', 'main-talk')
-);
-$task->format(IntervalFormat::Iso8601StartEnd);
-// returns 12:00:00/14:30:00;after-lunch-talks,main-talk
-```
-
-## Updating interval and identifiers
-
-```php
-Task::during(Interval $interval): self
-Task::named(Identifiers $identifier): self
-```
-
-## Strict Comparison
-
-The method compares the instance interval as well as its identifiers.
-
-```php
-Task::equals(Task $other): bool
+TaskSet::formatAll(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): array
 ```
 
 ## Interacting with PHP's native Date API
 
 ```php
-Task::toNative(DateTimeInterface $reference): NativeTask
+TaskSet::toNative(DateTimeInterface $reference): array
 ```
 
-The reference `DateTimeInterface` object is used to compute the starting date
-using `Time::applyTo` method.
-
-`NativeTask` is an immutable DTO exposing two public readonly properties:
-
-- `interval` (`NativeInterval`)
-- `identifiers` (`Identifiers`)
+## Temporal selection methods
 
 ```php
-$task = Task::for(
-    Interval::between(
-        Time::noon(),
-        Time::at(hour: 14, minute: 30)
-    ), 
-    'after-lunch-talks'
-);
-$native = $task->toNative(new DateTime('2026-12-03 13:03:57'));
-$native->interval::class; 
-// 'Bakame\Tokei\NativeInterval'
-
-$native->identifiers::class;
-// 'Bakame\Tokei\Identifiers'
+TaskSet::next(Time $atOrAfter, SearchMode $mode, Bound $using = Bound::Start): self
+TaskSet::previous(Time $before, SearchMode $mode, Bound $using = Bound::Start): self
+TaskSet::nearest(Time $around, Bound $using = Bound::Start): self
+TaskSet::abuts(Interval $interval): self
+TaskSet::overlaps(Interval $interval): self
+TaskSet::contains(Interval $interval): self
+TaskSet::includes(Time $time): self
+TaskSet::outsideOf(Time $time): self
 ```
 
-<p class="message-info">The supplied <code>DateTimeInterface</code> object provides the date
-component used when converting the task interval into native PHP date objects.</p>
-
-A `Task` instance can also be created from a `NativeTask`.
+## Temporal algebra methods
 
 ```php
-$native = new NativeInterval(
-    new DateTimeImmutable('2026-12-03 13:03:57'),
-    new DateTimeImmutable('2026-12-05 11:19:57'),
-);
+TaskSet::roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
+TaskSet::roundDurationTo(Unit $unit, SnapMode $mode = SnapMode::Nearest, Bound $anchor = Bound::Start): self
+TaskSet::gaps(): self
+TaskSet::intersect(iterable $sets): self
+TaskSet::union(iterable $sets = []): self
+TaskSet::difference(iterable $sets): self
+TaskSet::shift(Duration $duration): self
+```
 
-$nativeTask = new NativeTask($native, new Identifiers('after-lunch-talks'));
+## Collection methods
 
-$task = Task::fromNative($nativeTask);
-$task->interval::class; 
-// 'Bakame\Tokei\Interval'
-
-$task->identifiers::class;
-// 'Bakame\Tokei\Identifiers'
+```php
+TaskSet::getIterator(): Traversable
+TaskSet::jsonSerialize(): array
+TaskSet::all(): array
+TaskSet::isEmpty(): bool
+TaskSet::firstMatching(callable $predicate): ?Task
+TaskSet::lastMatching(callable $predicate): ?Task
+TaskSet::any(callable $predicate): bool
+TaskSet::every(callable $predicate): bool
+TaskSet::map(callable $callback): iterable
+TaskSet::transform(callable $callback): self
+TaskSet::filter(callable $callback): self
+TaskSet::reduce(callable $callback, mixed $initial = null): mixed
+TaskSet::roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
+TaskSet::roundDurationTo(Unit $unit, SnapMode $mode = SnapMode::Nearest, Bound $anchor = Bound::Start): self
+TaskSet::each(callable $callback): bool
+TaskSet::push(Task ...$tasks): self
+TaskSet::remove(int ...$offsets): self
+TaskSet::replace(int $offset, Task $item): self
 ```

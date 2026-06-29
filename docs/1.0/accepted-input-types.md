@@ -102,14 +102,24 @@ Identifiers can be expressed using:
 - `string`
 - `iterable<Identifiers|HasIdentifiers|string>`
 
+
+## Timezone
+
+Timezone can be expressed using:
+
+- `DateTimeZone` object
+- `DateTimeInterface` object, its `getTimezone` method will be called
+- `non-empty-string` representing a timezone identifier
+
 ## Argument rules
 
-| Concept     | 	Accepted representations                                                       |
-|-------------|---------------------------------------------------------------------------------|
-| Time	       | `Time`, `Event`, `DateTimeInterface`, `NativeEvent`                             | 
-| Duration    | 	`Duration`, `DateInterval`, `Interval`, `Task`, `NativeInterval`, `NativeTask` |       
-| Interval    | 	`Interval`, `Task`, `NativeInterval`, `NativeTask`                             |   
-| Identifiers | `Identifiers`, `HasIdentifiers`, `string`, `iterable`                           |
+| Concept     | Accepted representations                                                       |
+|-------------|--------------------------------------------------------------------------------|
+| Time	       | `Time`, `Event`, `DateTimeInterface`, `NativeEvent`                            | 
+| Duration    | `Duration`, `DateInterval`, `Interval`, `Task`, `NativeInterval`, `NativeTask` |       
+| Interval    | `Interval`, `Task`, `NativeInterval`, `NativeTask`                             |   
+| Identifiers | `Identifiers`, `HasIdentifiers`, `string`, `iterable`                          |   
+| Timezone    | `DateTimeZone`, `DateTimeInterface`, `string`,                                 |
 
 Unless stated otherwise, any method accepting a temporal
 primitive also accepts any compatible representation of that primitive.

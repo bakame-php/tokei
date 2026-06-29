@@ -31,10 +31,10 @@ The package comes with the following Temporal classes under the `Bakame\Tokei` n
 
 **Temporal Values**
 
-- [Time](1.0/time.md)
-- [Duration](1.0/duration.md)
-- [Interval](1.0/interval.md)
-- [IntervalSet](1.0/intervalset.md)
+- [Duration](duration.md)
+- [Time](time.md)
+- [Interval](interval.md)
+- [IntervalSet](intervalset.md)
 
 **Annotation Values**
 
@@ -42,12 +42,12 @@ The package comes with the following Temporal classes under the `Bakame\Tokei` n
 
 **Annotated Temporal Values**
 
-- [Event](1.0/event.md)
-- [Task](1.0/task.md)
+- [Event](event.md)
+- [Task](task.md)
 - [EventSet](eventset.md)
-- [TaskSet](1.0/taskset.md)
+- [TaskSet](taskset.md)
 
-See also: [Accepted Input Types](1.0/accepted-input-types.md) for how values are converted
+See also: [Accepted Input Types](accepted-input-types.md) for how values are converted
 between temporal representations.
 
 Annotated temporal values extend the core temporal primitives by associating identifiers with them
