@@ -120,7 +120,7 @@ Duration::decrease(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes =
 Duration::sum(Duration ...$duration): Duration
 Duration::multipliedBy(int $factor): Duration
 Duration::dividedBy(int $factor): Duration
-Duration::dividedInto(Duration $factor): DivisionResult
+Duration::dividedInto(Duration $factor): array
 Duration::roundTo(Unit $precision, SnapMode $mode): Duration
 Duration::clamp(Duration $min, Duration $max): Duration
 ```
@@ -163,24 +163,24 @@ $a->roundTo(Unit::Minute, SnapMode::Ceil)->format(DurationFormat::Timer);
 // returns "1:03:00"
 
 $duration = Duration::fromFormat('-PT5H30M');
-$delta = Duration::of(hours: 1);
-$result = $duration->dividedInto($delta);
+$oneHour = Duration::of(hours: 1);
+[$availableParts, $durationLeft] = $duration->dividedInto($oneHour);
 $duration->format();
 // returns '-PT5H30M'
-$result->factor;
+$availableParts;
 // returns '-5'
-$result->remainder->format();
+$durationLeft->format();
 // returns '-PT30M'
-$delta
-    ->multipliedBy($result->factor)
-    ->sum($result->remainder)
-    ->format();
-// returns '-PT5H30M'
+$oneHour
+    ->multipliedBy($availableParts)
+    ->sum($durationLeft)
+    ->equals($duration);
+// returns true
 ```
 
 <p class="message-info">Use <code>Duration::sum</code> to aggregate signed duration objects.</p>
 
-<p class="message-notice"><code>Duration::increase</code> and <code>Duration::decrease</code>  can only take non-negative 
+<p class="message-notice"><code>Duration::increase</code> and <code>Duration::decrease</code> can only take non-negative 
 arguments otherwise an exception will be thrown.</p>
 
 ## Comparing duration

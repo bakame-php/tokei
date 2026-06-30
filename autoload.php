@@ -1,10 +1,9 @@
 <?php
 
-if (PHP_VERSION_ID < 80600) {
-    $classMap = [SortDirection::class => __DIR__ . '/lib/SortDirection.php'];
-    spl_autoload_register(static function (string $class) use ($classMap): void {
-        if (isset($classMap[$class])) {
-            require $classMap[$class];
+if (PHP_VERSION_ID < 80600 && !enum_exists('SortDirection', false)) {
+    spl_autoload_register(static function (string $class): void {
+        if ('SortDirection' === $class) {
+            require __DIR__ . '/lib/SortDirection.php';
         }
     });
 }

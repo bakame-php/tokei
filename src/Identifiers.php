@@ -8,8 +8,8 @@ use Countable;
 use Iterator;
 use IteratorAggregate;
 use JsonSerializable;
-
 use SortDirection;
+
 use function array_diff;
 use function array_fill_keys;
 use function array_filter;

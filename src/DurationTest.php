@@ -1053,27 +1053,30 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(hours: 5);
         $other = Duration::of(hours: 2);
+        [$factor, $remainder] = $duration->dividedInto($other);
 
-        self::assertSame(2, $duration->dividedInto($other)->factor);
+        self::assertSame(2, $factor);
+        self::assertTrue($remainder->equals(Duration::of(hours: 1)));
     }
 
     public function testCountOfReturnsZeroWhenDurationIsSmaller(): void
     {
         $duration = Duration::of(minutes: 30);
         $other = Duration::of(hours: 1);
+        [$factor, $remainder] = $duration->dividedInto($other);
 
-        self::assertSame(0, $duration->dividedInto($other)->factor);
+        self::assertSame(0, $factor);
+        self::assertTrue($remainder->equals($duration));
     }
 
     public function testCountOfHandlesExactDivision(): void
     {
         $duration = Duration::of(hours: 6);
         $other = Duration::of(hours: 2);
+        [$factor, $remainder] = $duration->dividedInto($other);
 
-        $result = $duration->dividedInto($other);
-
-        self::assertSame(3, $result->factor);
-        self::assertTrue($result->remainder->isZero());
+        self::assertSame(3, $factor);
+        self::assertTrue($remainder->isZero());
     }
 
     public function testCountOfThrowsWhenDividingByZeroDuration(): void
@@ -1088,26 +1091,30 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(hours: 5);
         $other = Duration::of(hours: 2);
+        [$factor, $remainder] = $duration->dividedInto($other);
 
-        $result = $duration->dividedInto($other);
-        self::assertSame(2, $result->factor);
-        self::assertEquals(Duration::of(hours: 1), $result->remainder);
+        self::assertSame(2, $factor);
+        self::assertEquals(Duration::of(hours: 1), $remainder);
     }
 
     public function testRemainderReturnsZeroForExactDivision(): void
     {
         $duration = Duration::of(hours: 6);
         $other = Duration::of(hours: 2);
+        [$factor, $remainder] = $duration->dividedInto($other);
 
-        self::assertTrue($duration->dividedInto($other)->remainder->isZero());
+        self::assertSame(3, $factor);
+        self::assertTrue($remainder->isZero());
     }
 
     public function testRemainderReturnsOriginalDurationWhenSmaller(): void
     {
         $duration = Duration::of(minutes: 30);
         $other = Duration::of(hours: 1);
+        [$factor, $remainder] = $duration->dividedInto($other);
 
-        self::assertEquals(Duration::of(minutes: 30), $duration->dividedInto($other)->remainder);
+        self::assertSame(0, $factor);
+        self::assertEquals(Duration::of(minutes: 30), $remainder);
     }
 
     public function testRemainderThrowsWhenDividingByZeroDuration(): void
@@ -1122,13 +1129,11 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(hours: 5);
         $other = Duration::of(hours: 2)->negated();
-        $result = $duration->dividedInto($other);
+        [$factor, $remainder] = $duration->dividedInto($other);
 
         self::assertEquals(
             $duration,
-            $other
-                ->multipliedBy($result->factor)
-                ->sum($result->remainder)
+            $other->multipliedBy($factor)->sum($remainder)
         );
     }
 }

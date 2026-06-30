@@ -9,8 +9,8 @@ use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
-
 use SortDirection;
+
 use function array_map;
 use function iterator_to_array;
 use function json_encode;

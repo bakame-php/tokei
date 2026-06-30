@@ -695,16 +695,18 @@ final class Duration implements JsonSerializable
      * Returns the number of Duration that can fit into the instance and the optional Duration remainder.
      *
      * @throws TokeiException
+     *
+     * @return array{0: int, 1:Duration}
      */
-    public function dividedInto(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): DivisionResult
+    public function dividedInto(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): array
     {
         $duration = InputNormalizer::duration($duration);
 
         !$duration->isZero() || throw new DivisionByZeroError('Cannot divide by zero duration.');
 
-        return new DivisionResult(
-            factor: intdiv($this->microseconds, $duration->microseconds),
-            remainder: new self($this->microseconds % $duration->microseconds),
-        );
+        return [
+            intdiv($this->microseconds, $duration->microseconds),
+            new self($this->microseconds % $duration->microseconds),
+        ];
     }
 }
