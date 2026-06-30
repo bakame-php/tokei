@@ -554,7 +554,7 @@ final class TaskSet implements TemporalSet
     /**
      * @param iterable<TaskSet|Task|Interval|IntervalSet> $sets
      *
-     * @throws InvalidDuration|InvalidInterval|TemporalException
+     * @throws TokeiException
      */
     public function union(iterable $sets = []): self
     {
@@ -567,9 +567,15 @@ final class TaskSet implements TemporalSet
         );
     }
 
-    public function complement(): IntervalSet
+    /**
+     * @throws TokeiException
+     */
+    public function complement(): self
     {
-        return IntervalSet::chronological($this)->complement();
+        return self::fromIntervals(
+            IntervalSet::chronological($this)->complement(),
+            new Identifiers()
+        );
     }
 
     /**

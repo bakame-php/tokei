@@ -179,6 +179,28 @@ final class TaskSetTest extends TestCase
         self::assertNotEmpty($result);
     }
 
+    public function test_complement_basic(): void
+    {
+        $a = new TaskSet(
+            Task::for(Interval::between(Time::at(10), Time::at(13)), 'A'),
+            Task::for(Interval::between(Time::at(21), Time::at(22)), 'B'),
+        );
+        $complement = $a->complement();
+        self::assertCount(3, $complement);
+        self::assertCount(0, $complement->filter(fn (Task $task): bool => !$task->identifiers->isEmpty()));
+    }
+
+    public function test_complement_with_overflow(): void
+    {
+        $a = new TaskSet(
+            Task::for(Interval::between(Time::at(22), Time::at(2)), 'A'),
+            Task::for(Interval::between(Time::at(23), Time::at(1)), 'B'),
+        );
+        $complement = $a->complement();
+        self::assertCount(1, $complement);
+        self::assertSame('[00:00:00,22:00:00);', $complement->get(0)->format(IntervalFormat::Iso80000));
+    }
+
     public function test_active_at_returns_only_matching_tasks(): void
     {
         $set = new TaskSet(
