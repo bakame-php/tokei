@@ -11,6 +11,8 @@ title: Installation
 
 ## Installation
 
+### Using Composer
+
 **Tokei** is available on [Packagist](https://packagist.org/packages/bakame/tokei) and can be installed using [Composer](https://getcomposer.org/):
 
 ~~~
@@ -21,45 +23,26 @@ You **MAY** need:
 
 - The `ext-intl` extension or use a polyfill for `IntlDateFormatter` to be able to get the locale string version of the time.
 
+### Manual installation
 
-## Principles
+You can also use `Tokei` without using Composer by downloading the library on Github.
 
-The framework-agnostic package offers a consistent and expressive way to work with temporal values in a safe
-and predictable manner.
+1. Visit [the releases page](https://github.com/bakame-php/tokei/releases) of the project.
+2. Find the release of `Tokei` for your version of PHP.
+3. Click the **Source Code** link for preferred compression format.
 
-The package comes with the following Temporal classes under the `Bakame\Tokei` namespace:
+The library is compatible with any [PSR-4](http://www.php-fig.org/psr/psr-4/) compatible autoloader.
 
-**Temporal Values**
+Also, `Tokei` comes bundled with its own autoloader script `autoload.php` located in the root directory.
 
-- [Duration](duration.md)
-- [Time](time.md)
-- [Interval](interval.md)
-- [IntervalSet](intervalset.md)
+```php
+use Bakame\Tokei\Duration;
+use Bakame\Tokei\Time;
 
-**Annotation Values**
+require '/path/to/tokeu/autoload.php';
 
-- [Identifiers](identifiers.md)
+// Your script starts here
+// ...
+```
 
-**Annotated Temporal Values**
-
-- [Event](event.md)
-- [Task](task.md)
-- [EventSet](eventset.md)
-- [TaskSet](taskset.md)
-
-See also: [Accepted Input Types](accepted-input-types.md) for how values are converted
-between temporal representations.
-
-Annotated temporal values extend the core temporal primitives by associating identifiers with them
-while preserving the same temporal semantics.
-
-| Primitives  | Annotated Values |
-|-------------|------------------|
-| Time        | Event            |
-| Interval    | Task             |
-| IntervalSet | TaskSet          |
-
-- Learn `Time`, `Duration`, `Interval`, `IntervalSet` first.
-- `Event`, `Task` and `TaskSet` are enrichments, not separate models.
-- Temporal logic lives in the primitives.
-- Annotated values mostly add identification and context.
+where `path/to/tokei` represents the path where the library was extracted.

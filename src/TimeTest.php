@@ -44,7 +44,7 @@ final class TimeTest extends TestCase
     #[TestWith(['part' => -1], 'the hour component is too low')]
     public function testDomainRejectsInvalidHours(int $part): void
     {
-        $this->expectExceptionObject(InvalidTime::dueToMalformedHour($part));
+        $this->expectExceptionObject(InvalidTime::dueToMalformedTime($part, Unit::Hour));
 
         Time::at($part);
     }
@@ -53,7 +53,7 @@ final class TimeTest extends TestCase
     #[TestWith(['part' => -1], 'the minute component is too low')]
     public function testDomainRejectsInvalidMinutes(int $part): void
     {
-        $this->expectExceptionObject(InvalidTime::dueToMalformedMinute($part));
+        $this->expectExceptionObject(InvalidTime::dueToMalformedTime($part, Unit::Minute));
 
         Time::at(minute: $part);
     }
@@ -62,7 +62,7 @@ final class TimeTest extends TestCase
     #[TestWith(['part' => -1], 'the second component is too low')]
     public function testDomainRejectsInvalidSeconds(int $part): void
     {
-        $this->expectExceptionObject(InvalidTime::dueToMalformedSecond($part));
+        $this->expectExceptionObject(InvalidTime::dueToMalformedTime($part, Unit::Second));
 
         Time::at(second: $part);
     }
@@ -71,7 +71,7 @@ final class TimeTest extends TestCase
     #[TestWith(['part' => -1], 'the microsecond component is too low')]
     public function testDomainRejectsInvalidMicroseconds(int $part): void
     {
-        $this->expectExceptionObject(InvalidTime::dueToMalformedMicrosecond($part));
+        $this->expectExceptionObject(InvalidTime::dueToMalformedTime($part, Unit::Microsecond));
 
         Time::at(microsecond: $part);
     }

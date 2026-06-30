@@ -23,7 +23,7 @@ title: Event
 
 ```php
 Event::at(Time $at, Identifiers|string $identifier = new Identifiers()): self
-Event::fromFormat(string $value, TimeFormat $format = TimeFormat::Iso8601): self
+Event::fromFormat(string $value, TimeFormat $format = TimeFormat::Iso8601Extended): self
 ```
 
 ## Accessors
@@ -52,7 +52,7 @@ $event = Event::at(Time::noon(), ['lunch', 'break']);
 $event->format(TimeFormat::Compact);   // returns 12h00m00s;lunch,break
 ```
 
-#### Updating time and identifiers
+## Modifying events
 
 ```php
 Event::occursOn(Time $at): self

@@ -124,7 +124,7 @@ Interval::splitBy(Duration $duration, Bound $from = Bound:Start): IntervalSet
 Interval::splitAt(Time ...$steps): IntervalSet
 ```
 
-#### Modifying by duration and/or time
+## Modifiers
 
 ```php
 Interval::startingOn(Time $time): self

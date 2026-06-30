@@ -2,19 +2,19 @@ version:
     '1.0':
         Getting Started:
             Installation: '/1.0/'
-            Accepted Input: '/1.0/accepted-input-types'
         Temporal Primitives:
+            Principes: '/1.0/principes/'
             Duration: '/1.0/duration/'
             Time: '/1.0/time/'
             Interval: '/1.0/interval/'
             IntervalSet: '/1.0/intervalset/'
+            Available Enums: '/1.0/enums/'
+            Accepted Input: '/1.0/accepted-input-types/'
         Annotated Values:
-            Event: '/1.0/event/'
-            Task: '/1.0/task/'
-            EventSet: '/1.0/eventset/'
-            TaskSet: '/1.0/taskset/'
-        Helpers:
             Identifiers: '/1.0/identifiers'
-            Enum: '/1.0/enums'
+            Event: '/1.0/event/'
+            EventSet: '/1.0/eventset/'
+            Task: '/1.0/task/'
+            TaskSet: '/1.0/taskset/'
 upgrading:
         Release Notes: '/releases/'

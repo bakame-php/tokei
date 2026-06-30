@@ -73,10 +73,10 @@ final readonly class Time implements JsonSerializable
         int $second = 0,
         int $microsecond = 0,
     ): self {
-        ($hour >= 0 && $hour < 24) || throw InvalidTime::dueToMalformedHour($hour);
-        ($minute >= 0 && $minute < 60) || throw InvalidTime::dueToMalformedMinute($minute);
-        ($second >= 0 && $second < 60) || throw InvalidTime::dueToMalformedSecond($second);
-        ($microsecond >= 0 && $microsecond < 1_000_000) || throw InvalidTime::dueToMalformedMicrosecond($microsecond);
+        ($hour >= 0 && $hour < 24) || throw InvalidTime::dueToMalformedTime($hour, Unit::Hour);
+        ($minute >= 0 && $minute < 60) || throw InvalidTime::dueToMalformedTime($minute, Unit::Minute);
+        ($second >= 0 && $second < 60) || throw InvalidTime::dueToMalformedTime($second, Unit::Second);
+        ($microsecond >= 0 && $microsecond < 1_000_000) || throw InvalidTime::dueToMalformedTime($microsecond, Unit::Microsecond);
 
         return new self(new DurationParts(
             hours: $hour,
@@ -105,10 +105,10 @@ final readonly class Time implements JsonSerializable
     /**
      * @throws InvalidTime
      */
-    public static function fromFormat(string $value, TimeFormat $format = TimeFormat::Iso8601): self
+    public static function fromFormat(string $value, TimeFormat $format = TimeFormat::Iso8601Extended): self
     {
         $regexp = match ($format) {
-            TimeFormat::Iso8601 => self::REGEXP_ISO8601,
+            TimeFormat::Iso8601Extended => self::REGEXP_ISO8601,
             TimeFormat::Compact => self::REGEXP_COMPACT,
         };
 
@@ -230,10 +230,10 @@ final readonly class Time implements JsonSerializable
      *
      * @return non-empty-string
      */
-    public function format(TimeFormat $format = TimeFormat::Iso8601): string
+    public function format(TimeFormat $format = TimeFormat::Iso8601Extended): string
     {
         return match ($format) {
-            TimeFormat::Iso8601 => $this->toIso8601(),
+            TimeFormat::Iso8601Extended => $this->toIso8601(),
             TimeFormat::Compact => $this->toCompact(),
         };
     }

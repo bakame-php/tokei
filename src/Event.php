@@ -33,7 +33,7 @@ final class Event implements HasIdentifiers, JsonSerializable
     /**
      * @throws InvalidTime|TemporalException
      */
-    public static function fromFormat(string $value, TimeFormat $format = TimeFormat::Iso8601): self
+    public static function fromFormat(string $value, TimeFormat $format = TimeFormat::Iso8601Extended): self
     {
         [$time, $identifiers] = explode(';', $value, 2) + [1 => ''];
 
@@ -63,7 +63,7 @@ final class Event implements HasIdentifiers, JsonSerializable
      *
      * @return non-empty-string
      */
-    public function format(TimeFormat $format = TimeFormat::Iso8601): string
+    public function format(TimeFormat $format = TimeFormat::Iso8601Extended): string
     {
         return $this->at->format($format).';'.$this->identifiers->toCommaSeparated();
     }

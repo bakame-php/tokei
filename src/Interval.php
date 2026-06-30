@@ -140,8 +140,10 @@ final readonly class Interval implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public static function between(Time|Event|NativeEvent|DateTimeInterface $start, Time|Event|NativeEvent|DateTimeInterface $end): self
-    {
+    public static function between(
+        Time|Event|NativeEvent|DateTimeInterface $start,
+        Time|Event|NativeEvent|DateTimeInterface $end
+    ): self {
         $start = InputNormalizer::time($start);
         $end = InputNormalizer::time($end);
 

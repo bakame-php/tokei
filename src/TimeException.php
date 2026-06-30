@@ -17,23 +17,18 @@ class TimeException extends TokeiException
         );
     }
 
-    public static function dueToMalformedHour(int $hour): static
+    public static function dueToMalformedTime(int $value, Unit $unit): static
     {
-        return new static("Hour must be between 0 and 23, got $hour.");
-    }
+        $prefix = $unit->name.' must be ';
 
-    public static function dueToMalformedMinute(int $minute): static
-    {
-        return new static("Minute must be between 0 and 59, got $minute.");
-    }
-
-    public static function dueToMalformedSecond(int $second): static
-    {
-        return new static("Second must be between 0 and 59, got $second.");
-    }
-
-    public static function dueToMalformedMicrosecond(int $microsecond): static
-    {
-        return new static("Microsecond must be between 0 and 999999, got $microsecond.");
+        return new static(match ($unit) {
+            Unit::Week,
+            Unit::Day => $prefix.' greater than or equal to 0',
+            Unit::Hour => $prefix.' between 0 and 23',
+            Unit::Minute,
+            Unit::Second => $prefix.' between 0 and 59',
+            Unit::Millisecond => $prefix.' must be between 0 and 999',
+            Unit::Microsecond => $prefix.' must be between 0 and 999999',
+        }.", got $value.");
     }
 }

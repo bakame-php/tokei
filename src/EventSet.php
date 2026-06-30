@@ -76,7 +76,7 @@ final class EventSet implements TemporalSet
      *
      * @return list<non-empty-string>
      */
-    public function formatAll(TimeFormat $format = TimeFormat::Iso8601): array
+    public function formatAll(TimeFormat $format = TimeFormat::Iso8601Extended): array
     {
         return array_map(static fn (Event $item): string => $item->format($format), $this->items);
     }

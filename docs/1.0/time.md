@@ -25,7 +25,7 @@ Time::at(
 
 Time::fromFormat(
     string $value,
-    TimeFormat $format = TimeFormat::Iso8601
+    TimeFormat $format = TimeFormat::Iso8601Extended
 ): Time
 
 Time::sinceMidnight(Duration $value): Time
@@ -37,7 +37,7 @@ Here's some usage example.
 use Bakame\Tokei\Time;
 
 $time = Time::at(hour: 10, minute: 30, second: 15);
-$time = Time::fromFormat("10:30:15.123456", TimeFormat::Iso8601);
+$time = Time::fromFormat("10:30:15.123456", TimeFormat::Iso8601Extended);
 $time = Time::fromFormat("10h30m15s123456µs", TimeFormat::Compact);
 $time = Time::sinceMidnight(Duration::of(microseconds: 123_456_789));
 $time = Time::sinceMidnight(Duration::of(milliseconds: 123_456));
@@ -82,7 +82,7 @@ $time->microsecond;
 ## Formatting
 
 ```php
-Time::format(TimeFormat $format = TimeFormat::Iso8601): string
+Time::format(TimeFormat $format = TimeFormat::Iso8601Extended): string
 Time::in(Unit $unit): int|float; // returns the time value according to the provided
 Time::toLocaleString(
     string $locale,

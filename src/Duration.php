@@ -6,23 +6,19 @@ namespace Bakame\Tokei;
 
 use ArgumentCountError;
 use DateInterval;
-use DateTimeImmutable;
 use DateTimeInterface;
 use DivisionByZeroError;
 use JsonSerializable;
 
 use function array_key_first;
 use function array_key_last;
-use function implode;
 use function intdiv;
 use function preg_match;
-use function rtrim;
 use function str_pad;
 use function usort;
 
 use const PHP_INT_MAX;
 use const PHP_INT_MIN;
-use const STR_PAD_LEFT;
 
 final class Duration implements JsonSerializable
 {
@@ -31,7 +27,7 @@ final class Duration implements JsonSerializable
         (?<hours>\d+):
         (?<minutes>\d{1,2}):
         (?<seconds>\d{1,2})
-        (\.(?<microseconds>\d+))?
+        ((\.|")(?<microseconds>\d{1,6}))?
     $@x';
 
     private const string REGEXP_COMPACT = '@^
@@ -41,26 +37,30 @@ final class Duration implements JsonSerializable
         (?:(?<hours>\d+)\s*h\s*)?
         (?:(?<minutes>\d+)\s*m\s*)?
         (?:(?<seconds>\d+)\s*s\s*)?
-        (?:(?<microseconds>\d+)\s*(µs|us)\s*)?
+        (?:(?<microseconds>\d{1,6})\s*(µs|us)\s*)?
     $@x';
 
     private const string REGEXP_ISO8601 = '@^
         (?<sign>[+-])?
         P
-        (?=.*?(?:\d+W|\d+D|T\d+H|T\d+M|T\d+(?:\.\d+)?S)) # look-ahead to restrict support for ISO8601 formats
+        (?=.*?(?:\d+W|\d+D|T\d+H|T\d+M|T\d+(?:\.\d+)?S))
         (?:(?<weeks>\d+)W)?
         (?:(?<days>\d+)D)?
         (?:T
             (?:(?<hours>\d+)H)?
             (?:(?<minutes>\d+)M)?
-            (?:(?<seconds>\d+(?:\.\d+)?)S)?
+            (?:
+                (?<seconds>\d+)
+                (?:\.(?<microseconds>\d{1,6}))?
+                S
+            )?
         )?
     $@x';
 
     /** Total duration expressed in the library base unit. */
     public readonly int $microseconds;
     public readonly int $sign;
-    private DurationParts $parts;
+    private ?DurationParts $parts = null;
 
     /**
      * @param int $microseconds expressed in microseconds
@@ -73,18 +73,14 @@ final class Duration implements JsonSerializable
 
         $this->microseconds = $microseconds;
         $this->sign = $this->microseconds <=> 0;
-        $this->parts = DurationParts::parse($this->microseconds);
+    }
+
+    private function parts(): DurationParts
+    {
+        return $this->parts ??= DurationParts::parse($this->microseconds);
     }
 
     /**
-     * @param non-negative-int $weeks
-     * @param non-negative-int $days
-     * @param non-negative-int $hours
-     * @param non-negative-int $minutes
-     * @param non-negative-int $seconds
-     * @param non-negative-int $milliseconds
-     * @param non-negative-int $microseconds
-     *
      * @throws TokeiException
      */
     public static function of(
@@ -96,7 +92,6 @@ final class Duration implements JsonSerializable
         int $milliseconds = 0,
         int $microseconds = 0,
     ): self {
-        /* @phpstan-ignore-next-line */
         (0 <= $weeks && 0 <= $days && 0 <= $hours && 0 <= $minutes && 0 <= $seconds && 0 <= $milliseconds && 0 <= $microseconds) || throw new InvalidDuration('No duration part can be expressed with a negative number.');
 
         return new self(
@@ -161,11 +156,11 @@ final class Duration implements JsonSerializable
 
         $minutes = (int) $parts['minutes'];
         $seconds = (int) $parts['seconds'];
-        $microseconds = (int) ($parts['microseconds'] ?? '0');
+        $microseconds = (int) (str_pad($parts['microseconds'] ?? '0', 6, '0'));
 
-        ($minutes >= 0 && $minutes < 60) || throw InvalidDuration::dueToMalformedMinute($minutes);
-        ($seconds >= 0 && $seconds < 60) || throw InvalidDuration::dueToMalformedSecond($seconds);
-        ($microseconds >= 0 && $microseconds < 1_000_000) || throw InvalidDuration::dueToMalformedMicrosecond($microseconds);
+        ($minutes >= 0 && $minutes < 60) || throw InvalidDuration::dueToMalformedTime($minutes, Unit::Minute);
+        ($seconds >= 0 && $seconds < 60) || throw InvalidDuration::dueToMalformedTime($seconds, Unit::Second);
+        ($microseconds >= 0 && $microseconds < 1_000_000) || throw InvalidDuration::dueToMalformedTime($microseconds, Unit::Microsecond);
 
         return new self(
             new DurationParts(
@@ -189,7 +184,7 @@ final class Duration implements JsonSerializable
 
         return new self(
             new DurationParts(
-                hours: ((((int)($parts['weeks'] ?? 0) * 7) + (int)($parts['days'] ?? 0)) * 24) + (int)($parts['hours'] ?? 0),
+                hours: (int)($parts['hours'] ?? 0) + ((((int)($parts['weeks'] ?? 0) * 7) + (int)($parts['days'] ?? 0)) * 24),
                 minutes: (int)($parts['minutes'] ?? 0),
                 seconds: (int)($parts['seconds'] ?? 0),
                 microseconds: (int)($parts['microseconds'] ?? 0),
@@ -220,8 +215,8 @@ final class Duration implements JsonSerializable
             new DurationParts(
                 hours: (int)($parts['hours'] ?? 0) + ((((int)($parts['weeks'] ?? 0) * 7) + (int)($parts['days'] ?? 0)) * 24),
                 minutes: (int)($parts['minutes'] ?? 0),
-                seconds: 0,
-                microseconds: UnitTransformer::toMicroseconds((float)($parts['seconds'] ?? 0), Unit::Second),
+                seconds: (int)($parts['seconds'] ?? 0),
+                microseconds: (int) (str_pad($parts['microseconds'] ?? '0', 6, '0')),
                 sign: '-' === ($parts['sign'] ?? '') ? -1 : 1,
             )->build(),
         );
@@ -301,7 +296,6 @@ final class Duration implements JsonSerializable
         $duration = new self($properties['microseconds']);
         $this->microseconds = $duration->microseconds;
         $this->sign = $duration->sign;
-        $this->parts = $duration->parts;
     }
 
     /**
@@ -311,107 +305,7 @@ final class Duration implements JsonSerializable
      */
     public function format(DurationFormat $format = DurationFormat::Iso8601): string
     {
-        return match ($format) {
-            DurationFormat::Iso8601 => $this->toIso8601(),
-            DurationFormat::Timer => $this->toTimer(),
-            DurationFormat::Compact => $this->toCompact(),
-        };
-    }
-
-    /**
-     * Returns the string representation of the Duration.
-     *
-     * The following format is used [-]HH:MM:SS[.mmmmmm]
-     * the fraction and the signed are only display if
-     * they duration is negative and/or the sub seconds
-     * fraction is different from 0
-     *
-     * @return non-empty-string
-     */
-    private function toTimer(): string
-    {
-        $pad = static fn (int $value, int $length): string => str_pad((string) $value, $length, '0', STR_PAD_LEFT);
-        $formatted = $pad($this->parts->hours, 2).':'.$pad($this->parts->minutes, 2).':'.$pad($this->parts->seconds, 2);
-        if (0 !== $this->parts->microseconds) {
-            $formatted .= '.'.$pad($this->parts->microseconds, 6);
-        }
-
-        return -1 === $this->parts->sign ? '-'.$formatted : $formatted;
-    }
-
-    /**
-     * Returns the ISO8601 string representation of the duration.
-     *
-     * - fractional values are only allowed on seconds
-     * - only D, H, M and S are allowed; M represents the minutes
-     * - negative marker is allowed in front of the expression
-     *
-     * @return non-empty-string
-     */
-    private function toIso8601(): string
-    {
-        $time = '';
-        if (0 < $this->parts->hours || 0 < $this->parts->minutes || 0 < $this->parts->seconds || 0 < $this->parts->microseconds) {
-            $time = 'T';
-            if (0 < $this->parts->hours) {
-                $time .= $this->parts->hours.'H';
-            }
-
-            if (0 < $this->parts->minutes) {
-                $time .= $this->parts->minutes.'M';
-            }
-
-            if (0 < $this->parts->seconds || 0 < $this->parts->microseconds) {
-                $time .= $this->parts->seconds;
-                if (0 !== $this->parts->microseconds) {
-                    $time .= '.'.rtrim(str_pad((string) $this->parts->microseconds, 6, '0', STR_PAD_LEFT), '0');
-                }
-
-                $time .= 'S';
-            }
-        }
-
-        return '' === $time
-            ? 'PT0S'
-            : (-1 === $this->parts->sign ? '-' : '').'P'.$time;
-    }
-
-    /**
-     * Format [-]xw xd xh xm xs xµs where x is a number.
-     * @return non-empty-string
-     */
-    private function toCompact(): string
-    {
-        $value = -1 === $this->sign ? -$this->microseconds : $this->microseconds;
-        $time = [];
-        $weeksCount = UnitTransformer::whole($value, Unit::Week);
-        if (0 !== $weeksCount) {
-            $time[] = $weeksCount.'w';
-        }
-
-        $days = UnitTransformer::whole($value, Unit::Day) % 7;
-        if (0 !== $days) {
-            $time[] = $days.'d';
-        }
-
-        $hours = $this->parts->hours % 24;
-        if (0 !== $hours) {
-            $time[] = $hours.'h';
-        }
-
-        if (0 !== $this->parts->minutes) {
-            $time[] = $this->parts->minutes.'m';
-        }
-
-        if (0 !== $this->parts->seconds) {
-            $time[] = $this->parts->seconds.'s';
-        }
-
-        if (0 !== $this->parts->microseconds) {
-            $time[] = $this->parts->microseconds.'µs';
-        }
-
-        return [] === $time ? '0s' : (-1 === $this->sign ? '-' : '').implode('', $time);
+        return $this->parts()->format($format);
     }
 
     /**
@@ -419,24 +313,7 @@ final class Duration implements JsonSerializable
      */
     public function toDateInterval(?DateTimeInterface $relativeTo = null): DateInterval
     {
-        $interval = new DateInterval('PT0S');
-        $interval->d = UnitTransformer::whole($this->microseconds, Unit::Day);
-        $interval->h = $this->parts->hours % 24;
-        $interval->i = $this->parts->minutes;
-        $interval->s = $this->parts->seconds;
-        if (0 !== $this->parts->microseconds) {
-            $interval->f = UnitTransformer::fromMicroseconds($this->parts->microseconds, Unit::Second);
-        }
-        $interval->invert = -1 === $this->sign ? 1 : 0;
-        if (null === $relativeTo) {
-            return $interval;
-        }
-
-        if (!$relativeTo instanceof DateTimeImmutable) {
-            $relativeTo = DateTimeImmutable::createFromInterface($relativeTo);
-        }
-
-        return $relativeTo->diff($relativeTo->add($interval));
+        return $this->parts()->toDateInterval($relativeTo);
     }
 
     /**
@@ -449,8 +326,10 @@ final class Duration implements JsonSerializable
 
     public function component(Unit $unit): int
     {
-        $value = -1 === $this->sign ? -$this->microseconds : $this->microseconds;
-        $whole = UnitTransformer::whole($value, $unit);
+        [$whole] = UnitTransformer::divmod(
+            -1 === $this->sign ? -$this->microseconds : $this->microseconds,
+            $unit
+        );
 
         return match ($unit) {
             Unit::Week => $whole,
@@ -526,14 +405,6 @@ final class Duration implements JsonSerializable
     }
 
     /**
-     * @param non-negative-int $weeks
-     * @param non-negative-int $days
-     * @param non-negative-int $hours
-     * @param non-negative-int $minutes
-     * @param non-negative-int $seconds
-     * @param non-negative-int $milliseconds
-     * @param non-negative-int $microseconds
-     *
      * @throws TokeiException
      */
     public function increase(
@@ -557,14 +428,6 @@ final class Duration implements JsonSerializable
     }
 
     /**
-     * @param non-negative-int $weeks
-     * @param non-negative-int $days
-     * @param non-negative-int $hours
-     * @param non-negative-int $minutes
-     * @param non-negative-int $seconds
-     * @param non-negative-int $milliseconds
-     * @param non-negative-int $microseconds
-     *
      * @throws TokeiException
      */
     public function decrease(

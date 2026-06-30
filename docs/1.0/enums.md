@@ -7,18 +7,6 @@ title: Enums
 
 The following Enums are used throughout the package.
 
-## Bound
-
-This `Bound` enum identifies which interval boundary is being referenced.
-
-```php
-enum Bound
-{
-    case Start;
-    case End;
-}
-```
-
 ## Unit
 
 The `Unit` enum defines all time units supported by the package and is used whenever a unit of time must be specified.
@@ -33,6 +21,18 @@ enum Unit
     case Second;
     case Millisecond;
     case Microsecond;
+}
+```
+
+## Bound
+
+This `Bound` enum identifies which interval boundary is being referenced.
+
+```php
+enum Bound
+{
+    case Start;
+    case End;
 }
 ```
 
@@ -110,7 +110,7 @@ Available formats:
 
 - `Iso8601`: formats a duration according to the ISO-8601 standard.
 - `Timer`: formats a duration using timer notation (`HH:MM:SS.FF`).
-- `Compact`: formats a duration using a compact representation (`1d3h25m3s250µs`).
+- `Compact`: formats a duration using a compact representation which omits zero components (`1d3h25m3s250µs`).
 
 This enum is primarily used by formatting methods operating on `Duration` objects.
 
@@ -121,12 +121,12 @@ The `TimeFormat` enum defines the supported string representations for a `Time`.
 ```php
 enum TimeFormat
 {
-    case Iso8601;
+    case Iso8601Extended;
     case Compact;
 }
 ```
 
-- `Iso8601` : formats a time according to ISO-8601 (`HH:MM:SS.FF`);
+- `Iso8601Extended` : formats a time according to ISO-8601 Extended Time format (`HH:MM:SS.FFFFFF`);
 - `Compact` : formats a time using a compact representation (`3h25m3s250µs`);
 
 ## Interval format

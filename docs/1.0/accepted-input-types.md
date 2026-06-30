@@ -128,7 +128,7 @@ primitive also accepts any compatible representation of that primitive.
 
 `Tokei` distinguishes between two temporal domains:
 
-### Time-based types (no date/timezone)
+### Time-based types
 
 - `Time`
 - `Event`
@@ -138,7 +138,7 @@ primitive also accepts any compatible representation of that primitive.
 These types represent time-of-day semantics only.  
 Date and timezone information are not part of their model.
 
-### Native types (absolute datetime)
+### Native types
 
 - `NativeEvent`
 - `NativeInterval`

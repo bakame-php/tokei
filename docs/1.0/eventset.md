@@ -17,7 +17,7 @@ EventSet::fromTasks(TaskSet $tasks, Bound $anchor = Bound::Start): self
 ## Accessors
 
 ```php
-EventSet::formatAll(TimeFormat $format = TimeFormat::Iso8601): array
+EventSet::formatAll(TimeFormat $format = TimeFormat::Iso8601Extended): array
 EventSet::count(): int
 EventSet::getIterator(): Traversable
 EventSet::jsonSerialize(): array
@@ -42,7 +42,7 @@ EventSet::has(Event ...$items): bool
 Supports the same formatting arguments as the `Time::format` method.
 
 ```php
-EventSet::formatAll(TimeFormat $format = TimeFormat::Iso8601): array
+EventSet::formatAll(TimeFormat $format = TimeFormat::Iso8601Extended): array
 ````
 
 ## Interacting with PHP's native Date API

@@ -9,30 +9,25 @@ use function floor;
 use function intdiv;
 use function round;
 
+use const PHP_INT_MAX;
+use const PHP_INT_MIN;
+
 /**
  * @internal class to convert between time units
  */
-final class UnitTransformer
+final readonly class UnitTransformer
 {
-    public static function round(int $valueInMicro, Unit $unit, SnapMode $mode = SnapMode::Nearest): int
+    private function __construct()
     {
-        $unit = $unit->inMicroseconds();
-        $factor = $valueInMicro / $unit;
-        $roundedFactor = match ($mode) {
-            SnapMode::Floor => floor($factor),
-            SnapMode::Ceil => ceil($factor),
-            SnapMode::Nearest => round($factor),
-        };
-
-        return (int) ($roundedFactor * $unit);
     }
 
     public static function toMicroseconds(int|float $value, Unit $unit): int
     {
-        $factor = $unit->inMicroseconds();
-        ($value <= intdiv(PHP_INT_MAX, $factor) && $value >= intdiv(PHP_INT_MIN, $factor)) || throw InvalidDuration::dueToOverflow();
+        $micro = $unit->inMicroseconds();
 
-        return (int) round($factor * $value);
+        ($value <= intdiv(PHP_INT_MAX, $micro) && $value >= intdiv(PHP_INT_MIN, $micro)) || throw InvalidDuration::dueToOverflow();
+
+        return (int) round($micro * $value);
     }
 
     public static function fromMicroseconds(int $valueInMicro, Unit $unit): int|float
@@ -40,14 +35,25 @@ final class UnitTransformer
         return $valueInMicro / $unit->inMicroseconds();
     }
 
-    public static function whole(int $valueInMicro, Unit $unit): int
+    /**
+     * @return array{0: int, 1: int}
+     */
+    public static function divmod(int $valueInMicro, Unit $unit): array
     {
-        return intdiv($valueInMicro, $unit->inMicroseconds());
+        $micro = $unit->inMicroseconds();
+
+        return [intdiv($valueInMicro, $micro), $valueInMicro % $micro];
     }
 
-    public static function remainder(int $valueInMicro, Unit $unit): int
+    public static function round(int $valueInMicro, Unit $unit, SnapMode $mode = SnapMode::Nearest): int
     {
-        return $valueInMicro % $unit->inMicroseconds();
+        $micro = $unit->inMicroseconds();
+
+        return (int) ($micro * match ($mode) {
+            SnapMode::Floor => floor($valueInMicro / $micro),
+            SnapMode::Ceil => ceil($valueInMicro / $micro),
+            SnapMode::Nearest => round($valueInMicro / $micro),
+        });
     }
 
     public static function wrap(int $valueInMicro, Unit $unit): int

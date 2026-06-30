@@ -10,6 +10,7 @@ use DateTimeImmutable;
 use DivisionByZeroError;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 
 use function json_encode;
@@ -21,6 +22,7 @@ use function unserialize;
 #[CoversClass(InvalidDuration::class)]
 #[CoversClass(Duration::class)]
 #[CoversClass(DurationFormat::class)]
+#[CoversClass(DurationParts::class)]
 #[CoversClass(Unit::class)]
 #[CoversClass(UnitTransformer::class)]
 #[CoversClass(InputNormalizer::class)]
@@ -590,6 +592,16 @@ final class DurationTest extends TestCase
         Duration::fromFormat('invalid', DurationFormat::Iso8601);
     }
 
+    #[TestWith(['PT1.0000001S', DurationFormat::Iso8601])]
+    #[TestWith(['00:00:00"0000001', DurationFormat::Timer])]
+    #[TestWith(['0000001us', DurationFormat::Compact])]
+    public function testItRejectsInvalidDurationWithSubMicrosecondsPrecision(string $notation, DurationFormat $format): void
+    {
+        $this->expectException(InvalidDuration::class);
+
+        Duration::fromFormat($notation, $format);
+    }
+
     public function testItParsesWeeks(): void
     {
         $duration = Duration::fromFormat('P2W', DurationFormat::Iso8601);
@@ -962,7 +974,8 @@ final class DurationTest extends TestCase
             'simple' => ['01:02:03', 3723],
             'midnight edge' => ['00:00:01', 1],
             'large hours' => ['100:00:00', 360000],
-            'microseconds' => ['01:02:03.500000', 3723, 500],
+            'microseconds with dot' => ['01:02:03.500000', 3723, 500],
+            'microseconds with enclosure character' => ['01:02:03"500000', 3723, 500],
         ];
     }
 
