@@ -6,8 +6,8 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Added
 
-- `Event`, `Task`, `EventSet`, `TaskSet`, `Identifiers`, `NativeEvent`, `NativeTask` to work with identified Temporal Values.
-- `NativeInterval` to allow better conversion to PHP Native Date API.
+- `Event`, `Task`, `EventSet`, `TaskSet`, `Identifiers` to work with identified Temporal Values.
+- `NativeInterval`, `NativeEvent`, `NativeTask` to allow better conversion to PHP Native Date API.
 - `IntervalSet::each`
 - `IntervalSet::transform`
 - `IntervalSet::chronological`
@@ -39,7 +39,6 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Time::utc`
 - `Time::roundTo`
 - `LocaleTimeFormatter`to improve time string localization using `ext-intl`
-- `Direction` to unify sorting
 - `SnapMode` to unify rounding
 - `SearchMode` to unify search type (linear or circular)
 - `LocaleVerbosity` to allow fine-grained locale string representation using by `LocaleTimeFormatter`
@@ -53,7 +52,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Time::toLocaleString` accepts timezone string identifier as well as fully instantiated `DateTimeZone` instances.
 - `Time::toLocaleString` improves timezone handling, the time is no longer affected by the timezone shift.
 - **BC BREAK:** `Duration::format` using Timer format will always output the hours parts with at least two digits previously for hours below 10 one digit was used.
-- **BC BREAK:** Renamed method suffixe "Clock" to "Timer" which is a better description for `Duration`
+- **BC BREAK:** Renamed methods suffixed with "Clock" to "Timer" which is a better description for `Duration`
 - **BC BREAK:** `Duration::of` no longer accepts negative integer use `negated()` or `fromFormat`.
 - **BC BREAK:** `Interval::lasting` signature parameter order.
 - **BC BREAK:** `Interval::shiftBound` signature parameter order.
@@ -72,17 +71,17 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC BREAK:** `Duration::increment` is removed use `Duration::increase` instead
 - **BC BREAK:** `Duration::isEmpty` is removed use `Duration::isZero` instead
 - **BC BREAK:** `Duration::total` is removed and replaced by `Duration::in`
-- **BC BREAK:** all `Duration` public properties excepts `microseconds` and `sign`
+- **BC BREAK:** all `Duration` public properties are removed except for `microseconds` and `sign`
 - **BC BREAK:** `Interval::fromIso8601` is removed and replaced by `Interval::fromFormat` with the `IntervalFormat::Iso8601StartDuration` argument
 - **BC BREAK:** `Interval::compareDurationTo` is removed use `Duration::compare` instead
 - **BC BREAK:** `SubSecondDisplay` is removed with no remplacement use rounding with the `Rounding::Floor` mode
 - **BC BREAK:** `truncateTo` is removed use `roundTo` instead with the new `Rounding:Floor` mode
 - **BC BREAK:** `Time::add` is removed use `Time::shift` instead
 - **BC BREAK:** `Time::fromDate` is removed use `Time::fromDateTime` instead
-- **BC BREAK:** `Time::fromUnitOfDay` is removed use `Time::fromOffset` instead
-- **BC BREAK:** `Time::toUnitOfDay` is removed use `Time::toOffset` instead
+- **BC BREAK:** `Time::fromUnitOfDay` is removed use `Time::sinceMidnight` instead
+- **BC BREAK:** `Time::toUnitOfDay` is removed use `Time::in` instead
 - **BC BREAK:** `Time::toString` is removed use `Time::format` instead
-- **BC BREAK:** `IntervalSet::sorted` argument was a string or PHP8.6 `SorDirection` enum is changed to using the `Order` enum instead.
+- **BC BREAK:** `IntervalSet::sorted` argument was a string or PHP8.6 `SorDirection` enum is changed to only supports PHP8.6 `SorDirection` enum.
 - **BC BREAK:** `IntervalSet::allFormatted` is removed use `IntervalSet::formatAll` instead
 
 ## [0.1.0 - asagao](https://github.com/bakame-php/tokei/releases/tag/0.1.0) - 2026-05-27

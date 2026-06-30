@@ -6,6 +6,7 @@ namespace Bakame\Tokei;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use SortDirection;
 use stdClass;
 
 use function serialize;
@@ -173,7 +174,7 @@ final class IdentifiersTest extends TestCase
         self::assertTrue($mergeBA->equals($mergeAB));
         self::assertNotSame($mergeBA->toCommaSeparated(), $mergeAB->toCommaSeparated());
         self::assertSame($mergeBA->sorted()->toCommaSeparated(), $mergeAB->sorted()->toCommaSeparated());
-        self::assertNotSame($mergeBA->sorted(), $mergeAB->sorted(Direction::Descending));
+        self::assertNotSame($mergeBA->sorted(), $mergeAB->sorted(SortDirection::Descending));
     }
 
     public function test_unique_is_case_sensitive(): void

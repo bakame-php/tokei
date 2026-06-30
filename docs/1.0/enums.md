@@ -5,12 +5,11 @@ title: Enums
 
 # Package Enums
 
-To work as expected the package defines the following Enums:
+The following Enums are used throughout the package.
 
 ## Bound
 
-This Enum is used to indicate which interval boundary is being considered.
-An `Interval` has two boundaries at the start and at the end.
+This `Bound` enum identifies which interval boundary is being referenced.
 
 ```php
 enum Bound
@@ -20,23 +19,9 @@ enum Bound
 }
 ```
 
-## Direction
-
-This Enum is used during sorting to indicate which direction ascending or descending
-is being considered.
-
-```php
-enum Direction
-{
-    case Ascending;
-    case Descending;
-}
-```
-
 ## Unit
 
-The package supported time unit. This enum is helpful to designate which
-time unit can be used in the operation.
+The `Unit` enum defines all time units supported by the package and is used whenever a unit of time must be specified.
 
 ```php
 enum Unit
@@ -53,7 +38,7 @@ enum Unit
 
 ## Interval Type
 
-There are 4 types of interval as defined by the relative position of their endpoints and their duration.
+The `IntervalType` enum defines the four possible interval types based on the relative positions of their boundaries and their duration.
 
 ```php
 enum IntervalType
@@ -65,11 +50,16 @@ enum IntervalType
 }
 ```
 
+The interval types have the following meanings:
 
+- `Linear`: the interval progresses normally from start to end.
+- `Overflow`: the interval wraps past midnight.
+- `Circular`: the interval spans an entire day.
+- `Collapsed`: the interval has no duration.
 
 ## Snap Mode
 
-This Enum tells how to round a value.
+The `SnapMode` enum determines how values should be rounded when snapping.
 
 ```php
 enum SnapMode
@@ -79,12 +69,15 @@ enum SnapMode
     case Ceil;
 }
 ```
+Available modes:
+
+- `Floor`: rounds down to the nearest value.
+- `Nearest`: rounds to the nearest value.
+- `Ceil`: rounds up to the nearest value.
 
 ## Search Mode
-
-This Enum tells which search type is being considered should we do a linear search
-with a start and an end or a circular search where there's no beginning or end and
-every time are ordered around a time circle.
+ 
+The `SearchMode` enum specifies the search strategy to use.
 
 ```php
 enum SearchMode
@@ -94,12 +87,15 @@ enum SearchMode
 }
 ```
 
-## Formatting Enums
+Search modes behave as follows:
 
-### Duration format
+- `Linear`: searches within a fixed range starting at midnight and ending at the end of the day.
+- `Circular`: searches without boundaries and wraps beyond the end of the day.
 
-To ease choosing the correct string representation for the duration, the `DurationFormat`
-Enum is added:
+
+## Duration format
+
+The `DurationFormat` enum defines the supported string representations for a `Duration`.
 
 ```php
 enum DurationFormat
@@ -110,15 +106,17 @@ enum DurationFormat
 }
 ```
 
-- `DurationFormat::Iso8601` : returns a Duration as defined in ISO-8601;
-- `DurationFormat::Timer` : returns a Duration represented in a Timer format (`HH:MM:SS.FF`);
-- `DurationFormat::Compact` : returns a Duration using a compact view (`1d3h25m3s250us`);
+Available formats:
 
-The enum is mostly with formatting methods that uses a `Duration` class.
+- `Iso8601`: formats a duration according to the ISO-8601 standard.
+- `Timer`: formats a duration using timer notation (`HH:MM:SS.FF`).
+- `Compact`: formats a duration using a compact representation (`1d3h25m3s250µs`).
 
-### Time Format
+This enum is primarily used by formatting methods operating on `Duration` objects.
 
-To ease choosing the correct string representation for a Time, the `TimeFormat` Enum is added:
+## Time Format
+
+The `TimeFormat` enum defines the supported string representations for a `Time`.
 
 ```php
 enum TimeFormat
@@ -128,14 +126,12 @@ enum TimeFormat
 }
 ```
 
-- `TimeFormat::Iso8601` : returns a Time string representation as defined in ISO-8601 format (`HH:MM:SS.FF`);
-- `TimeFormat::Compact` : returns a Time string representation using a compact view (`3h25m3s250us`);
+- `Iso8601` : formats a time according to ISO-8601 (`HH:MM:SS.FF`);
+- `Compact` : formats a time using a compact representation (`3h25m3s250µs`);
 
+## Interval format
 
-### Interval format
-
-To ease choosing the correct string representation for an interval, the `IntervalFormat`
-Enum is added:
+The `IntervalFormat` enum defines the supported string representations for an interval.
 
 ```php
 enum IntervalFormat
@@ -148,18 +144,17 @@ enum IntervalFormat
 }
 ```
 
-- `DurationFormat::Iso8601StartDuration` : returns the Interval string representation using the start boundary and its duration as defined in ISO-8601;
-- `DurationFormat::Iso8601DurationEnd` : returns the Interval string representation using its duration and its end boundary as defined in ISO-8601;
-- `DurationFormat::Iso8601StartEnd` : returns the Interval string representation using  its start and end boudaries times as defined in ISO-8601;
-- `DurationFormat::Iso80000` : returns the Interval string representation using its start and end boudaries times as defined in ISO-80000;
-- `DurationFormat::Bourbaki` : returns the Interval string representation using its start and end boudaries times as defined in Bourbaki specification;
+Available formats to represent an interval in a string format:
 
-The enum is mostly with formatting methods that uses a `Interval` class.
+- `Iso8601StartDuration` : uses the start boundary and duration, as defined by ISO-8601.
+- `Iso8601DurationEnd` : uses the duration and end boundary, as defined by ISO-8601.
+- `Iso8601StartEnd` : uses the start and end boundaries, as defined by ISO-8601.
+- `Iso80000` : uses the start and end boundaries together with boundary notation according to ISO-80000.
+- `Bourbaki` : uses the start and end boundaries together with boundary notation according to Bourbaki notation.
 
-### Locale Verbosity
+## Locale Verbosity
 
-This Enum allows defining the lenght of the Time when it is being generated using
-the `LocalTimeFormatter`.
+The `LocaleVerbosity` enum specifies the verbosity level used when generating localized Time string representations with the `LocalTimeFormatter`.
 
 ```php
 enum LocaleVerbosity
@@ -168,4 +163,5 @@ enum LocaleVerbosity
     case Medium;
     case Long;
     case Full;
+}
 ```

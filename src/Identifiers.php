@@ -9,6 +9,7 @@ use Iterator;
 use IteratorAggregate;
 use JsonSerializable;
 
+use SortDirection;
 use function array_diff;
 use function array_fill_keys;
 use function array_filter;
@@ -231,9 +232,9 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
     /**
      * @throws TemporalException
      */
-    public function sorted(Direction $direction = Direction::Ascending): self
+    public function sorted(SortDirection $direction = SortDirection::Ascending): self
     {
-        $callback = Direction::Ascending === $direction
+        $callback = SortDirection::Ascending === $direction
                 ? static fn (string $a, string $b): int => strcmp($a, $b)
                 : static fn (string $a, string $b): int => strcmp($b, $a);
 

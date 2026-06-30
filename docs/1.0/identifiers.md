@@ -34,7 +34,7 @@ Identifiers::nth(int $offset): ?string
 ## Equality
 
 ```php
-Identifiers::equals(HasIdentifiers|Identifiers $other): bool
+Identifiers::equals(Identifiers $other): bool
 ```
 
 ## Modifiers

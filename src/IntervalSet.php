@@ -7,6 +7,7 @@ namespace Bakame\Tokei;
 use Closure;
 use DateInterval;
 use DateTimeInterface;
+use SortDirection;
 use Traversable;
 
 use function array_key_last;
@@ -656,7 +657,7 @@ final class IntervalSet implements TemporalSet
      *
      * @throws InvalidDuration
      */
-    public function sorted(Bound $by = Bound::Start, Direction $direction = Direction::Ascending): self
+    public function sorted(Bound $by = Bound::Start, SortDirection $direction = SortDirection::Ascending): self
     {
         return $this->sortedUsing(self::filterCompare($by, $direction));
     }
@@ -705,9 +706,9 @@ final class IntervalSet implements TemporalSet
     /**
      * @return Closure(Interval, Interval): int
      */
-    private static function filterCompare(Bound $bound, Direction $direction): Closure
+    private static function filterCompare(Bound $bound, SortDirection $direction): Closure
     {
-        $directionFactor = Direction::Ascending === $direction ? 1 : -1;
+        $directionFactor = SortDirection::Ascending === $direction ? 1 : -1;
         $keyExtractor = match ($bound) {
             Bound::Start => static fn (Interval $i): int => $i->linearStart,
             Bound::End => static fn (Interval $i): int => $i->linearEnd,

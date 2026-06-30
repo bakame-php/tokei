@@ -10,6 +10,7 @@ use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
+use SortDirection;
 use function array_map;
 use function iterator_to_array;
 use function json_encode;
@@ -605,7 +606,7 @@ final class IntervalSetTest extends TestCase
             Interval::between(Time::at(hour: 10), Time::at(hour: 13)),
             Interval::between(Time::noon(), Time::at(hour: 13)),
         );
-        $sorted = $set->sorted(direction: Direction::Descending);
+        $sorted = $set->sorted(direction: SortDirection::Descending);
 
         self::assertNotSame($set, $sorted);
         self::assertSame($set->last(), $sorted->first());
@@ -617,7 +618,7 @@ final class IntervalSetTest extends TestCase
             Interval::between(Time::at(hour: 10), Time::at(hour: 13)),
             Interval::between(Time::noon(), Time::at(hour: 13)),
         );
-        $sorted = $set->sorted(by: Bound::End, direction: Direction::Descending);
+        $sorted = $set->sorted(by: Bound::End, direction: SortDirection::Descending);
 
         self::assertNotSame($set, $sorted);
         self::assertSame($set->last(), $sorted->first());

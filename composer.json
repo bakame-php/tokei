@@ -64,7 +64,10 @@
     "autoload": {
         "psr-4": {
             "Bakame\\Tokei\\": "src"
-        }
+        },
+        "classmap": [
+            "lib"
+        ]
     },
     "scripts": {
         "phpcs": "php-cs-fixer fix -vvv --diff --dry-run --allow-risky=yes --ansi",
