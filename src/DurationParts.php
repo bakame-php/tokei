@@ -7,10 +7,13 @@ namespace Bakame\Tokei;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
+use ValueError;
 
 use function implode;
+use function in_array;
 use function rtrim;
 use function str_pad;
+use function strtolower;
 
 use const STR_PAD_LEFT;
 
@@ -19,6 +22,9 @@ use const STR_PAD_LEFT;
  */
 final readonly class DurationParts
 {
+    public const COMPACT_DURATION = 'compact_duration';
+    public const COMPACT_TIME = 'compact_time';
+
     public function __construct(
         public int $hours,
         public int $minutes,
@@ -47,21 +53,26 @@ final readonly class DurationParts
 
     public function build(): int
     {
-        return $this->sign * (UnitTransformer::toMicroseconds($this->hours, Unit::Hour)
-                + UnitTransformer::toMicroseconds($this->minutes, Unit::Minute)
-                + UnitTransformer::toMicroseconds($this->seconds, Unit::Second)
-                + $this->microseconds);
+        return $this->sign * (
+            UnitTransformer::toMicroseconds($this->hours, Unit::Hour)
+            + UnitTransformer::toMicroseconds($this->minutes, Unit::Minute)
+            + UnitTransformer::toMicroseconds($this->seconds, Unit::Second)
+            + $this->microseconds
+        );
     }
 
     /**
      * @return non-empty-string
      */
-    public function format(DurationFormat $format): string
+    public function format(DurationFormat $format, string $compactType): string
     {
+        $type = strtolower($compactType);
+        in_array($type, [self::COMPACT_DURATION, self::COMPACT_TIME], true) || throw new ValueError('Invalid duration format: '.$compactType);
+
         return match ($format) {
             DurationFormat::Iso8601 => $this->toIso8601(),
             DurationFormat::Timer => $this->toTimer(),
-            DurationFormat::Compact => $this->toCompact(),
+            DurationFormat::Compact => $this->toCompact($type),
         };
     }
 
@@ -127,32 +138,20 @@ final readonly class DurationParts
      * Format [-]xw xd xh xm xs xµs where x is a number.
      * @return non-empty-string
      */
-    private function toCompact(): string
+    private function toCompact(string $type): string
     {
-        $microseconds = $this->build();
-        $value = -1 === $this->sign ? -$microseconds : $microseconds;
+        $isTimeType = self::COMPACT_TIME === $type;
         $time = [];
-        [$weeksCount] = UnitTransformer::divmod($value, Unit::Week);
-        if (0 !== $weeksCount) {
-            $time[] = $weeksCount.'w';
-        }
-
-        [$days] = UnitTransformer::divmod($value, Unit::Day);
-        $days %= 7;
-        if (0 !== $days) {
-            $time[] = $days.'d';
-        }
-
-        $hours = $this->hours % 24;
-        if (0 !== $hours) {
+        $hours = $this->hours;
+        if (0 !== $hours || $isTimeType) {
             $time[] = $hours.'h';
         }
 
-        if (0 !== $this->minutes) {
+        if (0 !== $this->minutes || $isTimeType) {
             $time[] = $this->minutes.'m';
         }
 
-        if (0 !== $this->seconds) {
+        if (0 !== $this->seconds || ($isTimeType && 0 !== $this->microseconds)) {
             $time[] = $this->seconds.'s';
         }
 

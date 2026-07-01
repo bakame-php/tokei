@@ -305,7 +305,7 @@ final class Duration implements JsonSerializable
      */
     public function format(DurationFormat $format = DurationFormat::Iso8601): string
     {
-        return $this->parts()->format($format);
+        return $this->parts()->format($format, DurationParts::COMPACT_DURATION);
     }
 
     /**

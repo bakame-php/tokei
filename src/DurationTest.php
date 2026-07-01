@@ -34,7 +34,7 @@ final class DurationTest extends TestCase
 
         self::assertSame(1, $duration->sign);
         self::assertSame(3_550_542_123_456, $duration->microseconds);
-        self::assertSame('5w6d2h15m42s123456µs', $duration->format(DurationFormat::Compact));
+        self::assertSame('986h15m42s123456µs', $duration->format(DurationFormat::Compact));
     }
 
     public function testParseNegativeMicroseconds(): void

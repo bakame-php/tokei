@@ -13,17 +13,13 @@ use JsonSerializable;
 
 use function array_key_first;
 use function array_key_last;
-use function implode;
-use function is_int;
 use function preg_match;
 use function str_pad;
 use function substr;
 use function trim;
 use function usort;
 
-use const STR_PAD_LEFT;
-
-final readonly class Time implements JsonSerializable
+final class Time implements JsonSerializable
 {
     private const string REGEXP_ISO8601 = '@^
         (?<hour>\d{1,2}):
@@ -43,25 +39,24 @@ final readonly class Time implements JsonSerializable
      * Time since midnight expressed in the library base unit.
      * @var non-negative-int
      */
-    public int $ticks;
-    public int $hour;
-    public int $minute;
-    public int $second;
-    public int $microsecond;
+    public readonly int $ticks;
+    private ?DurationParts $parts = null;
+    public int $hour { get => $this->parts()->hours; }
+    public int $minute { get => $this->parts()->minutes; }
+    public int $second { get => $this->parts()->seconds; }
+    public int $microsecond { get => $this->parts()->microseconds; }
 
     /**
      * @param int $ticks Time since midnight expressed in the library base unit
      */
     private function __construct(int $ticks)
     {
-        /** @var non-negative-int $ticks */
-        $ticks = UnitTransformer::wrap($ticks, Unit::Day);
-        $this->ticks = $ticks;
-        $parts = DurationParts::parse($this->ticks);
-        $this->hour = $parts->hours;
-        $this->minute = $parts->minutes;
-        $this->second = $parts->seconds;
-        $this->microsecond = $parts->microseconds;
+        $this->ticks = UnitTransformer::wrap($ticks, Unit::Day);
+    }
+
+    private function parts(): DurationParts
+    {
+        return $this->parts ??= DurationParts::parse($this->ticks);
     }
 
     /**
@@ -209,12 +204,7 @@ final readonly class Time implements JsonSerializable
     public function __unserialize(array $data): void
     {
         [$properties] = $data;
-        $time = new self($properties['microseconds']);
-        $this->ticks = $time->ticks;
-        $this->hour = $time->hour;
-        $this->minute = $time->minute;
-        $this->second = $time->second;
-        $this->microsecond = $time->microsecond;
+        $this->ticks = new self($properties['microseconds'])->ticks;
     }
 
     /**
@@ -226,58 +216,19 @@ final readonly class Time implements JsonSerializable
     }
 
     /**
-     *  Encodes a Time into a specified string notation representation.
+     * Encodes a Time into a specified string notation representation.
      *
      * @return non-empty-string
      */
     public function format(TimeFormat $format = TimeFormat::Iso8601Extended): string
     {
-        return match ($format) {
-            TimeFormat::Iso8601Extended => $this->toIso8601(),
-            TimeFormat::Compact => $this->toCompact(),
-        };
-    }
-
-    /**
-     * Returns the string representation of the Duration.
-     *
-     * The following format is used [-]HH:MM:SS[.mmmmmm]
-     * the fraction and the signed are only display if
-     * they duration is negative and/or the sub seconds
-     * fraction is different from 0
-     *
-     * @return non-empty-string
-     */
-    private function toIso8601(): string
-    {
-        $pad = static fn (int $value, int $length): string => str_pad((string) $value, $length, '0', STR_PAD_LEFT);
-        $formatted = $pad($this->hour, 2).':'.$pad($this->minute, 2).':'.$pad($this->second, 2);
-        if (0 !== $this->microsecond) {
-            $formatted .= '.'.$pad($this->microsecond, 6);
-        }
-
-        return $formatted;
-    }
-
-    /**
-     * Format xhxmxsxµs where x is a number.
-     *
-     * @return non-empty-string
-     */
-    private function toCompact(): string
-    {
-        $parts = [];
-        $parts[] = $this->hour.'h';
-        $parts[] = $this->minute.'m';
-        if (0 !== $this->second || 0 !== $this->microsecond) {
-            $parts[] = $this->second.'s';
-        }
-
-        if (0 !== $this->microsecond) {
-            $parts[] = $this->microsecond.'µs';
-        }
-
-        return implode('', $parts);
+        return $this->parts()->format(
+            format: match ($format) {
+                TimeFormat::Iso8601Extended => DurationFormat::Timer,
+                TimeFormat::Compact => DurationFormat::Compact,
+            },
+            compactType: DurationParts::COMPACT_TIME
+        );
     }
 
     /**
@@ -393,14 +344,8 @@ final readonly class Time implements JsonSerializable
     public function shift(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
     {
         $duration = InputNormalizer::duration($duration);
-        if ($duration->isZero()) {
-            return $this;
-        }
 
-        $value = $this->ticks + $duration->microseconds;
-        is_int($value) || throw InvalidDuration::dueToOverflow(); /* @phpstan-ignore-line */
-
-        return new self($value);
+        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->ticks)->sum($duration));
     }
 
     /**
@@ -469,9 +414,9 @@ final readonly class Time implements JsonSerializable
      */
     public function distance(Time|Event|NativeEvent|DateTimeInterface $other): Duration
     {
-        /** @var non-negative-int $duration */
-        $duration = UnitTransformer::wrap(InputNormalizer::time($other)->ticks - $this->ticks, Unit::Day);
-
-        return Duration::of(microseconds: $duration);
+        return Duration::of(microseconds: UnitTransformer::wrap(
+            InputNormalizer::time($other)->ticks - $this->ticks,
+            Unit::Day
+        ));
     }
 }

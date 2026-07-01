@@ -911,9 +911,12 @@ final class IntervalTest extends TestCase
 
     public function test_differences(): void
     {
-        self::assertEquals(
-            Interval::fullDay(),
-            Interval::fullDay()->difference(Interval::collapsed(Time::at(hour: 10)))->first()
+        self::assertTrue(
+            Interval::fullDay()->equals(
+                Interval::fullDay()
+                    ->difference(Interval::collapsed(Time::at(hour: 10)))
+                    ->get(0)
+            ),
         );
 
         self::assertEquals(

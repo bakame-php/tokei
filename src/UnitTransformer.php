@@ -56,10 +56,16 @@ final readonly class UnitTransformer
         });
     }
 
+    /**
+     * @return non-negative-int
+     */
     public static function wrap(int $valueInMicro, Unit $unit): int
     {
         $micro = $unit->inMicroseconds();
 
-        return ($valueInMicro % $micro + $micro) % $micro;
+        /** @var non-negative-int $value */
+        $value = ($valueInMicro % $micro + $micro) % $micro;
+
+        return $value;
     }
 }
