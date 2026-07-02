@@ -23,8 +23,8 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Duration::fromDateInterval`
 - `Duration::fromFormat`
 - `Duration::format`
-- `Duration::increase`
-- `Duration::decrease`
+- `Duration::add`
+- `Duration::sub`
 - `Duration::dividedInto`
 - `Duration::isZero`
 - `Duration::component`
@@ -68,7 +68,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC BREAK:** `Duration::toClockFormat` is removed and replaced by `Duration::format` with the `DurationFormat::Timer` argument
 - **BC BREAK:** `Duration::toIso8601` is removed and replaced by `Duration::format` with the `DurationFormat::Iso8601` argument
 - **BC BREAK:** `Duration::toCompact` is removed and replaced by `Duration::format` with the `DurationFormat::Compact` argument
-- **BC BREAK:** `Duration::increment` is removed use `Duration::increase` instead
+- **BC BREAK:** `Duration::increment` is removed use `Duration::add` instead
 - **BC BREAK:** `Duration::isEmpty` is removed use `Duration::isZero` instead
 - **BC BREAK:** `Duration::total` is removed and replaced by `Duration::in`
 - **BC BREAK:** all `Duration` public properties are removed except for `microseconds` and `sign`

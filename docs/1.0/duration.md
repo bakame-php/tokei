@@ -115,12 +115,13 @@ $durationB->in(Unit::Hours);       // returns 1.0170094444444 the full duration 
 ```php
 Duration::abs(): Duration
 Duration::negated(): Duration
-Duration::increase(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $microseconds = 0): Duration
-Duration::decrease(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $microseconds = 0): Duration
-Duration::sum(Duration ...$duration): Duration
+Duration::increasedBy(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $microseconds = 0): Duration
+Duration::decreasedBy(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $microseconds = 0): Duration
+Duration::add(Duration ...$duration): Duration
+Duration::subtract(Duration ...$duration): Duration
 Duration::multipliedBy(int $factor): Duration
 Duration::dividedBy(int $factor): Duration
-Duration::dividedInto(Duration $factor): array
+Duration::dividedInto(Duration $factor): DivisionResult
 Duration::roundTo(Unit $precision, SnapMode $mode): Duration
 Duration::clamp(Duration $min, Duration $max): Duration
 ```
@@ -129,10 +130,9 @@ You can:
 
 - make it unsigned using the `Duration::abs` method
 - invert its signing using the `Duration::negate` method
-- update the duration using fixed duration parts with the `Duration::increase` and `Duration::decrease` methods
+- update the duration using multiple instances with `Duration::add` and `Duration::sub` methods
 - round its value to one of the unit declare on the `Bakame\Tokei\Unit` enum
 - clamp its value against two other `Duration` instances
-- sum multiple `Duration` instance using the `Duration::sum` method
 - multiply or divide a `Duration` instance using the `Duration::multipliedBy`, `Duration::dividedBy` and  `Duration::dividedInto` methods
 
 ```php
@@ -150,7 +150,7 @@ echo $c->format(DurationFormat::Timer);
 // returns "-1:01:00"
 echo $c->abs()->format(DurationFormat::Timer);
 // returns "1:01:00"
-echo $a->sum($b, $c, $d)->format(DurationFormat::Timer);
+echo $a->add($b, $c, $d)->format(DurationFormat::Timer);
 // returns "-0:09:58.500000"
 
 $microseconds = 3_761_500_000;
@@ -164,16 +164,17 @@ $a->roundTo(Unit::Minute, SnapMode::Ceil)->format(DurationFormat::Timer);
 
 $duration = Duration::fromFormat('-PT5H30M');
 $oneHour = Duration::of(hours: 1);
-[$availableParts, $durationLeft] = $duration->dividedInto($oneHour);
+$result = $duration->dividedInto($oneHour);
+
 $duration->format();
 // returns '-PT5H30M'
-$availableParts;
+$result->quotient;
 // returns '-5'
-$durationLeft->format();
+$result->remainder->format();
 // returns '-PT30M'
 $oneHour
-    ->multipliedBy($availableParts)
-    ->sum($durationLeft)
+    ->multipliedBy($result->quotient)
+    ->add($result->remainder)
     ->equals($duration);
 // returns true
 ```

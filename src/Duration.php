@@ -205,7 +205,7 @@ final class Duration implements JsonSerializable
      * - at least one unit must exist
      * - negative marker is allowed in front of the expression
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
     private static function fromIso8601(string $notation): Duration
     {
@@ -389,7 +389,7 @@ final class Duration implements JsonSerializable
     /**
      * @throws TokeiException
      */
-    public function sum(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$other): self
+    public function add(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$other): self
     {
         $microseconds = $this->microseconds;
         foreach ($other as $item) {
@@ -407,47 +407,19 @@ final class Duration implements JsonSerializable
     /**
      * @throws TokeiException
      */
-    public function increase(
-        int $weeks = 0,
-        int $days = 0,
-        int $hours = 0,
-        int $minutes = 0,
-        int $seconds = 0,
-        int $milliseconds = 0,
-        int $microseconds = 0
-    ): self {
-        return $this->sum(self::of(
-            weeks: $weeks,
-            days: $days,
-            hours: $hours,
-            minutes: $minutes,
-            seconds: $seconds,
-            milliseconds: $milliseconds,
-            microseconds: $microseconds
-        ));
-    }
+    public function subtract(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$other): self
+    {
+        $microseconds = $this->microseconds;
+        foreach ($other as $item) {
+            $value = InputNormalizer::duration($item)->microseconds;
+            if (($value > 0 && $microseconds > PHP_INT_MAX - $value) || ($value < 0 && $microseconds < PHP_INT_MIN - $value)) {
+                throw InvalidDuration::dueToOverflow();
+            }
 
-    /**
-     * @throws TokeiException
-     */
-    public function decrease(
-        int $weeks = 0,
-        int $days = 0,
-        int $hours = 0,
-        int $minutes = 0,
-        int $seconds = 0,
-        int $milliseconds = 0,
-        int $microseconds = 0
-    ): self {
-        return $this->sum(self::of(
-            weeks: $weeks,
-            days: $days,
-            hours: $hours,
-            minutes: $minutes,
-            seconds: $seconds,
-            milliseconds: $milliseconds,
-            microseconds: $microseconds
-        )->negated());
+            $microseconds -= $value;
+        }
+
+        return $microseconds === $this->microseconds ? $this : new self($microseconds);
     }
 
     /**
@@ -558,18 +530,16 @@ final class Duration implements JsonSerializable
      * Returns the number of Duration that can fit into the instance and the optional Duration remainder.
      *
      * @throws TokeiException
-     *
-     * @return array{0: int, 1:Duration}
      */
-    public function dividedInto(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): array
+    public function dividedInto(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): DivisionResult
     {
         $duration = InputNormalizer::duration($duration);
 
         !$duration->isZero() || throw new DivisionByZeroError('Cannot divide by zero duration.');
 
-        return [
+        return new DivisionResult(
             intdiv($this->microseconds, $duration->microseconds),
             new self($this->microseconds % $duration->microseconds),
-        ];
+        );
     }
 }

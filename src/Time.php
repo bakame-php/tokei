@@ -345,7 +345,7 @@ final class Time implements JsonSerializable
     {
         $duration = InputNormalizer::duration($duration);
 
-        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->ticks)->sum($duration));
+        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->ticks)->add($duration));
     }
 
     /**

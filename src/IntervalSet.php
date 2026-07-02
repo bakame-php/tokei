@@ -37,7 +37,7 @@ final class IntervalSet implements TemporalSet
     public function __construct(Interval|NativeInterval|IntervalSet|Task|NativeTask|TaskSet ...$items)
     {
         $this->items = self::flatten(...$items);
-        $this->duration = Duration::zero()->sum(...$this->items);
+        $this->duration = Duration::zero()->add(...$this->items);
     }
 
     /**

@@ -603,7 +603,7 @@ final class IntervalTest extends TestCase
 
         self::assertTrue(
             Duration::zero()
-                ->sum($range, $range->complement())
+                ->add($range, $range->complement())
                 ->equals(Duration::of(hours: 24))
         );
     }
