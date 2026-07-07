@@ -27,7 +27,7 @@ final class Duration implements JsonSerializable
         (?<hours>\d+):
         (?<minutes>\d{1,2}):
         (?<seconds>\d{1,2})
-        ((\.|")(?<microseconds>\d{1,6}))?
+        ((\.|")(?<fractions>\d{1,6}))?
     $@x';
 
     private const string REGEXP_COMPACT = '@^
@@ -37,7 +37,10 @@ final class Duration implements JsonSerializable
         (?:(?<hours>\d+)\s*h\s*)?
         (?:(?<minutes>\d+)\s*m\s*)?
         (?:(?<seconds>\d+)\s*s\s*)?
-        (?:(?<microseconds>\d{1,6})\s*(µs|us)\s*)?
+        (?:
+            (?<fractionvalue>\d{1,6})\s*
+            (?<fractionunit>µs|us|ms)\s*
+        )?
     $@x';
 
     private const string REGEXP_ISO8601 = '@^
@@ -51,7 +54,7 @@ final class Duration implements JsonSerializable
             (?:(?<minutes>\d+)M)?
             (?:
                 (?<seconds>\d+)
-                (?:\.(?<microseconds>\d{1,6}))?
+                (?:\.(?<fractions>\d{1,6}))?
                 S
             )?
         )?
@@ -156,7 +159,7 @@ final class Duration implements JsonSerializable
 
         $minutes = (int) $parts['minutes'];
         $seconds = (int) $parts['seconds'];
-        $microseconds = (int) (str_pad($parts['microseconds'] ?? '0', 6, '0'));
+        $microseconds = (int) (str_pad($parts['fractions'] ?? '0', 6, '0'));
 
         ($minutes >= 0 && $minutes < 60) || throw InvalidDuration::dueToMalformedTime($minutes, Unit::Minute);
         ($seconds >= 0 && $seconds < 60) || throw InvalidDuration::dueToMalformedTime($seconds, Unit::Second);
@@ -182,12 +185,19 @@ final class Duration implements JsonSerializable
     {
         ('' !== $notation && 1 === preg_match(self::REGEXP_COMPACT, $notation, $parts)) || throw new InvalidDuration('Unknown or bad format `'.$notation.'`.');
 
+        $fractionValue = (int) ($parts['fractionvalue'] ?? 0);
+        $fractionUnit = $parts['fractionunit'] ?? 'µs';
+        if ('ms' === $fractionUnit) {
+            ($fractionValue <= 999) || throw new InvalidDuration('millisecond fraction value cannot be greater than 999.');
+            $fractionValue *= 1000;
+        }
+
         return new self(
             new DurationParts(
-                hours: (int)($parts['hours'] ?? 0) + ((((int)($parts['weeks'] ?? 0) * 7) + (int)($parts['days'] ?? 0)) * 24),
-                minutes: (int)($parts['minutes'] ?? 0),
-                seconds: (int)($parts['seconds'] ?? 0),
-                microseconds: (int)($parts['microseconds'] ?? 0),
+                hours: (int) ($parts['hours'] ?? 0) + ((((int)($parts['weeks'] ?? 0) * 7) + (int)($parts['days'] ?? 0)) * 24),
+                minutes: (int) ($parts['minutes'] ?? 0),
+                seconds: (int) ($parts['seconds'] ?? 0),
+                microseconds: $fractionValue,
                 sign: '-' === ($parts['sign'] ?? '') ? -1 : 1,
             )->build()
         );
@@ -216,7 +226,7 @@ final class Duration implements JsonSerializable
                 hours: (int)($parts['hours'] ?? 0) + ((((int)($parts['weeks'] ?? 0) * 7) + (int)($parts['days'] ?? 0)) * 24),
                 minutes: (int)($parts['minutes'] ?? 0),
                 seconds: (int)($parts['seconds'] ?? 0),
-                microseconds: (int) (str_pad($parts['microseconds'] ?? '0', 6, '0')),
+                microseconds: (int) (str_pad($parts['fractions'] ?? '0', 6, '0')),
                 sign: '-' === ($parts['sign'] ?? '') ? -1 : 1,
             )->build(),
         );

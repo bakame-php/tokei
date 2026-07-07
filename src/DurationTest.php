@@ -42,7 +42,7 @@ final class DurationTest extends TestCase
         $duration = Duration::of(microseconds: 1_500_000)->negated();
 
         self::assertSame(-1, $duration->sign);
-        self::assertSame('-1s500000µs', $duration->format(DurationFormat::Compact));
+        self::assertSame('-1s500ms', $duration->format(DurationFormat::Compact));
     }
 
     public function testFormatMicrosecondsWithoutFraction(): void
@@ -1058,7 +1058,6 @@ final class DurationTest extends TestCase
             'unknown unit' => ['10x'],
             'letters only' => ['abc'],
             'missing number' => ['h 10m'],
-            'bad spacing unit' => ['10 ms'],
         ];
     }
 
@@ -1147,6 +1146,17 @@ final class DurationTest extends TestCase
         self::assertEquals(
             $duration,
             $other->multipliedBy($result->quotient)->add($result->remainder)
+        );
+    }
+
+    public function testDurationHandlesConvertingToMilliseconds(): void
+    {
+        $compact = '1h2ms';
+
+        self::assertSame(
+            $compact,
+            Duration::fromFormat($compact, DurationFormat::Compact)
+                ->format(DurationFormat::Compact)
         );
     }
 }

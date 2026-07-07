@@ -11,6 +11,7 @@ use ValueError;
 
 use function implode;
 use function in_array;
+use function intdiv;
 use function rtrim;
 use function str_pad;
 use function strtolower;
@@ -156,7 +157,9 @@ final readonly class DurationParts
         }
 
         if (0 !== $this->microseconds) {
-            $time[] = $this->microseconds.'µs';
+            $time[] = 0 === $this->microseconds % 1000
+                ? intdiv($this->microseconds, 1000).'ms'
+                : $this->microseconds.'µs';
         }
 
         return [] === $time ? '0s' : (-1 === $this->sign ? '-' : '').implode('', $time);
