@@ -23,9 +23,9 @@ use Bakame\Tokei\Time;
 
 $target = Duration::of(hours: 7, minutes: 33);
 $alreadyDone = Duration::of(hours: 5, minutes: 17);
-$remaining = $target->subtract($alreadyDone);
+$remaining = $target->sub($alreadyDone);
 $startedNewShiftAt = Time::at(hour: 21, minute: 31);
-$shouldStopAt = $startedNewShiftAt->shift($remaining);
+$shouldStopAt = $startedNewShiftAt->add($remaining);
 
 echo "I have to work ", $target->format(DurationFormat::Compact), " today", PHP_EOL;
 echo "I have already worked for ", $alreadyDone->format(DurationFormat::Compact), PHP_EOL;

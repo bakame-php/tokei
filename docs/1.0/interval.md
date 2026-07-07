@@ -130,7 +130,8 @@ Interval::splitAt(Time ...$steps): IntervalSet
 Interval::startingOn(Time $time): self
 Interval::endingOn(Time $time): self
 Interval::expand(Duration $duration): self
-Interval::shift(Duration $duration): self
+Interval::add(Duration $duration): self
+Interval::sub(Duration $duration): self
 Interval::shiftBound(Duration $duration, Bound $from): self
 Interval::lasting(Duration $duration, Bound $from): self
 Interval::roundTo(Unit $unit, SnapMode $mode): self

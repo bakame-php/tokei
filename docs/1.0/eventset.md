@@ -64,7 +64,6 @@ EventSet::after(Time $time): self
 EventSet::next(Time $atOrAfter, SearchMode $mode): self
 EventSet::previous(Time $before, SearchMode $mode): self
 EventSet::nearest(Time $around): self
-EventSet::shift(Duration $duration): self
 ```
 
 ## Temporal algebra methods
@@ -74,7 +73,8 @@ EventSet::gaps(): IntervalSet
 EventSet::union(Event ...$items): self
 EventSet::intersect(Event ...$items): self
 EventSet::difference(Event ...$items): self
-EventSet::shift(Duration $duration): self
+EventSet::add(Duration $duration): self
+EventSet::sub(Duration $duration): self
 EventSet::roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
 ```
 

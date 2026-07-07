@@ -115,10 +115,8 @@ $durationB->in(Unit::Hours);       // returns 1.0170094444444 the full duration 
 ```php
 Duration::abs(): Duration
 Duration::negated(): Duration
-Duration::increasedBy(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $microseconds = 0): Duration
-Duration::decreasedBy(int $weeks = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $microseconds = 0): Duration
 Duration::add(Duration ...$duration): Duration
-Duration::subtract(Duration ...$duration): Duration
+Duration::sub(Duration ...$duration): Duration
 Duration::multipliedBy(int $factor): Duration
 Duration::dividedBy(int $factor): Duration
 Duration::dividedInto(Duration $factor): DivisionResult
@@ -179,10 +177,7 @@ $oneHour
 // returns true
 ```
 
-<p class="message-info">Use <code>Duration::sum</code> to aggregate signed duration objects.</p>
-
-<p class="message-notice"><code>Duration::increase</code> and <code>Duration::decrease</code> can only take non-negative 
-arguments otherwise an exception will be thrown.</p>
+<p class="message-info">Use <code>Duration::add</code> or <code>Duration::sub</code> to aggregate signed duration objects.</p>
 
 ## Comparing duration
 

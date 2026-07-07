@@ -61,26 +61,30 @@ final class Duration implements JsonSerializable
     $@x';
 
     /** Total duration expressed in the library base unit. */
-    public readonly int $microseconds;
-    public readonly int $sign;
     private ?DurationParts $parts = null;
+    public readonly int $sign;
+    public readonly int $totalMicroseconds;
+    public int|float $totalMilliseconds { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Millisecond); }
+    public int|float $totalSeconds { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Second); }
+    public int|float $totalMinutes { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Minute); }
+    public int|float $totalHours { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Hour); }
 
     /**
-     * @param int $microseconds expressed in microseconds
+     * @param int $totalMicroseconds expressed in microseconds
      *
      * @throws TokeiException
      */
-    private function __construct(int $microseconds)
+    private function __construct(int $totalMicroseconds)
     {
-        PHP_INT_MIN !== $microseconds || throw InvalidDuration::dueToOverflow();
+        PHP_INT_MIN !== $totalMicroseconds || throw InvalidDuration::dueToOverflow();
 
-        $this->microseconds = $microseconds;
-        $this->sign = $this->microseconds <=> 0;
+        $this->totalMicroseconds = $totalMicroseconds;
+        $this->sign = $this->totalMicroseconds <=> 0;
     }
 
     private function parts(): DurationParts
     {
-        return $this->parts ??= DurationParts::parse($this->microseconds);
+        return $this->parts ??= DurationParts::parse($this->totalMicroseconds);
     }
 
     /**
@@ -292,7 +296,7 @@ final class Duration implements JsonSerializable
      */
     public function __serialize(): array
     {
-        return [['microseconds' => $this->microseconds], []];
+        return [['microseconds' => $this->totalMicroseconds], []];
     }
 
     /**
@@ -304,7 +308,7 @@ final class Duration implements JsonSerializable
     {
         [$properties] = $data;
         $duration = new self($properties['microseconds']);
-        $this->microseconds = $duration->microseconds;
+        $this->totalMicroseconds = $duration->totalMicroseconds;
         $this->sign = $duration->sign;
     }
 
@@ -326,18 +330,10 @@ final class Duration implements JsonSerializable
         return $this->parts()->toDateInterval($relativeTo);
     }
 
-    /**
-     * Returns the Duration as expressed in the specified Unit of time.
-     */
-    public function in(Unit $unit): int|float
-    {
-        return UnitTransformer::fromMicroseconds($this->microseconds, $unit);
-    }
-
     public function component(Unit $unit): int
     {
         [$whole] = UnitTransformer::divmod(
-            -1 === $this->sign ? -$this->microseconds : $this->microseconds,
+            -1 === $this->sign ? -$this->totalMicroseconds : $this->totalMicroseconds,
             $unit
         );
 
@@ -365,7 +361,7 @@ final class Duration implements JsonSerializable
      */
     public function isZero(): bool
     {
-        return 0 === $this->microseconds;
+        return 0 === $this->totalMicroseconds;
     }
 
     /**
@@ -375,7 +371,7 @@ final class Duration implements JsonSerializable
      */
     public function negated(): self
     {
-        return new self(-$this->microseconds);
+        return new self(-$this->totalMicroseconds);
     }
 
     /**
@@ -383,7 +379,7 @@ final class Duration implements JsonSerializable
      */
     public function abs(): self
     {
-        return $this->microseconds < 0 ? $this->negated() : $this;
+        return $this->totalMicroseconds < 0 ? $this->negated() : $this;
     }
 
     /**
@@ -391,19 +387,19 @@ final class Duration implements JsonSerializable
      */
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
-        $rounded = UnitTransformer::round($this->microseconds, $unit, $mode);
+        $rounded = UnitTransformer::round($this->totalMicroseconds, $unit, $mode);
 
-        return $this->microseconds === $rounded ? $this : new self($rounded);
+        return $this->totalMicroseconds === $rounded ? $this : new self($rounded);
     }
 
     /**
      * @throws TokeiException
      */
-    public function add(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$other): self
+    public function add(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$duration): self
     {
-        $microseconds = $this->microseconds;
-        foreach ($other as $item) {
-            $value = InputNormalizer::duration($item)->microseconds;
+        $microseconds = $this->totalMicroseconds;
+        foreach ($duration as $item) {
+            $value = InputNormalizer::duration($item)->totalMicroseconds;
             if (($value > 0 && $microseconds > PHP_INT_MAX - $value) || ($value < 0 && $microseconds < PHP_INT_MIN - $value)) {
                 throw InvalidDuration::dueToOverflow();
             }
@@ -411,17 +407,17 @@ final class Duration implements JsonSerializable
             $microseconds += $value;
         }
 
-        return $microseconds === $this->microseconds ? $this : new self($microseconds);
+        return $microseconds === $this->totalMicroseconds ? $this : new self($microseconds);
     }
 
     /**
      * @throws TokeiException
      */
-    public function subtract(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$other): self
+    public function sub(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$other): self
     {
-        $microseconds = $this->microseconds;
+        $microseconds = $this->totalMicroseconds;
         foreach ($other as $item) {
-            $value = InputNormalizer::duration($item)->microseconds;
+            $value = InputNormalizer::duration($item)->totalMicroseconds;
             if (($value > 0 && $microseconds > PHP_INT_MAX - $value) || ($value < 0 && $microseconds < PHP_INT_MIN - $value)) {
                 throw InvalidDuration::dueToOverflow();
             }
@@ -429,7 +425,7 @@ final class Duration implements JsonSerializable
             $microseconds -= $value;
         }
 
-        return $microseconds === $this->microseconds ? $this : new self($microseconds);
+        return $microseconds === $this->totalMicroseconds ? $this : new self($microseconds);
     }
 
     /**
@@ -443,7 +439,7 @@ final class Duration implements JsonSerializable
         Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $that,
         Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other
     ): int {
-        return InputNormalizer::duration($that)->microseconds <=> InputNormalizer::duration($other)->microseconds;
+        return InputNormalizer::duration($that)->totalMicroseconds <=> InputNormalizer::duration($other)->totalMicroseconds;
     }
 
     public function isLongerThan(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
@@ -502,7 +498,7 @@ final class Duration implements JsonSerializable
      */
     public function multipliedBy(int $factor): self
     {
-        if (1 === $factor || 0 === $this->microseconds) {
+        if (1 === $factor || 0 === $this->totalMicroseconds) {
             return $this;
         }
 
@@ -514,7 +510,7 @@ final class Duration implements JsonSerializable
             return self::zero();
         }
 
-        $value = $this->microseconds;
+        $value = $this->totalMicroseconds;
         $absFactor = abs($factor);
 
         return ($value <= intdiv(PHP_INT_MAX, $absFactor) && $value >= intdiv(-PHP_INT_MAX, $absFactor))
@@ -533,7 +529,7 @@ final class Duration implements JsonSerializable
     {
         0 !== $factor || throw new DivisionByZeroError('Cannot divide by zero duration.');
 
-        return new self(intdiv($this->microseconds, $factor));
+        return new self(intdiv($this->totalMicroseconds, $factor));
     }
 
     /**
@@ -548,8 +544,8 @@ final class Duration implements JsonSerializable
         !$duration->isZero() || throw new DivisionByZeroError('Cannot divide by zero duration.');
 
         return new DivisionResult(
-            intdiv($this->microseconds, $duration->microseconds),
-            new self($this->microseconds % $duration->microseconds),
+            intdiv($this->totalMicroseconds, $duration->totalMicroseconds),
+            new self($this->totalMicroseconds % $duration->totalMicroseconds),
         );
     }
 }

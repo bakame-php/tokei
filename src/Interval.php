@@ -43,7 +43,7 @@ final readonly class Interval implements JsonSerializable
         $this->duration = $duration;
         $this->linearStart = $this->start->ticks;
         /** @var non-negative-int $linearEnd */
-        $linearEnd = $this->linearStart + $duration->microseconds;
+        $linearEnd = $this->linearStart + $duration->totalMicroseconds;
         $this->linearEnd = $linearEnd;
         $this->end = Time::sinceMidnight(Duration::of(microseconds: $this->linearEnd));
         $this->type = $this->setType();
@@ -67,7 +67,7 @@ final readonly class Interval implements JsonSerializable
         $this->duration = $properties['duration'];
         $this->linearStart = $this->start->ticks;
         /** @var non-negative-int $linearEnd */
-        $linearEnd = $this->linearStart + $properties['duration']->microseconds;
+        $linearEnd = $this->linearStart + $properties['duration']->totalMicroseconds;
         $this->linearEnd = $linearEnd;
         $this->end = Time::sinceMidnight(Duration::of(microseconds: $this->linearEnd));
         $this->type = $this->setType();
@@ -92,9 +92,8 @@ final readonly class Interval implements JsonSerializable
         Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration
     ): self {
         $start = InputNormalizer::time($start);
-        $duration = InputNormalizer::duration($duration);
 
-        return new self($start, $start->distance($start->shift($duration)));
+        return new self($start, $start->distance($start->add(InputNormalizer::duration($duration))));
     }
 
     /**
@@ -109,9 +108,7 @@ final readonly class Interval implements JsonSerializable
         Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration
     ): self {
         $end = InputNormalizer::time($end);
-        $duration = InputNormalizer::duration($duration);
-
-        $start = $end->shift($duration->negated());
+        $start = $end->sub(InputNormalizer::duration($duration));
 
         return new self($start, $start->distance($end));
     }
@@ -128,9 +125,9 @@ final readonly class Interval implements JsonSerializable
         $midRange = InputNormalizer::time($midRange);
         $duration = InputNormalizer::duration($duration);
 
-        $start = $midRange->shift($duration->dividedBy(2)->negated());
+        $start = $midRange->add($duration->dividedBy(2)->negated());
 
-        return self::between($start, $start->shift($duration));
+        return self::between($start, $start->add($duration));
     }
 
     /**
@@ -393,11 +390,23 @@ final readonly class Interval implements JsonSerializable
      *
      * @throws InvalidDuration
      */
-    public function shift(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    public function add(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
-        return $duration->isZero() ? $this : self::between($this->start->shift($duration), $this->end->shift($duration));
+        return $duration->isZero() ? $this : self::between($this->start->add($duration), $this->end->add($duration));
+    }
+
+    /**
+     * Returns a new instance with both endpoints shifted by duration.
+     *
+     * @throws InvalidDuration
+     */
+    public function sub(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    {
+        $duration = InputNormalizer::duration($duration);
+
+        return $duration->isZero() ? $this : self::between($this->start->sub($duration), $this->end->sub($duration));
     }
 
     /**
@@ -413,8 +422,8 @@ final readonly class Interval implements JsonSerializable
 
         return match (true) {
             $duration->isZero() => $this,
-            Bound::Start === $to => self::between($this->start->shift($duration), $this->end),
-            Bound::End === $to => self::between($this->start, $this->end->shift($duration)),
+            Bound::Start === $to => self::between($this->start->add($duration), $this->end),
+            Bound::End === $to => self::between($this->start, $this->end->add($duration)),
         };
     }
 
@@ -431,8 +440,8 @@ final readonly class Interval implements JsonSerializable
 
         return match (true) {
             $duration->isZero() => $this,
-            Bound::Start === $from => self::between($this->start, $this->start->shift($duration)),
-            Bound::End === $from => self::between($this->end->shift($duration->negated()), $this->end),
+            Bound::Start === $from => self::between($this->start, $this->start->add($duration)),
+            Bound::End === $from => self::between($this->end->add($duration->negated()), $this->end),
         };
     }
 
@@ -447,7 +456,7 @@ final readonly class Interval implements JsonSerializable
     {
         $duration = InputNormalizer::duration($duration);
 
-        $new = self::between($this->start->shift($duration->negated()), $this->end->shift($duration));
+        $new = self::between($this->start->add($duration->negated()), $this->end->add($duration));
 
         return $new->equals($this) ? $this : $new;
     }
@@ -520,7 +529,7 @@ final readonly class Interval implements JsonSerializable
             return new IntervalSet();
         }
 
-        $step = $duration->microseconds;
+        $step = $duration->totalMicroseconds;
         $start = $this->start->ticks;
         $end = $this->end->ticks;
         $forward = Bound::Start === $from;

@@ -182,7 +182,7 @@ final class TimeTest extends TestCase
     public function testAddTime(): void
     {
         $time = Time::at(10)
-            ->shift(Duration::of(hours: 2, minutes: 30, seconds: 15, microseconds: 500));
+            ->add(Duration::of(hours: 2, minutes: 30, seconds: 15, microseconds: 500));
 
         self::assertSame(12, $time->hour);
         self::assertSame(30, $time->minute);
@@ -192,7 +192,7 @@ final class TimeTest extends TestCase
 
     public function testAddTimeWrapsDay(): void
     {
-        $time = Time::at(23)->shift(Duration::of(hours: 2));
+        $time = Time::at(23)->add(Duration::of(hours: 2));
 
         self::assertSame(1, $time->hour);
     }
@@ -201,7 +201,7 @@ final class TimeTest extends TestCase
     {
         $time = Time::at(23);
 
-        self::assertSame($time, $time->shift(Duration::of()));
+        self::assertSame($time, $time->add(Duration::of()));
     }
 
     /* -------------------------------------------------
@@ -231,8 +231,8 @@ final class TimeTest extends TestCase
         $a = Time::at(8);
         $b = Time::at(10);
 
-        self::assertSame(7_200_000_000, $a->diff($b)->microseconds);
-        self::assertSame(-7_200_000_000, $b->diff($a)->microseconds);
+        self::assertSame(7_200_000_000, $a->diff($b)->totalMicroseconds);
+        self::assertSame(-7_200_000_000, $b->diff($a)->totalMicroseconds);
     }
 
     public function testDiffForwardWraps(): void
@@ -240,7 +240,7 @@ final class TimeTest extends TestCase
         $a = Time::at(23);
         $b = Time::at(1);
 
-        self::assertSame(7_200_000_000, $a->distance($b)->microseconds);
+        self::assertSame(7_200_000_000, $a->distance($b)->totalMicroseconds);
     }
 
     /* -------------------------------------------------
@@ -251,7 +251,7 @@ final class TimeTest extends TestCase
     {
         $time = Time::at(10);
 
-        self::assertSame($time, $time->shift(Duration::zero()));
+        self::assertSame($time, $time->add(Duration::zero()));
     }
 
     public function testMicroseconds(): void
@@ -436,7 +436,7 @@ final class TimeTest extends TestCase
 
         $this->expectExceptionObject(InvalidDuration::dueToOverflow());
 
-        $time->shift(Duration::max());
+        $time->add(Duration::max());
     }
 
     public function test_time_can_be_serialized_and_unserialized(): void

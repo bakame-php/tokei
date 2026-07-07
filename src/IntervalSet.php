@@ -364,13 +364,22 @@ final class IntervalSet implements TemporalSet
         return $this->filter(fn (Interval $item): bool => $item->contains($interval));
     }
 
-    public function shift(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    public function add(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
         return $duration->isZero()
             ? $this
-            : $this->transform(fn (Interval $interval): Interval => $interval->shift($duration));
+            : $this->transform(fn (Interval $interval): Interval => $interval->add($duration));
+    }
+
+    public function sub(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    {
+        $duration = InputNormalizer::duration($duration);
+
+        return $duration->isZero()
+            ? $this
+            : $this->transform(fn (Interval $interval): Interval => $interval->sub($duration));
     }
 
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self

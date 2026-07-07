@@ -585,7 +585,7 @@ final class EventSetTest extends TestCase
             Event::at(Time::at(9), 'A'),
             Event::at(Time::at(10), 'B'),
             Event::at(Time::at(11), 'C')
-        )->shift(Duration::of(hours: 2));
+        )->add(Duration::of(hours: 2));
 
         self::assertFalse($shifts->isEmpty());
         self::assertCount(3, $shifts);

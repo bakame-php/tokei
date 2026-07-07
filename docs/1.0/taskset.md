@@ -79,7 +79,8 @@ TaskSet::intersect(iterable $sets): self
 TaskSet::union(iterable $sets = []): self
 TaskSet::difference(iterable $sets): self
 TaskSet::complement(): self
-TaskSet::shift(Duration $duration): self
+TaskSet::add(Duration $duration): self
+TaskSet::sub(Duration $duration): self
 ```
 
 ## Collection methods

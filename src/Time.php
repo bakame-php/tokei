@@ -123,7 +123,7 @@ final class Time implements JsonSerializable
      */
     public static function sinceMidnight(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
     {
-        return new self(InputNormalizer::duration($duration)->microseconds);
+        return new self(InputNormalizer::duration($duration)->totalMicroseconds);
     }
 
     public static function midnight(): self
@@ -335,17 +335,31 @@ final class Time implements JsonSerializable
     }
 
     /**
-     * Alter the time by using a duration object.
+     * Alter the time by adding a duration.
      *
      * The duration will be added or subtract depending on its sign.
      *
      * @throws InvalidDuration
      */
-    public function shift(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    public function add(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
         return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->ticks)->add($duration));
+    }
+
+    /**
+     * Alter the time by subtracting a duration object.
+     *
+     * The duration will be added or subtract depending on its sign.
+     *
+     * @throws InvalidDuration
+     */
+    public function sub(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    {
+        $duration = InputNormalizer::duration($duration);
+
+        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->ticks)->sub($duration));
     }
 
     /**

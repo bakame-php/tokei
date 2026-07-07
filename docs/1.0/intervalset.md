@@ -95,7 +95,8 @@ IntervalSet::gaps(): IntervalSet
 IntervalSet::sorted(Bound $by = Bound::Start, Direction $direction = Direction::Ascending): IntervalSet
 IntervalSet::roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): IntervalSet
 IntervalSet::roundDurationTo(Unit $unit, SnapMode $mode = SnapMode::Nearest, Bound $anchor = Bound::Start): IntervalSet
-IntervalSet::shift(Duration $duration): IntervalSet
+IntervalSet::add(Duration $duration): IntervalSet
+IntervalSet::sub(Duration $duration): IntervalSet
 ```
 
 ## Collection methods

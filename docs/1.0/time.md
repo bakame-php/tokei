@@ -116,13 +116,14 @@ Because `Time` is an immutable VO, any change to its value will return a new ins
 with the updated value and leave the original object unchanged. You can modify the time
 with the following methods:
 
-- `Time::shift` will adjust the time using a duration;
+- `Time::add` and `Time::sub` will adjust the time using a duration;
 - `Time::with` will adjust a specific time component;
 - `Time::roundTo` will round the time to a specific unot;
 - `Time::clamp` will adjust the time against two other time references;
 
 ```php
-Time::shift(Duration $duration): Time
+Time::add(Duration $duration): Time
+Time::sub(Duration $duration): Time
 Time::with(
     ?int $hour = null,
     ?int $minute = null,
@@ -133,18 +134,18 @@ Time::roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): Time
 Time::clamp(Time $min, Time $max): Time
 ```
 
-The `shift` and `with` methods act differently in regard to wrapping around 24hours.
-The `Time::shift` supports wrapping whereas `Time::with` does not and instead
-throws an `InvalidTime` exception instead
+The `add`, `sub` and `with` methods act differently in regard to wrapping around 24hours.
+The `Time::add` and `Time::sub` methods support wrapping whereas `Time::with` does not and instead
+throws an `InvalidTime` exception instead.
 
 ```php
 // adding 2 hours
-$time = Time::noon()->shift(Duration::of(hours: 2, minutes: 15));
+$time = Time::noon()->add(Duration::of(hours: 2, minutes: 15));
 $time->format();
 // "14:15:00"
 
 // adding 12 hours
-$time = Time::noon()->shift(Duration::of(hours: 12, minutes: 15));
+$time = Time::noon()->add(Duration::of(hours: 12, minutes: 15));
 $time->format();
 // "00:15:00"
 

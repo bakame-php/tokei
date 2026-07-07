@@ -11,6 +11,8 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `IntervalSet::each`
 - `IntervalSet::transform`
 - `IntervalSet::chronological`
+- `IntervalSet::add`
+- `IntervalSet::sub`
 - `IntervalSet::next`
 - `IntervalSet::previous`
 - `IntervalSet::nearest`
@@ -35,7 +37,8 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Time::format`
 - `Time::sinceMidnight`
 - `Time::in`
-- `Time::shift`
+- `Time::add`
+- `Time::sub`
 - `Time::utc`
 - `Time::roundTo`
 - `LocaleTimeFormatter`to improve time string localization using `ext-intl`
@@ -76,7 +79,6 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC BREAK:** `Interval::compareDurationTo` is removed use `Duration::compare` instead
 - **BC BREAK:** `SubSecondDisplay` is removed with no remplacement use rounding with the `Rounding::Floor` mode
 - **BC BREAK:** `truncateTo` is removed use `roundTo` instead with the new `Rounding:Floor` mode
-- **BC BREAK:** `Time::add` is removed use `Time::shift` instead
 - **BC BREAK:** `Time::fromDate` is removed use `Time::fromDateTime` instead
 - **BC BREAK:** `Time::fromUnitOfDay` is removed use `Time::sinceMidnight` instead
 - **BC BREAK:** `Time::toUnitOfDay` is removed use `Time::in` instead

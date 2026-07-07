@@ -432,13 +432,22 @@ final class EventSet implements TemporalSet
         return new self(...$this->engine()->nearest($around));
     }
 
-    public function shift(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    public function add(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
         return $duration->isZero()
             ? $this
-            : $this->transform(fn (Event $event): Event => $event->occursOn($event->at->shift($duration)));
+            : $this->transform(fn (Event $event): Event => $event->occursOn($event->at->add($duration)));
+    }
+
+    public function sub(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    {
+        $duration = InputNormalizer::duration($duration);
+
+        return $duration->isZero()
+            ? $this
+            : $this->transform(fn (Event $event): Event => $event->occursOn($event->at->sub($duration)));
     }
 
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self

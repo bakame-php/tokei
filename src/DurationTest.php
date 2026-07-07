@@ -33,7 +33,7 @@ final class DurationTest extends TestCase
         $duration = Duration::of(weeks:5, days:6, hours: 2, minutes: 15, seconds: 42, microseconds: 123_456);
 
         self::assertSame(1, $duration->sign);
-        self::assertSame(3_550_542_123_456, $duration->microseconds);
+        self::assertSame(3_550_542_123_456, $duration->totalMicroseconds);
         self::assertSame('986h15m42s123456µs', $duration->format(DurationFormat::Compact));
     }
 
@@ -109,7 +109,7 @@ final class DurationTest extends TestCase
 
         self::assertSame('00:00:00', $duration->format(DurationFormat::Timer));
         self::assertSame(0, $duration->sign);
-        self::assertSame(0, $duration->microseconds);
+        self::assertSame(0, $duration->totalMicroseconds);
         self::assertSame('0s', $duration->format(DurationFormat::Compact));
         self::assertTrue($duration->isZero());
         self::assertTrue($duration->equals(Duration::zero()));
@@ -225,7 +225,7 @@ final class DurationTest extends TestCase
             $expectedMicroseconds,
             $duration
                 ->roundTo($unit, SnapMode::Floor)
-                ->microseconds,
+                ->totalMicroseconds,
         );
     }
 
@@ -304,8 +304,8 @@ final class DurationTest extends TestCase
         $positive = Duration::of(microseconds:3_661_500_000);
         $negative = Duration::of(microseconds:3_661_500_000)->negated();
 
-        self::assertTrue($positive->roundTo(Unit::Minute, SnapMode::Floor)->microseconds > 0);
-        self::assertTrue($negative->roundTo(Unit::Minute, SnapMode::Floor)->microseconds < 0);
+        self::assertTrue($positive->roundTo(Unit::Minute, SnapMode::Floor)->totalMicroseconds > 0);
+        self::assertTrue($negative->roundTo(Unit::Minute, SnapMode::Floor)->totalMicroseconds < 0);
     }
 
     /* -------------------------------------------------
@@ -501,7 +501,7 @@ final class DurationTest extends TestCase
     public function test_decrement_preserves_original_instance(): void
     {
         $duration = Duration::of(hours: 10);
-        $modified = $duration->subtract(Duration::of(hours: 5));
+        $modified = $duration->sub(Duration::of(hours: 5));
 
         self::assertSame('10:00:00', $duration->format(DurationFormat::Timer));
         self::assertSame('05:00:00', $modified->format(DurationFormat::Timer));
@@ -518,7 +518,7 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(hours: 1);
 
-        self::assertSame($duration, $duration->subtract());
+        self::assertSame($duration, $duration->sub());
     }
 
     public function testItParsesSimpleMinutes(): void
@@ -692,7 +692,7 @@ final class DurationTest extends TestCase
             ? Duration::of(microseconds:  -$input)->negated()
             : Duration::of(microseconds:  $input);
 
-        self::assertSame($expected, $duration->roundTo($precision)->microseconds);
+        self::assertSame($expected, $duration->roundTo($precision)->totalMicroseconds);
     }
 
     /**
@@ -840,7 +840,7 @@ final class DurationTest extends TestCase
     #[DataProvider('validIntervalsProvider')]
     public function testFromDateIntervalConvertsCorrectly(DateInterval $interval, int $expectedMicroseconds): void
     {
-        self::assertSame($expectedMicroseconds, Duration::fromDateInterval($interval)->microseconds);
+        self::assertSame($expectedMicroseconds, Duration::fromDateInterval($interval)->totalMicroseconds);
     }
 
     /**
