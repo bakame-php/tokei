@@ -41,7 +41,7 @@ final readonly class Interval implements JsonSerializable
     {
         $this->start = $start;
         $this->duration = $duration;
-        $this->linearStart = $this->start->ticks;
+        $this->linearStart = $this->start->totalMicroseconds;
         /** @var non-negative-int $linearEnd */
         $linearEnd = $this->linearStart + $duration->totalMicroseconds;
         $this->linearEnd = $linearEnd;
@@ -65,7 +65,7 @@ final readonly class Interval implements JsonSerializable
         [$properties] = $data;
         $this->start = $properties['start'];
         $this->duration = $properties['duration'];
-        $this->linearStart = $this->start->ticks;
+        $this->linearStart = $this->start->totalMicroseconds;
         /** @var non-negative-int $linearEnd */
         $linearEnd = $this->linearStart + $properties['duration']->totalMicroseconds;
         $this->linearEnd = $linearEnd;
@@ -530,8 +530,8 @@ final readonly class Interval implements JsonSerializable
         }
 
         $step = $duration->totalMicroseconds;
-        $start = $this->start->ticks;
-        $end = $this->end->ticks;
+        $start = $this->start->totalMicroseconds;
+        $end = $this->end->totalMicroseconds;
         $forward = Bound::Start === $from;
         /** @var non-negative-int $cursor */
         $cursor = $forward ? $start : $end;
@@ -627,7 +627,7 @@ final readonly class Interval implements JsonSerializable
 
         $time = InputNormalizer::time($time);
 
-        $timeInMicro = $time->ticks;
+        $timeInMicro = $time->totalMicroseconds;
         if ($this->linearEnd > $this->linearStart && $timeInMicro < $this->linearStart) {
             $timeInMicro += Unit::Day->inMicroseconds();
         }

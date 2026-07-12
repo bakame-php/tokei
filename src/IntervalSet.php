@@ -703,8 +703,8 @@ final class IntervalSet implements TemporalSet
         $boundaries = [];
 
         foreach ($this->sorted() as $interval) {
-            $boundaries[$interval->start->ticks] = $interval->start;
-            $boundaries[$interval->end->ticks] = $interval->end;
+            $boundaries[$interval->start->totalMicroseconds] = $interval->start;
+            $boundaries[$interval->end->totalMicroseconds] = $interval->end;
         }
 
         ksort($boundaries);

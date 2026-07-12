@@ -256,7 +256,7 @@ final class TimeTest extends TestCase
 
     public function testMicroseconds(): void
     {
-        self::assertSame(36_000_000_000, Time::at(10)->ticks);
+        self::assertSame(36_000_000_000, Time::at(10)->totalMicroseconds);
     }
 
     public function test_apply_to_datetime_immutable(): void
@@ -468,9 +468,9 @@ final class TimeTest extends TestCase
     ): void {
         $time = Time::sinceMidnight(Duration::of(microseconds: $input));
 
-        self::assertSame($expectedTruncate, $time->roundTo($precision, SnapMode::Floor)->ticks);
-        self::assertSame($expectedRound, $time->roundTo($precision)->ticks);
-        self::assertSame($expectedCeil, $time->roundTo($precision, SnapMode::Ceil)->ticks);
+        self::assertSame($expectedTruncate, $time->roundTo($precision, SnapMode::Floor)->totalMicroseconds);
+        self::assertSame($expectedRound, $time->roundTo($precision)->totalMicroseconds);
+        self::assertSame($expectedCeil, $time->roundTo($precision, SnapMode::Ceil)->totalMicroseconds);
     }
 
     /**

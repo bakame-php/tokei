@@ -32,15 +32,24 @@ final class Time implements JsonSerializable
         (?<hour>\d{1,2})\s*h\s*
         (?<minute>\d{1,2})\s*m\s*
         (?:(?<second>\d{1,2})\s*s\s*)?
-        (?:(?<microsecond>\d{1,6})\s*(µs|us)\s*)?
+        (?:
+            (?<fvalue>\d{1,6})\s*
+            (?<funit>µs|us|ms)\s*
+        )?
     $@x';
 
     /**
      * Time since midnight expressed in the library base unit.
      * @var non-negative-int
      */
-    public readonly int $ticks;
+    public readonly int $totalMicroseconds;
     private ?DurationParts $parts = null;
+
+    public int|float $totalMilliseconds { get => $this->in(Unit::Microsecond); }
+    public int|float $totalSeconds { get => $this->in(Unit::Second); }
+    public int|float $totalMinutes { get => $this->in(Unit::Minute); }
+    public int|float $totalHours { get => $this->in(Unit::Hour); }
+
     public int $hour { get => $this->parts()->hours; }
     public int $minute { get => $this->parts()->minutes; }
     public int $second { get => $this->parts()->seconds; }
@@ -51,12 +60,12 @@ final class Time implements JsonSerializable
      */
     private function __construct(int $ticks)
     {
-        $this->ticks = UnitTransformer::wrap($ticks, Unit::Day);
+        $this->totalMicroseconds = UnitTransformer::wrap($ticks, Unit::Day);
     }
 
     private function parts(): DurationParts
     {
-        return $this->parts ??= DurationParts::parse($this->ticks);
+        return $this->parts ??= DurationParts::parse($this->totalMicroseconds);
     }
 
     /**
@@ -110,11 +119,27 @@ final class Time implements JsonSerializable
         $notation = trim($value);
         1 === preg_match($regexp, $notation, $parts) || throw new InvalidTime('Unknown or bad format `'.$value.'`'.'`.');
 
+        if (self::REGEXP_ISO8601 === $regexp) {
+            return Time::at(
+                hour: (int) $parts['hour'],
+                minute: (int) $parts['minute'],
+                second: (int) ($parts['second'] ?? 0),
+                microsecond: (int) str_pad(substr($parts['microsecond'] ?? '0', 0, 6), 6, '0'),
+            );
+        }
+
+        $fractionValue = (int) ($parts['fvalue'] ?? 0);
+        $fractionUnit = $parts['funit'] ?? 'µs';
+        if ('ms' === $fractionUnit) {
+            ($fractionValue <= 999) || throw new InvalidDuration('millisecond fraction value cannot be greater than 999.');
+            $fractionValue *= 1000;
+        }
+
         return Time::at(
             hour: (int) $parts['hour'],
             minute: (int) $parts['minute'],
             second: (int) ($parts['second'] ?? 0),
-            microsecond: (int) str_pad(substr($parts['microsecond'] ?? '0', 0, 6), 6, '0'),
+            microsecond: $fractionValue,
         );
     }
 
@@ -191,20 +216,20 @@ final class Time implements JsonSerializable
     }
 
     /**
-     * @return array{0: array{microseconds: int}, 1:array{}}
+     * @return array{0: array{total_microseconds: int}, 1:array{}}
      */
     public function __serialize(): array
     {
-        return [['microseconds' => $this->ticks], []];
+        return [['total_microseconds' => $this->totalMicroseconds], []];
     }
 
     /**
-     * @param array{0: array{microseconds: int}, 1:array{}} $data
+     * @param array{0: array{total_microseconds: int}, 1:array{}} $data
      */
     public function __unserialize(array $data): void
     {
         [$properties] = $data;
-        $this->ticks = new self($properties['microseconds'])->ticks;
+        $this->totalMicroseconds = new self($properties['total_microseconds'])->totalMicroseconds;
     }
 
     /**
@@ -212,7 +237,7 @@ final class Time implements JsonSerializable
      */
     public function in(Unit $unit): int|float
     {
-        return UnitTransformer::fromMicroseconds($this->ticks, $unit);
+        return UnitTransformer::fromMicroseconds($this->totalMicroseconds, $unit);
     }
 
     /**
@@ -280,7 +305,7 @@ final class Time implements JsonSerializable
         Time|Event|NativeEvent|DateTimeInterface $that,
         Time|Event|NativeEvent|DateTimeInterface $other
     ): int {
-        return InputNormalizer::time($that)->ticks <=> InputNormalizer::time($other)->ticks;
+        return InputNormalizer::time($that)->totalMicroseconds <=> InputNormalizer::time($other)->totalMicroseconds;
     }
 
     /**
@@ -345,7 +370,7 @@ final class Time implements JsonSerializable
     {
         $duration = InputNormalizer::duration($duration);
 
-        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->ticks)->add($duration));
+        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->totalMicroseconds)->add($duration));
     }
 
     /**
@@ -359,7 +384,7 @@ final class Time implements JsonSerializable
     {
         $duration = InputNormalizer::duration($duration);
 
-        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->ticks)->sub($duration));
+        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->totalMicroseconds)->sub($duration));
     }
 
     /**
@@ -390,9 +415,9 @@ final class Time implements JsonSerializable
      */
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
-        $rounded = UnitTransformer::round($this->ticks, $unit, $mode);
+        $rounded = UnitTransformer::round($this->totalMicroseconds, $unit, $mode);
 
-        return $this->ticks === $rounded ? $this : new self($rounded);
+        return $this->totalMicroseconds === $rounded ? $this : new self($rounded);
     }
 
     /**
@@ -414,7 +439,7 @@ final class Time implements JsonSerializable
      */
     public function diff(Time|Event|NativeEvent|DateTimeInterface $other): Duration
     {
-        $duration = InputNormalizer::time($other)->ticks - $this->ticks;
+        $duration = InputNormalizer::time($other)->totalMicroseconds - $this->totalMicroseconds;
 
         return 0 > $duration
             ? Duration::of(microseconds: -$duration)->negated()
@@ -429,7 +454,7 @@ final class Time implements JsonSerializable
     public function distance(Time|Event|NativeEvent|DateTimeInterface $other): Duration
     {
         return Duration::of(microseconds: UnitTransformer::wrap(
-            InputNormalizer::time($other)->ticks - $this->ticks,
+            InputNormalizer::time($other)->totalMicroseconds - $this->totalMicroseconds,
             Unit::Day
         ));
     }

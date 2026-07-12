@@ -62,7 +62,7 @@ final readonly class TemporalSearch
         return SearchMode::Linear === $mode
             ? $this->forwardSearch(fn ($item): bool => ($this->resolver)($item)->isAfterOrEqual($atOrAfter))
             : $this->circularSearch(
-                InputNormalizer::time($atOrAfter)->ticks,
+                InputNormalizer::time($atOrAfter)->totalMicroseconds,
                 static function (int $at, int $reference): int {
                     $delta = $at - $reference;
                     if ($delta <= 0) {
@@ -82,7 +82,7 @@ final readonly class TemporalSearch
         return SearchMode::Linear === $mode
             ? $this->forwardSearch(fn ($item): bool => ($this->resolver)($item)->isBefore($before))
             : $this->circularSearch(
-                InputNormalizer::time($before)->ticks,
+                InputNormalizer::time($before)->totalMicroseconds,
                 static function (int $at, int $reference): int {
                     $delta = $reference - $at;
                     if ($delta < 0) {
@@ -100,7 +100,7 @@ final readonly class TemporalSearch
     public function nearest(Time|Event|NativeEvent|DateTimeInterface $around): iterable
     {
         return $this->circularSearch(
-            InputNormalizer::time($around)->ticks,
+            InputNormalizer::time($around)->totalMicroseconds,
             static function (int $at, int $reference): int {
                 $calculate = static fn (int $value): int => ($value + self::CYCLE) % self::CYCLE;
 
@@ -133,7 +133,7 @@ final readonly class TemporalSearch
         $bestDelta = null;
         $results = [];
         foreach ($this->items as $offset => $item) {
-            $delta = $metrics(($this->resolver)($item)->ticks, $current);
+            $delta = $metrics(($this->resolver)($item)->totalMicroseconds, $current);
             if (null === $bestDelta || $delta < $bestDelta) {
                 $bestDelta = $delta;
                 $results = [$offset => $item];

@@ -38,8 +38,8 @@ final class Duration implements JsonSerializable
         (?:(?<minutes>\d+)\s*m\s*)?
         (?:(?<seconds>\d+)\s*s\s*)?
         (?:
-            (?<fractionvalue>\d{1,6})\s*
-            (?<fractionunit>µs|us|ms)\s*
+            (?<fvalue>\d{1,6})\s*
+            (?<funit>µs|us|ms)\s*
         )?
     $@x';
 
@@ -64,10 +64,17 @@ final class Duration implements JsonSerializable
     private ?DurationParts $parts = null;
     public readonly int $sign;
     public readonly int $totalMicroseconds;
+
     public int|float $totalMilliseconds { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Millisecond); }
     public int|float $totalSeconds { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Second); }
     public int|float $totalMinutes { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Minute); }
     public int|float $totalHours { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Hour); }
+
+    public int $microsecond { get => $this->component(Unit::Microsecond); }
+    public int $millisecond { get => $this->component(Unit::Millisecond); }
+    public int $second { get => $this->component(Unit::Second); }
+    public int $minute { get => $this->component(Unit::Minute); }
+    public int $hour { get => $this->component(Unit::Hour); }
 
     /**
      * @param int $totalMicroseconds expressed in microseconds
@@ -189,8 +196,8 @@ final class Duration implements JsonSerializable
     {
         ('' !== $notation && 1 === preg_match(self::REGEXP_COMPACT, $notation, $parts)) || throw new InvalidDuration('Unknown or bad format `'.$notation.'`.');
 
-        $fractionValue = (int) ($parts['fractionvalue'] ?? 0);
-        $fractionUnit = $parts['fractionunit'] ?? 'µs';
+        $fractionValue = (int) ($parts['fvalue'] ?? 0);
+        $fractionUnit = $parts['funit'] ?? 'µs';
         if ('ms' === $fractionUnit) {
             ($fractionValue <= 999) || throw new InvalidDuration('millisecond fraction value cannot be greater than 999.');
             $fractionValue *= 1000;
@@ -292,22 +299,22 @@ final class Duration implements JsonSerializable
     }
 
     /**
-     * @return array{0: array{microseconds: int}, 1:array{}}
+     * @return array{0: array{total_microseconds: int}, 1:array{}}
      */
     public function __serialize(): array
     {
-        return [['microseconds' => $this->totalMicroseconds], []];
+        return [['total_microseconds' => $this->totalMicroseconds], []];
     }
 
     /**
-     * @param array{0: array{microseconds: int}, 1: array{}} $data
+     * @param array{0: array{total_microseconds: int}, 1: array{}} $data
      *
      * @throws TokeiException
      */
     public function __unserialize(array $data): void
     {
         [$properties] = $data;
-        $duration = new self($properties['microseconds']);
+        $duration = new self($properties['total_microseconds']);
         $this->totalMicroseconds = $duration->totalMicroseconds;
         $this->sign = $duration->sign;
     }
@@ -330,7 +337,7 @@ final class Duration implements JsonSerializable
         return $this->parts()->toDateInterval($relativeTo);
     }
 
-    public function component(Unit $unit): int
+    private function component(Unit $unit): int
     {
         [$whole] = UnitTransformer::divmod(
             -1 === $this->sign ? -$this->totalMicroseconds : $this->totalMicroseconds,
