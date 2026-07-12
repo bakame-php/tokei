@@ -541,11 +541,11 @@ final class Duration implements JsonSerializable
     {
         $duration = InputNormalizer::duration($duration);
 
-        !$duration->isZero() || throw new DivisionByZeroError('Cannot divide by zero duration.');
-
-        return new DivisionResult(
-            intdiv($this->totalMicroseconds, $duration->totalMicroseconds),
-            new self($this->totalMicroseconds % $duration->totalMicroseconds),
-        );
+        return !$duration->isZero()
+            ? new DivisionResult(
+                quotient: intdiv($this->totalMicroseconds, $duration->totalMicroseconds),
+                remainder: new self($this->totalMicroseconds % $duration->totalMicroseconds),
+            )
+            : throw new DivisionByZeroError('Cannot divide by zero duration.');
     }
 }

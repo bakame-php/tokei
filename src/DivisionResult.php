@@ -15,7 +15,7 @@ final readonly class DivisionResult
     /**
      * @return array{0: int, 1: Duration}
      */
-    public function asArray(): array
+    public function asTuple(): array
     {
         return [$this->quotient, $this->remainder];
     }

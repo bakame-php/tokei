@@ -39,12 +39,22 @@ $duration = Duration::fromFormat('P2025Y3DT25s', DurationFormat::Iso8601);
 
 Once instantiated you can access the duration properties directly.
 The object exposes a `sign` property which indicates if the original value was negative, 0 or positive.
-And provides a `toMicro` method to get the microseconds based representation of the duration.
+And provides `totalxxx` methods to get the based representation of the duration in different unit.
+
+- `totalMicroseconds`
+- `totalMilliseconds`
+- `totalSeconds`
+- `totalMinutes`
+- `totalHours`
+
+Depending on the duration, the returned value can be an integer or a float.
 
 ```php
 $duration = Duration::fromDateInterval(new DateInterval('PT23M3S'))
-$duration->microseconds; 
-// returns 234_000
+$duration->totalMicroseconds; 
+// returns 1383_000_000
+$duration->totalMinutes; 
+// returns 23.05
 $duration->sign;        
  // returns 1
 $duration->isZero() ;      
@@ -62,7 +72,6 @@ $duration->component(Unit::Microsecond); // 0
 ```php
 Duration::format(DurationFormat $format = DurationFormat::Iso8601): string
 Duration::toDateInterval(): DateInterval
-Duration::in(Unit $unit = Unit::Microseconds): int|float
 ```
 
 Formatting the duration string representation is returned by the `Duration::format` with the help of the `DurationFormat` Enum
@@ -105,9 +114,12 @@ instance while preserving its sign (inverted intervals are supported).
 
 ```php
 $duration = Duration::of(microseconds: 3_661_234_000);
-$duration->toDateInterval();      // returns DateInterval
-$durationB->in(Unit::Microsecond); // returns 3_661_234_000   the full duration in microseconds
-$durationB->in(Unit::Hours);       // returns 1.0170094444444 the full duration in hours
+$duration->toDateInterval();
+// returns DateInterval
+$durationB->totalNicroseconds;
+// returns 3_661_234_000   the full duration in microseconds
+$durationB->totalHours;
+// returns 1.0170094444444 the full duration in hours
 ```
 
 ## Modifying duration
