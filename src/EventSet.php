@@ -379,7 +379,7 @@ final class EventSet implements TemporalSet
     {
         $result = [];
         foreach ($set->items as $item) {
-            $offset = $item->at->format();
+            $offset = $item->at->format(TimeFormat::Iso8601Extended);
             $result[$offset] = ([] === $result || !array_key_exists($offset, $result))
                 ? $item
                 : $result[$offset]->named($item->identifiers->merge($item->identifiers));

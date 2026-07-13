@@ -188,7 +188,7 @@ final class DurationTest extends TestCase
             ? Duration::of(microseconds: -$microseconds)->negated()
             : Duration::of(microseconds: $microseconds);
 
-        self::assertSame($expected, $duration->format());
+        self::assertSame($expected, $duration->format(DurationFormat::Iso8601));
     }
 
     /**
@@ -525,50 +525,50 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::fromFormat('PT30M', DurationFormat::Iso8601);
 
-        self::assertSame('PT30M', $duration->format());
+        self::assertSame('PT30M', $duration->format(DurationFormat::Iso8601));
     }
 
     public function testItParsesHoursMinutesSeconds(): void
     {
         $duration = Duration::fromFormat('PT1H30M15S', DurationFormat::Iso8601);
 
-        self::assertSame('PT1H30M15S', $duration->format());
+        self::assertSame('PT1H30M15S', $duration->format(DurationFormat::Iso8601));
     }
 
     public function testItParsesFractionalSeconds(): void
     {
         $duration = Duration::fromFormat('PT0.5S', DurationFormat::Iso8601);
 
-        self::assertSame('PT0.5S', $duration->format());
+        self::assertSame('PT0.5S', $duration->format(DurationFormat::Iso8601));
     }
 
     public function testItParsesDays(): void
     {
         $duration = Duration::fromFormat('P2DT3H', DurationFormat::Iso8601);
 
-        self::assertSame('PT51H', $duration->format());
+        self::assertSame('PT51H', $duration->format(DurationFormat::Iso8601));
     }
 
     public function testItParsesNegativeDuration(): void
     {
         $duration = Duration::fromFormat('-PT30S', DurationFormat::Iso8601);
 
-        self::assertSame('-PT30S', $duration->format());
+        self::assertSame('-PT30S', $duration->format(DurationFormat::Iso8601));
     }
 
     public function testItParseAndNormalizeDuration(): void
     {
         $rawIso8601 = '-PT25H0.5S';
-        $duration = Duration::fromFormat($rawIso8601);
+        $duration = Duration::fromFormat($rawIso8601, DurationFormat::Iso8601);
 
-        self::assertSame($rawIso8601, $duration->format());
+        self::assertSame($rawIso8601, $duration->format(DurationFormat::Iso8601));
     }
 
     public function testItRejectsYears(): void
     {
         $this->expectException(InvalidDuration::class);
 
-        Duration::fromFormat('P1Y');
+        Duration::fromFormat('P1Y', DurationFormat::Iso8601);
     }
 
     public function testItRejectsMonths(): void
@@ -606,28 +606,28 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::fromFormat('P2W', DurationFormat::Iso8601);
 
-        self::assertSame('PT336H', $duration->format());
+        self::assertSame('PT336H', $duration->format(DurationFormat::Iso8601));
     }
 
     public function testItParsesWeeksAndDays(): void
     {
         $duration = Duration::fromFormat('P1W2D', DurationFormat::Iso8601);
 
-        self::assertSame('PT216H', $duration->format());
+        self::assertSame('PT216H', $duration->format(DurationFormat::Iso8601));
     }
 
     public function testItParsesNegativeWeeks(): void
     {
         $duration = Duration::fromFormat('-P3W', DurationFormat::Iso8601);
 
-        self::assertSame('-PT504H', $duration->format());
+        self::assertSame('-PT504H', $duration->format(DurationFormat::Iso8601));
     }
 
     public function testItParsesWeeksWithTimeComponents(): void
     {
         $duration = Duration::fromFormat('P1WT2H30M', DurationFormat::Iso8601);
 
-        self::assertSame('PT170H30M', $duration->format());
+        self::assertSame('PT170H30M', $duration->format(DurationFormat::Iso8601));
     }
 
     public function testItRejectsEmptyWeekNotation(): void
@@ -665,8 +665,8 @@ final class DurationTest extends TestCase
 
     public function testItMultiplyTheDuration(): void
     {
-        self::assertSame('PT4H', Duration::of(hours: 2)->multipliedBy(2)->format());
-        self::assertSame('PT4M', Duration::of(minutes: 2)->multipliedBy(2)->format());
+        self::assertSame('PT4H', Duration::of(hours: 2)->multipliedBy(2)->format(DurationFormat::Iso8601));
+        self::assertSame('PT4M', Duration::of(minutes: 2)->multipliedBy(2)->format(DurationFormat::Iso8601));
     }
 
     public function test_duration_can_be_serialized_and_unserialized(): void

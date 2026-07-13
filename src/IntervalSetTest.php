@@ -519,7 +519,7 @@ final class IntervalSetTest extends TestCase
         $set = new IntervalSet($this->i(1, 2), $this->i(3, 4));
 
         self::assertSame([$this->i(1, 2)->format(IntervalFormat::Iso80000), $this->i(3, 4)->format(IntervalFormat::Iso80000)], $set->formatAll(IntervalFormat::Iso80000));
-        self::assertSame([$this->i(1, 2)->format(), $this->i(3, 4)->format()], $set->formatAll());
+        self::assertSame([$this->i(1, 2)->format(IntervalFormat::Iso8601StartDuration), $this->i(3, 4)->format(IntervalFormat::Iso8601StartDuration)], $set->formatAll());
         self::assertSame([$this->i(1, 2)->format(IntervalFormat::Bourbaki), $this->i(3, 4)->format(IntervalFormat::Bourbaki)], $set->formatAll(IntervalFormat::Bourbaki));
     }
 

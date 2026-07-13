@@ -39,7 +39,7 @@ $duration = Duration::fromFormat('P2025Y3DT25s', DurationFormat::Iso8601);
 
 Once instantiated you can access the duration properties directly.
 The object exposes a `sign` property which indicates if the original value was negative, 0 or positive.
-And provides `totalxxx` methods to get the based representation of the duration in different unit.
+It provides `totalxxx` methods to get the based representation of the duration in different unit.
 
 - `totalMicroseconds`
 - `totalMilliseconds`
@@ -47,30 +47,26 @@ And provides `totalxxx` methods to get the based representation of the duration 
 - `totalMinutes`
 - `totalHours`
 
+As well as properties to access the duration component for a specific uinit
+
 Depending on the duration, the returned value can be an integer or a float.
 
 ```php
 $duration = Duration::fromDateInterval(new DateInterval('PT23M3S'))
-$duration->totalMicroseconds; 
-// returns 1383_000_000
-$duration->totalMinutes; 
-// returns 23.05
-$duration->sign;        
- // returns 1
-$duration->isZero() ;      
-// returns true when the duration is zero, false otherwise 
-// the component method returns the duration component
-// for a specific unit
-$duration->component(Unit::Hour);        // 0
-$duration->component(Unit::Minute);      // 23
-$duration->component(Unit::Second);      // 3
-$duration->component(Unit::Microsecond); // 0
+$duration->totalMicroseconds; // returns 1383_000_000
+$duration->totalMinutes;      // returns 23.05
+$duration->sign;              // returns 1
+$duration->isZero() ;         // returns false     
+$duration->hour;              // returns 0
+$duration->minute;            // returns 23
+$duration->second;            // returns 3
+$duration->microsecond;       // returns 0
 ```
 
 ## Formatting
 
 ```php
-Duration::format(DurationFormat $format = DurationFormat::Iso8601): string
+Duration::format(DurationFormat $format): string
 Duration::toDateInterval(): DateInterval
 ```
 
@@ -79,7 +75,7 @@ Formatting the duration string representation is returned by the `Duration::form
 When using the `DurationFormat::Timer` the following human-readable format is used:
 
 ```php
-[-]H:mm:ss[.microseconds]
+[-]HH:mm:ss[.microseconds]
 ```
 - microseconds are optional
 - negative values are prefixed with `-`
@@ -89,7 +85,7 @@ The returned string may not be compatible with PHP's `DateInterval` constructor 
 
 ```php
 $duration = Duration::of(hours: 25, seconds: 5); 
-$duration->format(DurationFormat::Iso8601); // returns 'P1D1H5S'
+$duration->format(DurationFormat::Iso8601); // returns 'PT25H5S'
 $duration->format(DurationFormat::Timer);   // returns '25:00:05'
 ```
 
@@ -99,13 +95,13 @@ $duration->format(DurationFormat::Timer);   // returns '25:00:05'
 
 ```php
 $duration = Duration::fromFormat('-P2W', DurationFormat::Iso8601); 
-$duration->format(DurationFormat::Iso8601); // returns '-P14D'
+$duration->format(DurationFormat::Iso8601); // returns '-PT336H'
 ```
 Last but not least a compact format more suited for debugging is returns using the `DurationFormat::Compact` case.
 
 ```php
-$duration = Duration::of(hours: 25, seconds: 5); 
-$duration->format(DurationFormat::Compact); // returns '1d1h5s'
+$duration = Duration::fromFormat('-PT25H0.5S', DurationFormat::Iso8601); 
+$duration->format(DurationFormat::Compact); // returns '25h500ms'
 ```
 
 The `Duration` class also allows conversion in time units and in `DateInterval` instances.
@@ -116,10 +112,6 @@ instance while preserving its sign (inverted intervals are supported).
 $duration = Duration::of(microseconds: 3_661_234_000);
 $duration->toDateInterval();
 // returns DateInterval
-$durationB->totalNicroseconds;
-// returns 3_661_234_000   the full duration in microseconds
-$durationB->totalHours;
-// returns 1.0170094444444 the full duration in hours
 ```
 
 ## Modifying duration
@@ -139,7 +131,7 @@ Duration::clamp(Duration $min, Duration $max): Duration
 You can:
 
 - make it unsigned using the `Duration::abs` method
-- invert its signing using the `Duration::negate` method
+- invert its signing using the `Duration::negated` method
 - update the duration using multiple instances with `Duration::add` and `Duration::sub` methods
 - round its value to one of the unit declare on the `Bakame\Tokei\Unit` enum
 - clamp its value against two other `Duration` instances
@@ -180,7 +172,7 @@ $duration->format();
 // returns '-PT5H30M'
 $result->quotient;
 // returns '-5'
-$result->remainder->format();
+$result->remainder->format(DurationFormat::Iso8601);
 // returns '-PT30M'
 $oneHour
     ->multipliedBy($result->quotient)

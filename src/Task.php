@@ -62,7 +62,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
     /**
      * @throws InvalidInterval|TemporalException
      */
-    public static function fromFormat(string $value, IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): self
+    public static function fromFormat(string $value, IntervalFormat $format, ?Unit $unit = null): self
     {
         [$interval, $identifiers] = explode(';', $value, 2) + [1 => ''];
 
@@ -74,13 +74,13 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->format();
+        return $this->format(IntervalFormat::Iso8601StartDuration);
     }
 
     /**
      * @return non-empty-string
      */
-    public function format(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): string
+    public function format(IntervalFormat $format, ?Unit $unit = null): string
     {
         return $this->interval->format($format, $unit).';'.$this->identifiers->toCommaSeparated();
     }

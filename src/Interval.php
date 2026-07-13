@@ -154,7 +154,7 @@ final readonly class Interval implements JsonSerializable
      */
     public static function fromFormat(
         string $notation,
-        IntervalFormat $format = IntervalFormat::Iso8601StartDuration,
+        IntervalFormat $format,
         ?Unit $unit = null
     ): self {
         $trimmedData = trim($notation);
@@ -229,7 +229,7 @@ final readonly class Interval implements JsonSerializable
     private static function createTime(int|string|float $value, ?Unit $unit, string $data, IntervalFormat $format): Time
     {
         if (is_string($value)) {
-            return Time::fromFormat($value);
+            return Time::fromFormat($value, TimeFormat::Iso8601Extended);
         }
 
         null !== $unit || throw InvalidInterval::dueToMalformedFormat($data, $format);
@@ -248,9 +248,9 @@ final readonly class Interval implements JsonSerializable
         $isDurationFormat = static fn (string $str): bool => str_starts_with($str, 'P') || str_starts_with($str, '-P');
 
         return match (true) {
-            IntervalFormat::Iso8601DurationEnd === $format && $isDurationFormat($start) => Interval::until(Time::fromFormat($end), Duration::fromFormat($start)),
-            IntervalFormat::Iso8601StartDuration === $format && $isDurationFormat($end) => Interval::since(Time::fromFormat($start), Duration::fromFormat($end)),
-            IntervalFormat::Iso8601StartEnd === $format => Interval::between(Time::fromFormat($start), Time::fromFormat($end)),
+            IntervalFormat::Iso8601DurationEnd === $format && $isDurationFormat($start) => Interval::until(Time::fromFormat($end, TimeFormat::Iso8601Extended), Duration::fromFormat($start, DurationFormat::Iso8601)),
+            IntervalFormat::Iso8601StartDuration === $format && $isDurationFormat($end) => Interval::since(Time::fromFormat($start, TimeFormat::Iso8601Extended), Duration::fromFormat($end, DurationFormat::Iso8601)),
+            IntervalFormat::Iso8601StartEnd === $format => Interval::between(Time::fromFormat($start, TimeFormat::Iso8601Extended), Time::fromFormat($end, TimeFormat::Iso8601Extended)),
             default => throw InvalidInterval::dueToMalformedFormat($notation, $format),
         };
     }
@@ -308,11 +308,11 @@ final readonly class Interval implements JsonSerializable
      *
      * @return non-empty-string
      */
-    public function format(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): string
+    public function format(IntervalFormat $format, ?Unit $unit = null): string
     {
         $formatTime = static function (Time $time, ?Unit $unit, IntervalFormat $format): string {
             if (null === $unit || !$format->supportsUnit()) {
-                return $time->format();
+                return $time->format(TimeFormat::Iso8601Extended);
             }
 
             $value = $time->in($unit);
@@ -326,8 +326,8 @@ final readonly class Interval implements JsonSerializable
         $end = $formatTime($this->end, $unit, $format);
 
         return match ($format) {
-            IntervalFormat::Iso8601StartDuration => $start.'/'.$this->duration->format(),
-            IntervalFormat::Iso8601DurationEnd => $this->duration->format().'/'.$end,
+            IntervalFormat::Iso8601StartDuration => $start.'/'.$this->duration->format(DurationFormat::Iso8601),
+            IntervalFormat::Iso8601DurationEnd => $this->duration->format(DurationFormat::Iso8601).'/'.$end,
             IntervalFormat::Iso8601StartEnd => $start.'/'.$end,
             IntervalFormat::Iso80000 => '['.$start.','.$end.')',
             IntervalFormat::Bourbaki => '['.$start.','.$end.'[',
@@ -358,7 +358,7 @@ final readonly class Interval implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->format();
+        return $this->format(IntervalFormat::Iso8601StartDuration);
     }
 
     /**

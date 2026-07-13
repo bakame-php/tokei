@@ -306,10 +306,10 @@ final class IntervalTest extends TestCase
 
         self::assertCount(4, $times);
 
-        self::assertSame('09:00:00', $times[0]->format());
-        self::assertSame('09:15:00', $times[1]->format());
-        self::assertSame('09:30:00', $times[2]->format());
-        self::assertSame('09:45:00', $times[3]->format());
+        self::assertSame('09:00:00', $times[0]->format(TimeFormat::Iso8601Extended));
+        self::assertSame('09:15:00', $times[1]->format(TimeFormat::Iso8601Extended));
+        self::assertSame('09:30:00', $times[2]->format(TimeFormat::Iso8601Extended));
+        self::assertSame('09:45:00', $times[3]->format(TimeFormat::Iso8601Extended));
     }
 
     public function test_range_backward(): void
@@ -319,10 +319,10 @@ final class IntervalTest extends TestCase
 
         self::assertCount(4, $times);
 
-        self::assertSame('09:45:00', $times[0]->format());
-        self::assertSame('09:30:00', $times[1]->format());
-        self::assertSame('09:15:00', $times[2]->format());
-        self::assertSame('09:00:00', $times[3]->format());
+        self::assertSame('09:45:00', $times[0]->format(TimeFormat::Iso8601Extended));
+        self::assertSame('09:30:00', $times[1]->format(TimeFormat::Iso8601Extended));
+        self::assertSame('09:15:00', $times[2]->format(TimeFormat::Iso8601Extended));
+        self::assertSame('09:00:00', $times[3]->format(TimeFormat::Iso8601Extended));
     }
 
     public function test_range_with_zero_duration(): void
@@ -675,7 +675,7 @@ final class IntervalTest extends TestCase
     #[DataProvider('iso80000ValidProvider')]
     public function test_from_iso80000(string $input, string $expectedIso8601): void
     {
-        self::assertSame($expectedIso8601, Interval::fromFormat($input, IntervalFormat::Iso80000)->format());
+        self::assertSame($expectedIso8601, Interval::fromFormat($input, IntervalFormat::Iso80000)->format(IntervalFormat::Iso8601StartDuration));
     }
 
     /**
@@ -727,7 +727,7 @@ final class IntervalTest extends TestCase
     #[DataProvider('bourbakiValidProvider')]
     public function test_from_bouraki(string $input, string $expectedIso8601): void
     {
-        self::assertSame($expectedIso8601, Interval::fromFormat($input, IntervalFormat::Bourbaki)->format());
+        self::assertSame($expectedIso8601, Interval::fromFormat($input, IntervalFormat::Bourbaki)->format(IntervalFormat::Iso8601StartDuration));
     }
 
     /**
@@ -774,7 +774,7 @@ final class IntervalTest extends TestCase
 
     public function test_interval_can_be_serialized_and_unserialized(): void
     {
-        $interval = Interval::fromFormat('12:34:56/-PT23H30S');
+        $interval = Interval::fromFormat('12:34:56/-PT23H30S', IntervalFormat::Iso8601StartDuration);
         $restored = unserialize(serialize($interval));
 
         self::assertInstanceOf(Interval::class, $restored);

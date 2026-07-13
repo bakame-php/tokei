@@ -60,7 +60,6 @@ final class Duration implements JsonSerializable
         )?
     $@x';
 
-    /** Total duration expressed in the library base unit. */
     private ?DurationParts $parts = null;
     public readonly int $sign;
     public readonly int $totalMicroseconds;
@@ -70,11 +69,10 @@ final class Duration implements JsonSerializable
     public int|float $totalMinutes { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Minute); }
     public int|float $totalHours { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Hour); }
 
-    public int $microsecond { get => $this->component(Unit::Microsecond); }
-    public int $millisecond { get => $this->component(Unit::Millisecond); }
-    public int $second { get => $this->component(Unit::Second); }
-    public int $minute { get => $this->component(Unit::Minute); }
-    public int $hour { get => $this->component(Unit::Hour); }
+    public int $microsecond { get => $this->parts()->microseconds; }
+    public int $second { get => $this->parts()->seconds; }
+    public int $minute { get => $this->parts()->minutes; }
+    public int $hour { get => $this->parts()->hours; }
 
     /**
      * @param int $totalMicroseconds expressed in microseconds
@@ -150,7 +148,7 @@ final class Duration implements JsonSerializable
     /**
      * @throws TokeiException
      */
-    public static function fromFormat(string $notation, DurationFormat $format = DurationFormat::Iso8601): self
+    public static function fromFormat(string $notation, DurationFormat $format): self
     {
         return match ($format) {
             DurationFormat::Iso8601 => self::fromIso8601($notation),
@@ -324,7 +322,7 @@ final class Duration implements JsonSerializable
      *
      * @return non-empty-string
      */
-    public function format(DurationFormat $format = DurationFormat::Iso8601): string
+    public function format(DurationFormat $format): string
     {
         return $this->parts()->format($format, DurationParts::COMPACT_DURATION);
     }
@@ -337,22 +335,6 @@ final class Duration implements JsonSerializable
         return $this->parts()->toDateInterval($relativeTo);
     }
 
-    private function component(Unit $unit): int
-    {
-        [$whole] = UnitTransformer::divmod(
-            -1 === $this->sign ? -$this->totalMicroseconds : $this->totalMicroseconds,
-            $unit
-        );
-
-        return match ($unit) {
-            Unit::Week => $whole,
-            Unit::Day => $whole % 7,
-            Unit::Hour => $whole % 24,
-            Unit::Minute, Unit::Second => $whole % 60,
-            default => $whole % 1_000,
-        };
-    }
-
     /**
      * @see self::format()
      *
@@ -360,7 +342,7 @@ final class Duration implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->format();
+        return $this->format(DurationFormat::Iso8601);
     }
 
     /**

@@ -38,12 +38,9 @@ final class Time implements JsonSerializable
         )?
     $@x';
 
-    /**
-     * Time since midnight expressed in the library base unit.
-     * @var non-negative-int
-     */
-    public readonly int $totalMicroseconds;
     private ?DurationParts $parts = null;
+    /** @var non-negative-int */
+    public readonly int $totalMicroseconds;
 
     public int|float $totalMilliseconds { get => $this->in(Unit::Microsecond); }
     public int|float $totalSeconds { get => $this->in(Unit::Second); }
@@ -109,7 +106,7 @@ final class Time implements JsonSerializable
     /**
      * @throws InvalidTime
      */
-    public static function fromFormat(string $value, TimeFormat $format = TimeFormat::Iso8601Extended): self
+    public static function fromFormat(string $value, TimeFormat $format): self
     {
         $regexp = match ($format) {
             TimeFormat::Iso8601Extended => self::REGEXP_ISO8601,
@@ -245,7 +242,7 @@ final class Time implements JsonSerializable
      *
      * @return non-empty-string
      */
-    public function format(TimeFormat $format = TimeFormat::Iso8601Extended): string
+    public function format(TimeFormat $format): string
     {
         return $this->parts()->format(
             format: match ($format) {
@@ -291,7 +288,7 @@ final class Time implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->format();
+        return $this->format(TimeFormat::Iso8601Extended);
     }
 
     /**

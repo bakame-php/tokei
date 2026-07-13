@@ -222,10 +222,10 @@ final class EventSetTest extends TestCase
 
         self::assertInstanceOf(Event::class, $result->first());
         self::assertContains(
-            $result->first()->at->format(),
+            $result->first()->at->format(TimeFormat::Iso8601Extended),
             [
-                Time::at(0, 1)->format(),
-                Time::at(23, 59)->format(),
+                Time::at(0, 1)->format(TimeFormat::Iso8601Extended),
+                Time::at(23, 59)->format(TimeFormat::Iso8601Extended),
             ]
         );
     }
