@@ -109,7 +109,7 @@ final class Time implements JsonSerializable
     public static function fromFormat(string $value, TimeFormat $format): self
     {
         $regexp = match ($format) {
-            TimeFormat::Iso8601Extended => self::REGEXP_ISO8601,
+            TimeFormat::Clock => self::REGEXP_ISO8601,
             TimeFormat::Compact => self::REGEXP_COMPACT,
         };
 
@@ -246,7 +246,7 @@ final class Time implements JsonSerializable
     {
         return $this->parts()->format(
             format: match ($format) {
-                TimeFormat::Iso8601Extended => DurationFormat::Timer,
+                TimeFormat::Clock => DurationFormat::Timer,
                 TimeFormat::Compact => DurationFormat::Compact,
             },
             compactType: DurationParts::COMPACT_TIME
@@ -288,7 +288,7 @@ final class Time implements JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->format(TimeFormat::Iso8601Extended);
+        return $this->format(TimeFormat::Clock);
     }
 
     /**

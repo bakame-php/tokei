@@ -121,7 +121,7 @@ The `TimeFormat` enum defines the supported string representations for a `Time`.
 ```php
 enum TimeFormat
 {
-    case Iso8601Extended;
+    case Clock;
     case Compact;
 }
 ```

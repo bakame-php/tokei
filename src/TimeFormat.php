@@ -6,6 +6,6 @@ namespace Bakame\Tokei;
 
 enum TimeFormat
 {
-    case Iso8601Extended;
+    case Clock;
     case Compact;
 }

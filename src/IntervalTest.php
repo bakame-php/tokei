@@ -306,10 +306,10 @@ final class IntervalTest extends TestCase
 
         self::assertCount(4, $times);
 
-        self::assertSame('09:00:00', $times[0]->format(TimeFormat::Iso8601Extended));
-        self::assertSame('09:15:00', $times[1]->format(TimeFormat::Iso8601Extended));
-        self::assertSame('09:30:00', $times[2]->format(TimeFormat::Iso8601Extended));
-        self::assertSame('09:45:00', $times[3]->format(TimeFormat::Iso8601Extended));
+        self::assertSame('09:00:00', $times[0]->format(TimeFormat::Clock));
+        self::assertSame('09:15:00', $times[1]->format(TimeFormat::Clock));
+        self::assertSame('09:30:00', $times[2]->format(TimeFormat::Clock));
+        self::assertSame('09:45:00', $times[3]->format(TimeFormat::Clock));
     }
 
     public function test_range_backward(): void
@@ -319,10 +319,10 @@ final class IntervalTest extends TestCase
 
         self::assertCount(4, $times);
 
-        self::assertSame('09:45:00', $times[0]->format(TimeFormat::Iso8601Extended));
-        self::assertSame('09:30:00', $times[1]->format(TimeFormat::Iso8601Extended));
-        self::assertSame('09:15:00', $times[2]->format(TimeFormat::Iso8601Extended));
-        self::assertSame('09:00:00', $times[3]->format(TimeFormat::Iso8601Extended));
+        self::assertSame('09:45:00', $times[0]->format(TimeFormat::Clock));
+        self::assertSame('09:30:00', $times[1]->format(TimeFormat::Clock));
+        self::assertSame('09:15:00', $times[2]->format(TimeFormat::Clock));
+        self::assertSame('09:00:00', $times[3]->format(TimeFormat::Clock));
     }
 
     public function test_range_with_zero_duration(): void

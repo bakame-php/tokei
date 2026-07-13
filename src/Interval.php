@@ -229,7 +229,7 @@ final readonly class Interval implements JsonSerializable
     private static function createTime(int|string|float $value, ?Unit $unit, string $data, IntervalFormat $format): Time
     {
         if (is_string($value)) {
-            return Time::fromFormat($value, TimeFormat::Iso8601Extended);
+            return Time::fromFormat($value, TimeFormat::Clock);
         }
 
         null !== $unit || throw InvalidInterval::dueToMalformedFormat($data, $format);
@@ -248,9 +248,9 @@ final readonly class Interval implements JsonSerializable
         $isDurationFormat = static fn (string $str): bool => str_starts_with($str, 'P') || str_starts_with($str, '-P');
 
         return match (true) {
-            IntervalFormat::Iso8601DurationEnd === $format && $isDurationFormat($start) => Interval::until(Time::fromFormat($end, TimeFormat::Iso8601Extended), Duration::fromFormat($start, DurationFormat::Iso8601)),
-            IntervalFormat::Iso8601StartDuration === $format && $isDurationFormat($end) => Interval::since(Time::fromFormat($start, TimeFormat::Iso8601Extended), Duration::fromFormat($end, DurationFormat::Iso8601)),
-            IntervalFormat::Iso8601StartEnd === $format => Interval::between(Time::fromFormat($start, TimeFormat::Iso8601Extended), Time::fromFormat($end, TimeFormat::Iso8601Extended)),
+            IntervalFormat::Iso8601DurationEnd === $format && $isDurationFormat($start) => Interval::until(Time::fromFormat($end, TimeFormat::Clock), Duration::fromFormat($start, DurationFormat::Iso8601)),
+            IntervalFormat::Iso8601StartDuration === $format && $isDurationFormat($end) => Interval::since(Time::fromFormat($start, TimeFormat::Clock), Duration::fromFormat($end, DurationFormat::Iso8601)),
+            IntervalFormat::Iso8601StartEnd === $format => Interval::between(Time::fromFormat($start, TimeFormat::Clock), Time::fromFormat($end, TimeFormat::Clock)),
             default => throw InvalidInterval::dueToMalformedFormat($notation, $format),
         };
     }
@@ -312,7 +312,7 @@ final readonly class Interval implements JsonSerializable
     {
         $formatTime = static function (Time $time, ?Unit $unit, IntervalFormat $format): string {
             if (null === $unit || !$format->supportsUnit()) {
-                return $time->format(TimeFormat::Iso8601Extended);
+                return $time->format(TimeFormat::Clock);
             }
 
             $value = $time->in($unit);

@@ -23,7 +23,7 @@ title: Event
 
 ```php
 Event::at(Time $at, Identifiers|string $identifier = new Identifiers()): self
-Event::fromFormat(string $value, TimeFormat $format = TimeFormat::Iso8601Extended): self
+Event::fromFormat(string $value, TimeFormat $format = TimeFormat::Clock): self
 ```
 
 ## Accessors
@@ -49,7 +49,7 @@ are represented as comma-separated values.
 
 ```php
 $event = Event::at(Time::noon(), ['lunch', 'break']);
-$event->format(TimeFormat::Compact);   // returns 12h00m00s;lunch,break
+$event->format(TimeFormat::Compact);   // returns 12h0m0s;lunch,break
 ```
 
 ## Modifying events

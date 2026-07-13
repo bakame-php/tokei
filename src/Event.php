@@ -55,7 +55,7 @@ final class Event implements HasIdentifiers, JsonSerializable
      */
     public function jsonSerialize(): string
     {
-        return $this->format(TimeFormat::Iso8601Extended);
+        return $this->format(TimeFormat::Clock);
     }
 
     /**

@@ -72,9 +72,9 @@ final class EventTest extends TestCase
         string $expectedTime,
         string $expectedIdentifier,
     ): void {
-        $event = Event::fromFormat($input, TimeFormat::Iso8601Extended);
+        $event = Event::fromFormat($input, TimeFormat::Clock);
 
-        self::assertSame($expectedTime, $event->at->format(TimeFormat::Iso8601Extended));
+        self::assertSame($expectedTime, $event->at->format(TimeFormat::Clock));
         self::assertSame($expectedIdentifier, $event->identifiers->toCommaSeparated());
     }
 
@@ -131,7 +131,7 @@ final class EventTest extends TestCase
     {
         $this->expectException(TokeiException::class);
 
-        Event::fromFormat($input, TimeFormat::Iso8601Extended);
+        Event::fromFormat($input, TimeFormat::Clock);
     }
 
     /**

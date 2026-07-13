@@ -76,7 +76,7 @@ final class EventSet implements TemporalSet
      *
      * @return list<non-empty-string>
      */
-    public function formatAll(TimeFormat $format = TimeFormat::Iso8601Extended): array
+    public function formatAll(TimeFormat $format = TimeFormat::Clock): array
     {
         return array_map(static fn (Event $item): string => $item->format($format), $this->items);
     }
@@ -379,7 +379,7 @@ final class EventSet implements TemporalSet
     {
         $result = [];
         foreach ($set->items as $item) {
-            $offset = $item->at->format(TimeFormat::Iso8601Extended);
+            $offset = $item->at->format(TimeFormat::Clock);
             $result[$offset] = ([] === $result || !array_key_exists($offset, $result))
                 ? $item
                 : $result[$offset]->named($item->identifiers->merge($item->identifiers));

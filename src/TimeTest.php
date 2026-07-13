@@ -90,16 +90,16 @@ final class TimeTest extends TestCase
     public function testFromMicrosecondsWrapsCorrectly(): void
     {
         $time = Time::sinceMidnight(Duration::of(microseconds: 25 * 3_600_500_000));
-        self::assertSame('01:00:12.500000', $time->format(TimeFormat::Iso8601Extended));
+        self::assertSame('01:00:12.500000', $time->format(TimeFormat::Clock));
 
         $time = Time::sinceMidnight(Duration::of(milliseconds: 25 * 3_600_500));
-        self::assertSame('01:00:12.500000', $time->format(TimeFormat::Iso8601Extended));
+        self::assertSame('01:00:12.500000', $time->format(TimeFormat::Clock));
 
         $time = Time::sinceMidnight(Duration::of(seconds: 25 * 3_600));
-        self::assertSame('01:00:00', $time->format(TimeFormat::Iso8601Extended));
+        self::assertSame('01:00:00', $time->format(TimeFormat::Clock));
 
         $time = Time::sinceMidnight(Duration::of(minutes: 25 * 60));
-        self::assertSame('01:00:00', $time->format(TimeFormat::Iso8601Extended));
+        self::assertSame('01:00:00', $time->format(TimeFormat::Clock));
     }
 
     /* -------------------------------------------------
@@ -108,7 +108,7 @@ final class TimeTest extends TestCase
 
     public function testParseString(): void
     {
-        $time = Time::fromFormat('12:34:56.123456', TimeFormat::Iso8601Extended);
+        $time = Time::fromFormat('12:34:56.123456', TimeFormat::Clock);
 
         self::assertSame(12, $time->hour);
         self::assertSame(34, $time->minute);
@@ -118,7 +118,7 @@ final class TimeTest extends TestCase
 
     public function testParseWithoutSeconds(): void
     {
-        $time = Time::fromFormat('08:15', TimeFormat::Iso8601Extended);
+        $time = Time::fromFormat('08:15', TimeFormat::Clock);
 
         self::assertSame(8, $time->hour);
         self::assertSame(15, $time->minute);
@@ -129,7 +129,7 @@ final class TimeTest extends TestCase
     {
         $this->expectException(InvalidTime::class);
 
-        Time::fromFormat('99:99:99', TimeFormat::Iso8601Extended);
+        Time::fromFormat('99:99:99', TimeFormat::Clock);
     }
 
     public function testParseDateTime(): void
@@ -151,28 +151,28 @@ final class TimeTest extends TestCase
     {
         $time = Time::at(9, 5, 3);
 
-        self::assertSame('09:05:03', $time->format(TimeFormat::Iso8601Extended));
+        self::assertSame('09:05:03', $time->format(TimeFormat::Clock));
     }
 
     public function testFormatPadded(): void
     {
         $time = Time::at(9, 5, 3);
 
-        self::assertSame('09:05:03', $time->format(TimeFormat::Iso8601Extended));
+        self::assertSame('09:05:03', $time->format(TimeFormat::Clock));
     }
 
     public function testFormatWithMicroseconds(): void
     {
         $time = Time::at(1, 2, 3, 45);
 
-        self::assertSame('01:02:03.000045', $time->format(TimeFormat::Iso8601Extended));
+        self::assertSame('01:02:03.000045', $time->format(TimeFormat::Clock));
     }
 
     public function testFormatAutoMicroseconds(): void
     {
         $time = Time::at(1, 2, 3);
 
-        self::assertSame('01:02:03', $time->format(TimeFormat::Iso8601Extended));
+        self::assertSame('01:02:03', $time->format(TimeFormat::Clock));
     }
 
     /* -------------------------------------------------
@@ -308,7 +308,7 @@ final class TimeTest extends TestCase
         array $arguments,
         string $expected,
     ): void {
-        self::assertSame($expected, $original->with(...$arguments)->format(TimeFormat::Iso8601Extended));
+        self::assertSame($expected, $original->with(...$arguments)->format(TimeFormat::Clock));
     }
 
     /**
@@ -375,8 +375,8 @@ final class TimeTest extends TestCase
 
         $updated = $original->with(hour: 8);
 
-        self::assertSame('23:54:23', $original->format(TimeFormat::Iso8601Extended));
-        self::assertSame('08:54:23', $updated->format(TimeFormat::Iso8601Extended));
+        self::assertSame('23:54:23', $original->format(TimeFormat::Clock));
+        self::assertSame('08:54:23', $updated->format(TimeFormat::Clock));
         self::assertNotSame(
             $updated->toLocaleString(locale: 'tr-CY', verbosity: LocaleVerbosity::Short),
             $updated->toLocaleString(locale: 'tr-CY', verbosity: LocaleVerbosity::Long)
@@ -441,7 +441,7 @@ final class TimeTest extends TestCase
 
     public function test_time_can_be_serialized_and_unserialized(): void
     {
-        $time = Time::fromFormat('12:34:56.123456', TimeFormat::Iso8601Extended);
+        $time = Time::fromFormat('12:34:56.123456', TimeFormat::Clock);
         $restored = unserialize(serialize($time));
 
         self::assertInstanceOf(Time::class, $restored);
@@ -450,7 +450,7 @@ final class TimeTest extends TestCase
 
     public function test_time_can_be_json_serialized(): void
     {
-        $time = Time::fromFormat('12:34:56', TimeFormat::Iso8601Extended);
+        $time = Time::fromFormat('12:34:56', TimeFormat::Clock);
 
         self::assertSame('"12:34:56"', json_encode($time));
     }
