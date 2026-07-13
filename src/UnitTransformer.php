@@ -21,6 +21,9 @@ final readonly class UnitTransformer
     {
     }
 
+    /**
+     * @throws InvalidDuration
+     */
     public static function toMicroseconds(int|float $value, Unit $unit): int
     {
         $micro = $unit->inMicroseconds();

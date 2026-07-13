@@ -53,11 +53,11 @@ final class Time implements JsonSerializable
     public int $microsecond { get => $this->parts()->microseconds; }
 
     /**
-     * @param int $ticks Time since midnight expressed in the library base unit
+     * @param int $totalMicroseconds Time since midnight expressed in the library base unit
      */
-    private function __construct(int $ticks)
+    private function __construct(int $totalMicroseconds)
     {
-        $this->totalMicroseconds = UnitTransformer::wrap($ticks, Unit::Day);
+        $this->totalMicroseconds = UnitTransformer::wrap($totalMicroseconds, Unit::Day);
     }
 
     private function parts(): DurationParts
@@ -183,13 +183,12 @@ final class Time implements JsonSerializable
     /**
      * Returns the current time in the given time-zone.
      *
-     * @param DateTimeZone|non-empty-string $timezone
+     * @param DateTimeInterface|DateTimeZone|non-empty-string $timezone
      */
     public static function now(DateTimeInterface|DateTimeZone|string $timezone): self
     {
         return self::fromDateTime(new DateTimeImmutable(timezone: InputNormalizer::timezone($timezone)));
     }
-
     /**
      * Returns the smallest instances among the given values.
      */
@@ -244,13 +243,7 @@ final class Time implements JsonSerializable
      */
     public function format(TimeFormat $format): string
     {
-        return $this->parts()->format(
-            format: match ($format) {
-                TimeFormat::Clock => DurationFormat::Timer,
-                TimeFormat::Compact => DurationFormat::Compact,
-            },
-            compactType: DurationParts::COMPACT_TIME
-        );
+        return $this->parts()->formatTime($format);
     }
 
     /**
@@ -258,8 +251,7 @@ final class Time implements JsonSerializable
      * @param DateTimeInterface|DateTimeZone|non-empty-string $timezone
      *
      * @throws TimeException
-     *@see LocaleTimeFormatter::format()
-     *
+     * @see LocaleTimeFormatter::format()
      */
     public function toLocaleString(
         string $locale,
@@ -274,7 +266,7 @@ final class Time implements JsonSerializable
      *
      * @param DateTimeInterface|DateTimeZone|non-empty-string $timeZone
      *
-     * @throws TimeException
+     * @throws TokeiException
      */
     public function toDateTime(DateTimeInterface|DateTimeZone|string $timeZone): DateTimeImmutable
     {
@@ -361,7 +353,7 @@ final class Time implements JsonSerializable
      *
      * The duration will be added or subtract depending on its sign.
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
     public function add(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
     {
@@ -375,7 +367,7 @@ final class Time implements JsonSerializable
      *
      * The duration will be added or subtract depending on its sign.
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
     public function sub(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
     {
@@ -432,7 +424,7 @@ final class Time implements JsonSerializable
     /**
      * Returns the signed difference between this instance and a specified time.
      *
-     * @throws InvalidDuration|TimeException
+     * @throws TokeiException
      */
     public function diff(Time|Event|NativeEvent|DateTimeInterface $other): Duration
     {
@@ -446,7 +438,7 @@ final class Time implements JsonSerializable
     /**
      * Returns the forward cyclic difference (24 wrap) between this instance and a specified time.
      *
-     * @throws InvalidDuration|TimeException
+     * @throws TokeiException
      */
     public function distance(Time|Event|NativeEvent|DateTimeInterface $other): Duration
     {

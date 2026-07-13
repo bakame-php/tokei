@@ -7,14 +7,11 @@ namespace Bakame\Tokei;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
-use ValueError;
 
 use function implode;
-use function in_array;
 use function intdiv;
 use function rtrim;
 use function str_pad;
-use function strtolower;
 
 use const STR_PAD_LEFT;
 
@@ -23,8 +20,10 @@ use const STR_PAD_LEFT;
  */
 final readonly class DurationParts
 {
-    public const COMPACT_DURATION = 'compact_duration';
-    public const COMPACT_TIME = 'compact_time';
+    private const int HOURS_PER_DAY = 24;
+    private const int HOURS_PER_WEEK = self::HOURS_PER_DAY * 7;
+    private const string COMPACT_DURATION = 'compact_duration';
+    private const string COMPACT_TIME = 'compact_time';
 
     public function __construct(
         public int $hours,
@@ -65,15 +64,32 @@ final readonly class DurationParts
     /**
      * @return non-empty-string
      */
-    public function format(DurationFormat $format, string $compactType): string
+    public function formatDuration(DurationFormat $format): string
     {
-        $type = strtolower($compactType);
-        in_array($type, [self::COMPACT_DURATION, self::COMPACT_TIME], true) || throw new ValueError('Invalid duration format: '.$compactType);
+        return $this->format($format, self::COMPACT_DURATION);
 
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    public function formatTime(TimeFormat $format): string
+    {
+        return $this->format(match ($format) {
+            TimeFormat::Clock => DurationFormat::Timer,
+            TimeFormat::Compact => DurationFormat::Compact,
+        }, self::COMPACT_TIME);
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private function format(DurationFormat $format, string $compactType): string
+    {
         return match ($format) {
-            DurationFormat::Iso8601 => $this->toIso8601(),
-            DurationFormat::Timer => $this->toTimer(),
-            DurationFormat::Compact => $this->toCompact($type),
+            DurationFormat::Iso8601 => $this->asIso8601Duration(),
+            DurationFormat::Timer => $this->asTimer(),
+            DurationFormat::Compact => $this->asCompact($compactType),
         };
     }
 
@@ -87,7 +103,7 @@ final readonly class DurationParts
      *
      * @return non-empty-string
      */
-    private function toTimer(): string
+    private function asTimer(): string
     {
         $pad = static fn (int $value, int $length): string => str_pad((string) $value, $length, '0', STR_PAD_LEFT);
         $formatted = $pad($this->hours, 2).':'.$pad($this->minutes, 2).':'.$pad($this->seconds, 2);
@@ -107,7 +123,7 @@ final readonly class DurationParts
      *
      * @return non-empty-string
      */
-    private function toIso8601(): string
+    private function asIso8601Duration(): string
     {
         $time = '';
         if (0 < $this->hours || 0 < $this->minutes || 0 < $this->seconds || 0 < $this->microseconds) {
@@ -139,20 +155,33 @@ final readonly class DurationParts
      * Format [-]xw xd xh xm xs xµs where x is a number.
      * @return non-empty-string
      */
-    private function toCompact(string $type): string
+    private function asCompact(string $type): string
     {
-        $isTimeType = self::COMPACT_TIME === $type;
+        $isClock = self::COMPACT_TIME === $type;
+        $totalHours = $this->hours;
+        $weeks = intdiv($totalHours, self::HOURS_PER_WEEK);
+        $remainingHours = $totalHours % self::HOURS_PER_WEEK;
+        $days = intdiv($remainingHours, self::HOURS_PER_DAY);
+        $hours = $remainingHours % self::HOURS_PER_DAY;
+
         $time = [];
-        $hours = $this->hours;
-        if (0 !== $hours || $isTimeType) {
+        if ($weeks > 0 && !$isClock) {
+            $time[] = $weeks.'w';
+        }
+
+        if ($days > 0 && !$isClock) {
+            $time[] = $days.'d';
+        }
+
+        if ($hours > 0 || $isClock) {
             $time[] = $hours.'h';
         }
 
-        if (0 !== $this->minutes || $isTimeType) {
+        if (0 !== $this->minutes || $isClock) {
             $time[] = $this->minutes.'m';
         }
 
-        if (0 !== $this->seconds || ($isTimeType && 0 !== $this->microseconds)) {
+        if (0 !== $this->seconds || ($isClock && 0 !== $this->microseconds)) {
             $time[] = $this->seconds.'s';
         }
 

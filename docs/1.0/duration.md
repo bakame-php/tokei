@@ -85,7 +85,7 @@ The returned string may not be compatible with PHP's `DateInterval` constructor 
 
 ```php
 $duration = Duration::of(hours: 25, seconds: 5); 
-$duration->format(DurationFormat::Iso8601); // returns 'PT25H5S'
+$duration->format(DurationFormat::Iso8601); // returns 'P1DT1H5S'
 $duration->format(DurationFormat::Timer);   // returns '25:00:05'
 ```
 
@@ -101,7 +101,7 @@ Last but not least a compact format more suited for debugging is returns using t
 
 ```php
 $duration = Duration::fromFormat('-PT25H0.5S', DurationFormat::Iso8601); 
-$duration->format(DurationFormat::Compact); // returns '25h500ms'
+$duration->format(DurationFormat::Compact); // returns '-1d1h500ms'
 ```
 
 The `Duration` class also allows conversion in time units and in `DateInterval` instances.

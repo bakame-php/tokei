@@ -324,7 +324,7 @@ final class Duration implements JsonSerializable
      */
     public function format(DurationFormat $format): string
     {
-        return $this->parts()->format($format, DurationParts::COMPACT_DURATION);
+        return $this->parts()->formatDuration($format);
     }
 
     /**
@@ -386,17 +386,17 @@ final class Duration implements JsonSerializable
      */
     public function add(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$duration): self
     {
-        $microseconds = $this->totalMicroseconds;
+        $totalMicroseconds = $this->totalMicroseconds;
         foreach ($duration as $item) {
             $value = InputNormalizer::duration($item)->totalMicroseconds;
-            if (($value > 0 && $microseconds > PHP_INT_MAX - $value) || ($value < 0 && $microseconds < PHP_INT_MIN - $value)) {
+            if (($value > 0 && $totalMicroseconds > PHP_INT_MAX - $value) || ($value < 0 && $totalMicroseconds < PHP_INT_MIN - $value)) {
                 throw InvalidDuration::dueToOverflow();
             }
 
-            $microseconds += $value;
+            $totalMicroseconds += $value;
         }
 
-        return $microseconds === $this->totalMicroseconds ? $this : new self($microseconds);
+        return $totalMicroseconds === $this->totalMicroseconds ? $this : new self($totalMicroseconds);
     }
 
     /**
@@ -404,17 +404,17 @@ final class Duration implements JsonSerializable
      */
     public function sub(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$other): self
     {
-        $microseconds = $this->totalMicroseconds;
+        $totalMicroseconds = $this->totalMicroseconds;
         foreach ($other as $item) {
             $value = InputNormalizer::duration($item)->totalMicroseconds;
-            if (($value > 0 && $microseconds > PHP_INT_MAX - $value) || ($value < 0 && $microseconds < PHP_INT_MIN - $value)) {
+            if (($value > 0 && $totalMicroseconds > PHP_INT_MAX - $value) || ($value < 0 && $totalMicroseconds < PHP_INT_MIN - $value)) {
                 throw InvalidDuration::dueToOverflow();
             }
 
-            $microseconds -= $value;
+            $totalMicroseconds -= $value;
         }
 
-        return $microseconds === $this->totalMicroseconds ? $this : new self($microseconds);
+        return $totalMicroseconds === $this->totalMicroseconds ? $this : new self($totalMicroseconds);
     }
 
     /**
