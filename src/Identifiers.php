@@ -62,6 +62,25 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
     }
 
     /**
+     * @return array{0: array{identifiers: list<non-empty-string>}, 1: array{}}
+     */
+    public function __serialize(): array
+    {
+        return [['identifiers' => $this->items], []];
+    }
+
+    /**
+     * @param array{0: array{identifiers: list<non-empty-string>}, 1: array{}} $data
+     *
+     * @throws TemporalException
+     */
+    public function __unserialize(array $data): void
+    {
+        [$properties] = $data;
+        $this->items = self::filterIdentifiers($properties['identifiers']);
+    }
+
+    /**
      * @param InputIdentifiersList|InputIdentifiers $data
      *
      * @throws TemporalException
@@ -271,24 +290,5 @@ final readonly class Identifiers implements Countable, IteratorAggregate, JsonSe
         }
 
         return new self(array_keys($found));
-    }
-
-    /**
-     * @return array{0: array{identifiers: list<non-empty-string>}, 1: array{}}
-     */
-    public function __serialize(): array
-    {
-        return [['identifiers' => $this->items], []];
-    }
-
-    /**
-     * @param array{0: array{identifiers: list<non-empty-string>}, 1: array{}} $data
-     *
-     * @throws TemporalException
-     */
-    public function __unserialize(array $data): void
-    {
-        [$properties] = $data;
-        $this->items = self::filterIdentifiers($properties['identifiers']);
     }
 }

@@ -13,6 +13,7 @@ use JsonSerializable;
 
 use function array_key_first;
 use function array_key_last;
+use function array_map;
 use function preg_match;
 use function str_pad;
 use function substr;
@@ -42,15 +43,10 @@ final class Time implements JsonSerializable
     /** @var non-negative-int */
     public readonly int $totalMicroseconds;
 
-    public int|float $totalMilliseconds { get => $this->in(Unit::Microsecond); }
-    public int|float $totalSeconds { get => $this->in(Unit::Second); }
-    public int|float $totalMinutes { get => $this->in(Unit::Minute); }
-    public int|float $totalHours { get => $this->in(Unit::Hour); }
-
-    public int $hour { get => $this->parts()->hours; }
-    public int $minute { get => $this->parts()->minutes; }
-    public int $second { get => $this->parts()->seconds; }
-    public int $microsecond { get => $this->parts()->microseconds; }
+    public int $hour { get => $this->parts()->hour; }
+    public int $minute { get => $this->parts()->minute; }
+    public int $second { get => $this->parts()->second; }
+    public int $microsecond { get => $this->parts()->microsecond; }
 
     /**
      * @param int $totalMicroseconds Time since midnight expressed in the library base unit
@@ -58,6 +54,23 @@ final class Time implements JsonSerializable
     private function __construct(int $totalMicroseconds)
     {
         $this->totalMicroseconds = UnitTransformer::wrap($totalMicroseconds, Unit::Day);
+    }
+
+    /**
+     * @return array{0: array{total_microseconds: int}, 1:array{}}
+     */
+    public function __serialize(): array
+    {
+        return [['total_microseconds' => $this->totalMicroseconds], []];
+    }
+
+    /**
+     * @param array{0: array{total_microseconds: int}, 1:array{}} $data
+     */
+    public function __unserialize(array $data): void
+    {
+        [$properties] = $data;
+        $this->totalMicroseconds = new self($properties['total_microseconds'])->totalMicroseconds;
     }
 
     private function parts(): DurationParts
@@ -80,10 +93,10 @@ final class Time implements JsonSerializable
         ($microsecond >= 0 && $microsecond < 1_000_000) || throw InvalidTime::dueToMalformedTime($microsecond, Unit::Microsecond);
 
         return new self(new DurationParts(
-            hours: $hour,
-            minutes: $minute,
-            seconds: $second,
-            microseconds: $microsecond,
+            hour: $hour,
+            minute: $minute,
+            second: $second,
+            microsecond: $microsecond,
             sign: 1,
         )->build());
     }
@@ -189,12 +202,15 @@ final class Time implements JsonSerializable
     {
         return self::fromDateTime(new DateTimeImmutable(timezone: InputNormalizer::timezone($timezone)));
     }
+
     /**
      * Returns the smallest instances among the given values.
      */
-    public static function minOf(self ...$times): self
+    public static function minOf(Time|Event|NativeEvent|DateTimeInterface ...$times): self
     {
         [] !== $times || throw new ArgumentCountError('minOf() expects at least one time');
+
+        $times = array_map(InputNormalizer::time(...), $times);
         usort($times, Time::compare(...));
 
         return $times[array_key_first($times)];
@@ -203,29 +219,14 @@ final class Time implements JsonSerializable
     /**
      * Returns the highest instances among the given values.
      */
-    public static function maxOf(self ...$times): self
+    public static function maxOf(Time|Event|NativeEvent|DateTimeInterface ...$times): self
     {
         [] !== $times || throw new ArgumentCountError('maxOf() expects at least one time');
+
+        $times = array_map(InputNormalizer::time(...), $times);
         usort($times, Time::compare(...));
 
         return $times[array_key_last($times)];
-    }
-
-    /**
-     * @return array{0: array{total_microseconds: int}, 1:array{}}
-     */
-    public function __serialize(): array
-    {
-        return [['total_microseconds' => $this->totalMicroseconds], []];
-    }
-
-    /**
-     * @param array{0: array{total_microseconds: int}, 1:array{}} $data
-     */
-    public function __unserialize(array $data): void
-    {
-        [$properties] = $data;
-        $this->totalMicroseconds = new self($properties['total_microseconds'])->totalMicroseconds;
     }
 
     /**
@@ -243,7 +244,7 @@ final class Time implements JsonSerializable
      */
     public function format(TimeFormat $format): string
     {
-        return $this->parts()->formatTime($format);
+        return $this->parts()->toTimeString($format);
     }
 
     /**
@@ -297,17 +298,11 @@ final class Time implements JsonSerializable
         return InputNormalizer::time($that)->totalMicroseconds <=> InputNormalizer::time($other)->totalMicroseconds;
     }
 
-    /**
-     * Tells whether this instance is less than the specified time.
-     */
     public function isBefore(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
         return 0 > Time::compare($this, $other);
     }
 
-    /**
-     * Tells whether this instance is less than or equal the specified time.
-     */
     public function isBeforeOrEqual(Time|Event|NativeEvent|DateTimeInterface $other): bool
     {
         return 0 >= Time::compare($this, $other);

@@ -38,29 +38,28 @@ $duration = Duration::fromFormat('P2025Y3DT25s', DurationFormat::Iso8601);
 ## Accessors
 
 Once instantiated you can access the duration properties directly.
-The object exposes a `sign` property which indicates if the original value was negative, 0 or positive.
-It provides `totalxxx` methods to get the based representation of the duration in different unit.
+The object exposes a `sign` property which indicates if the original value was negative, `0` or positive.
+It provides properties to access the duration component for a specific unit:
 
-- `totalMicroseconds`
-- `totalMilliseconds`
-- `totalSeconds`
-- `totalMinutes`
-- `totalHours`
+- `microsecond`
+- `second`
+- `minute`
+- `hour`
 
-As well as properties to access the duration component for a specific uinit
+As well as the `in()` method to access the total duration in a specific unit
 
 Depending on the duration, the returned value can be an integer or a float.
 
 ```php
 $duration = Duration::fromDateInterval(new DateInterval('PT23M3S'))
-$duration->totalMicroseconds; // returns 1383_000_000
-$duration->totalMinutes;      // returns 23.05
-$duration->sign;              // returns 1
-$duration->isZero() ;         // returns false     
-$duration->hour;              // returns 0
-$duration->minute;            // returns 23
-$duration->second;            // returns 3
-$duration->microsecond;       // returns 0
+$duration->in(Unit::Microsecond); // returns 1383_000_000
+$duration->in(Unit::Minutes);     // returns 23.05
+$duration->sign;                  // returns 1
+$duration->isZero() ;             // returns false     
+$duration->hour;                  // returns 0
+$duration->minute;                // returns 23
+$duration->second;                // returns 3
+$duration->microsecond;           // returns 0
 ```
 
 ## Formatting

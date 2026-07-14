@@ -65,10 +65,17 @@ Once the time instance is created, the timezone information is lost.</p>
 
 ## Accessors
 
-Once instantiated you can access each time component using the following methods
+Once instantiated you can access each time component  directly.
+
+- `microsecond`
+- `second`
+- `minute`
+- `hour`
+
+The `in()` method allow access the total duration in a specific unit
 
 ```php
-$time = Time::fromFormat("10:30:15.123456");
+$time = Time::fromFormat("10:30:15.123456", TimeFormat::Clock);
 $time->hour;
 // 10
 $time->minute;
@@ -77,13 +84,16 @@ $time->second;
 // 15
 $time->microsecond;
 // 123456
+$time->in(Unit::Minute);
+// 630.2520576
+$time->in(Unit::Second);
+// 37815.123456
 ```
 
 ## Formatting
 
 ```php
 Time::format(TimeFormat $format = TimeFormat::Clock): string
-Time::in(Unit $unit): int|float; // returns the time value according to the provided
 Time::toLocaleString(
     string $locale,
     DateTimeZone|string|null $timezone = null,
@@ -150,7 +160,7 @@ $time->format();
 // "00:15:00"
 
 // setting the hour to
-$time = Time::noon()->with(hour: 2);
+$time = Time::noon()->with(hour: 2, minute: 15);
 $time->format();
 // "02:15:00"
 
@@ -162,7 +172,7 @@ To simplify reasoning around time you can also truncate or round its value to on
 the unit declare on the `Bakame\Tokei\Unit` enum
 
 ```php
-$t = Time::sinceMidnight(3_150_000_000, Unit::Microsecond);
+$t = Time::sinceMidnight(Duration::of(microseconds: 3_150_000_000));
 $t->format(); // returns "00:52:30"
 $t->roundTo(Unit::Minutes, SnapMode::Floor)->format(); // returns "00:52:00"
 $t->roundTo(Unit::Minutes, SnapMode::Nearest)->format();  // returns "00:53:00"

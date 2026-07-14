@@ -18,16 +18,33 @@ final class Event implements HasIdentifiers, JsonSerializable
     }
 
     /**
+     * @return array{0: array{at: Time, identifiers: Identifiers}, 1: array{}}
+     */
+    public function __serialize(): array
+    {
+        return [['at' => $this->at, 'identifiers' => $this->identifiers], []];
+    }
+
+    /**
+     * @param array{0: array{at: Time, identifiers: Identifiers}, 1: array{}} $data
+     */
+    public function __unserialize(array $data): void
+    {
+        [$properties] = $data;
+        $this->at = $properties['at'];
+        $this->identifiers = $properties['identifiers'];
+    }
+
+    /**
      * @param Identifiers|HasIdentifiers|non-empty-string $identifier
      *
-     * @throws TemporalException
+     * @throws TokeiException
      */
-    public static function at(Time|NativeEvent|DateTimeInterface|Event $time, Identifiers|HasIdentifiers|string $identifier = new Identifiers()): self
-    {
-        return new self(
-            InputNormalizer::time($time),
-            InputNormalizer::identifiers($identifier),
-        );
+    public static function at(
+        Time|NativeEvent|DateTimeInterface|Event $time,
+        Identifiers|HasIdentifiers|string $identifier = new Identifiers()
+    ): self {
+        return new self(InputNormalizer::time($time), InputNormalizer::identifiers($identifier));
     }
 
     /**
@@ -96,23 +113,5 @@ final class Event implements HasIdentifiers, JsonSerializable
     public function toNative(DateTimeInterface $reference): NativeEvent
     {
         return new NativeEvent($this->at->applyTo($reference), $this->identifiers);
-    }
-
-    /**
-     * @return array{0: array{at: Time, identifiers: Identifiers}, 1: array{}}
-     */
-    public function __serialize(): array
-    {
-        return [['at' => $this->at, 'identifiers' => $this->identifiers], []];
-    }
-
-    /**
-     * @param array{0: array{at: Time, identifiers: Identifiers}, 1: array{}} $data
-     */
-    public function __unserialize(array $data): void
-    {
-        [$properties] = $data;
-        $this->at = $properties['at'];
-        $this->identifiers = $properties['identifiers'];
     }
 }

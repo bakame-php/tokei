@@ -29,6 +29,23 @@ final class EventSet implements TemporalSet
         $this->items = self::sortChronologically($items);
     }
 
+    /**
+     * @return array{0: array{events: list<Event>}, 1: array{}}
+     */
+    public function __serialize(): array
+    {
+        return [['events' => $this->items], []];
+    }
+
+    /**
+     * @param array{0: array{events: list<Event>}, 1: array{}} $data
+     */
+    public function __unserialize(array $data): void
+    {
+        [$properties] = $data;
+        $this->items = $properties['events'];
+    }
+
     public static function fromTasks(TaskSet $tasks, Bound $anchor = Bound::Start): self
     {
         return new self(...$tasks->map(fn (Task $task): Event => Event::fromTask($task, $anchor)));
@@ -461,22 +478,5 @@ final class EventSet implements TemporalSet
     public function toNative(DateTimeInterface $reference): array
     {
         return array_map(fn (Event $event): NativeEvent => $event->toNative($reference), $this->items);
-    }
-
-    /**
-     * @return array{0: array{events: list<Event>}, 1: array{}}
-     */
-    public function __serialize(): array
-    {
-        return [['events' => $this->items], []];
-    }
-
-    /**
-     * @param array{0: array{events: list<Event>}, 1: array{}} $data
-     */
-    public function __unserialize(array $data): void
-    {
-        [$properties] = $data;
-        $this->items = $properties['events'];
     }
 }

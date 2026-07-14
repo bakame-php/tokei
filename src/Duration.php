@@ -12,6 +12,7 @@ use JsonSerializable;
 
 use function array_key_first;
 use function array_key_last;
+use function array_map;
 use function intdiv;
 use function preg_match;
 use function str_pad;
@@ -61,18 +62,13 @@ final class Duration implements JsonSerializable
     $@x';
 
     private ?DurationParts $parts = null;
-    public readonly int $sign;
     public readonly int $totalMicroseconds;
 
-    public int|float $totalMilliseconds { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Millisecond); }
-    public int|float $totalSeconds { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Second); }
-    public int|float $totalMinutes { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Minute); }
-    public int|float $totalHours { get => UnitTransformer::fromMicroseconds($this->totalMicroseconds, Unit::Hour); }
-
-    public int $microsecond { get => $this->parts()->microseconds; }
-    public int $second { get => $this->parts()->seconds; }
-    public int $minute { get => $this->parts()->minutes; }
-    public int $hour { get => $this->parts()->hours; }
+    public int $microsecond { get => $this->parts()->microsecond; }
+    public int $second { get => $this->parts()->second; }
+    public int $minute { get => $this->parts()->minute; }
+    public int $hour { get => $this->parts()->hour; }
+    public int $sign { get => $this->parts()->sign; }
 
     /**
      * @param int $totalMicroseconds expressed in microseconds
@@ -84,7 +80,25 @@ final class Duration implements JsonSerializable
         PHP_INT_MIN !== $totalMicroseconds || throw InvalidDuration::dueToOverflow();
 
         $this->totalMicroseconds = $totalMicroseconds;
-        $this->sign = $this->totalMicroseconds <=> 0;
+    }
+
+    /**
+     * @return array{0: array{total_microseconds: int}, 1:array{}}
+     */
+    public function __serialize(): array
+    {
+        return [['total_microseconds' => $this->totalMicroseconds], []];
+    }
+
+    /**
+     * @param array{0: array{total_microseconds: int}, 1: array{}} $data
+     *
+     * @throws TokeiException
+     */
+    public function __unserialize(array $data): void
+    {
+        [$properties] = $data;
+        $this->totalMicroseconds = new self($properties['total_microseconds'])->totalMicroseconds;
     }
 
     private function parts(): DurationParts
@@ -108,10 +122,10 @@ final class Duration implements JsonSerializable
 
         return new self(
             new DurationParts(
-                hours: (($weeks * 7) + $days) * 24 + $hours,
-                minutes: $minutes,
-                seconds: $seconds,
-                microseconds: UnitTransformer::toMicroseconds($milliseconds, Unit::Millisecond) + $microseconds,
+                hour: (($weeks * 7) + $days) * 24 + $hours,
+                minute: $minutes,
+                second: $seconds,
+                microsecond: UnitTransformer::toMicroseconds($milliseconds, Unit::Millisecond) + $microseconds,
                 sign: 1,
             )->build()
         );
@@ -136,10 +150,10 @@ final class Duration implements JsonSerializable
 
         return new self(
             new DurationParts(
-                hours: ($days) * 24 + $interval->h,
-                minutes: $interval->i,
-                seconds: $interval->s,
-                microseconds: UnitTransformer::toMicroseconds($interval->f, Unit::Second),
+                hour: ($days) * 24 + $interval->h,
+                minute: $interval->i,
+                second: $interval->s,
+                microsecond: UnitTransformer::toMicroseconds($interval->f, Unit::Second),
                 sign: 1 === $interval->invert ? -1 : 1,
             )->build()
         );
@@ -176,10 +190,10 @@ final class Duration implements JsonSerializable
 
         return new self(
             new DurationParts(
-                hours: (int)$parts['hours'],
-                minutes: $minutes,
-                seconds: $seconds,
-                microseconds: $microseconds,
+                hour: (int)$parts['hours'],
+                minute: $minutes,
+                second: $seconds,
+                microsecond: $microseconds,
                 sign: '-' === $parts['sign'] ? -1 : 1,
             )->build()
         );
@@ -203,10 +217,10 @@ final class Duration implements JsonSerializable
 
         return new self(
             new DurationParts(
-                hours: (int) ($parts['hours'] ?? 0) + ((((int)($parts['weeks'] ?? 0) * 7) + (int)($parts['days'] ?? 0)) * 24),
-                minutes: (int) ($parts['minutes'] ?? 0),
-                seconds: (int) ($parts['seconds'] ?? 0),
-                microseconds: $fractionValue,
+                hour: (int) ($parts['hours'] ?? 0) + ((((int)($parts['weeks'] ?? 0) * 7) + (int)($parts['days'] ?? 0)) * 24),
+                minute: (int) ($parts['minutes'] ?? 0),
+                second: (int) ($parts['seconds'] ?? 0),
+                microsecond: $fractionValue,
                 sign: '-' === ($parts['sign'] ?? '') ? -1 : 1,
             )->build()
         );
@@ -232,10 +246,10 @@ final class Duration implements JsonSerializable
 
         return new self(
             new DurationParts(
-                hours: (int)($parts['hours'] ?? 0) + ((((int)($parts['weeks'] ?? 0) * 7) + (int)($parts['days'] ?? 0)) * 24),
-                minutes: (int)($parts['minutes'] ?? 0),
-                seconds: (int)($parts['seconds'] ?? 0),
-                microseconds: (int) (str_pad($parts['fractions'] ?? '0', 6, '0')),
+                hour: (int)($parts['hours'] ?? 0) + ((((int)($parts['weeks'] ?? 0) * 7) + (int)($parts['days'] ?? 0)) * 24),
+                minute: (int)($parts['minutes'] ?? 0),
+                second: (int)($parts['seconds'] ?? 0),
+                microsecond: (int) (str_pad($parts['fractions'] ?? '0', 6, '0')),
                 sign: '-' === ($parts['sign'] ?? '') ? -1 : 1,
             )->build(),
         );
@@ -277,9 +291,11 @@ final class Duration implements JsonSerializable
     /**
      * Returns the shortest instance from a collection of instances.
      */
-    public static function minOf(self ...$durations): self
+    public static function minOf(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$durations): self
     {
         [] !== $durations || throw new ArgumentCountError('minOf() expects at least one duration.');
+
+        $durations = array_map(InputNormalizer::duration(...), $durations);
         usort($durations, Duration::compare(...));
 
         return $durations[array_key_first($durations)];
@@ -288,33 +304,14 @@ final class Duration implements JsonSerializable
     /**
      * Returns the longest instance from a collection of instances.
      */
-    public static function maxOf(self ...$durations): self
+    public static function maxOf(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$durations): self
     {
         [] !== $durations || throw new ArgumentCountError('maxOf() expects at least one duration.');
+
+        $durations = array_map(InputNormalizer::duration(...), $durations);
         usort($durations, Duration::compare(...));
 
         return $durations[array_key_last($durations)];
-    }
-
-    /**
-     * @return array{0: array{total_microseconds: int}, 1:array{}}
-     */
-    public function __serialize(): array
-    {
-        return [['total_microseconds' => $this->totalMicroseconds], []];
-    }
-
-    /**
-     * @param array{0: array{total_microseconds: int}, 1: array{}} $data
-     *
-     * @throws TokeiException
-     */
-    public function __unserialize(array $data): void
-    {
-        [$properties] = $data;
-        $duration = new self($properties['total_microseconds']);
-        $this->totalMicroseconds = $duration->totalMicroseconds;
-        $this->sign = $duration->sign;
     }
 
     /**
@@ -324,7 +321,7 @@ final class Duration implements JsonSerializable
      */
     public function format(DurationFormat $format): string
     {
-        return $this->parts()->formatDuration($format);
+        return $this->parts()->toDurationString($format);
     }
 
     /**
@@ -333,6 +330,14 @@ final class Duration implements JsonSerializable
     public function toDateInterval(?DateTimeInterface $relativeTo = null): DateInterval
     {
         return $this->parts()->toDateInterval($relativeTo);
+    }
+
+    /**
+     * Returns the time as the number of unit of time since midnight.
+     */
+    public function in(Unit $unit): int|float
+    {
+        return UnitTransformer::fromMicroseconds($this->totalMicroseconds, $unit);
     }
 
     /**
