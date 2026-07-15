@@ -156,7 +156,7 @@ final class Time implements JsonSerializable
     /**
      * Returns a new instance from a number of unit of time since midnight.
      */
-    public static function sinceMidnight(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    public static function sinceMidnight(Duration|DateInterval|Interval|Task $duration): self
     {
         return new self(InputNormalizer::duration($duration)->totalMicroseconds);
     }
@@ -206,7 +206,7 @@ final class Time implements JsonSerializable
     /**
      * Returns the smallest instances among the given values.
      */
-    public static function minOf(Time|Event|NativeEvent|DateTimeInterface ...$times): self
+    public static function minOf(Time|Event|DateTimeInterface ...$times): self
     {
         [] !== $times || throw new ArgumentCountError('minOf() expects at least one time');
 
@@ -219,7 +219,7 @@ final class Time implements JsonSerializable
     /**
      * Returns the highest instances among the given values.
      */
-    public static function maxOf(Time|Event|NativeEvent|DateTimeInterface ...$times): self
+    public static function maxOf(Time|Event|DateTimeInterface ...$times): self
     {
         [] !== $times || throw new ArgumentCountError('maxOf() expects at least one time');
 
@@ -292,33 +292,33 @@ final class Time implements JsonSerializable
      * @return int<-1, 1> If this time is before, on, or after the given time.
      */
     public static function compare(
-        Time|Event|NativeEvent|DateTimeInterface $that,
-        Time|Event|NativeEvent|DateTimeInterface $other
+        Time|Event|DateTimeInterface $that,
+        Time|Event|DateTimeInterface $other
     ): int {
         return InputNormalizer::time($that)->totalMicroseconds <=> InputNormalizer::time($other)->totalMicroseconds;
     }
 
-    public function isBefore(Time|Event|NativeEvent|DateTimeInterface $other): bool
+    public function isBefore(Time|Event|DateTimeInterface $other): bool
     {
         return 0 > Time::compare($this, $other);
     }
 
-    public function isBeforeOrEqual(Time|Event|NativeEvent|DateTimeInterface $other): bool
+    public function isBeforeOrEqual(Time|Event|DateTimeInterface $other): bool
     {
         return 0 >= Time::compare($this, $other);
     }
 
-    public function equals(Time|Event|NativeEvent|DateTimeInterface $other): bool
+    public function equals(Time|Event|DateTimeInterface $other): bool
     {
         return 0 === Time::compare($this, $other);
     }
 
-    public function isAfterOrEqual(Time|Event|NativeEvent|DateTimeInterface $other): bool
+    public function isAfterOrEqual(Time|Event|DateTimeInterface $other): bool
     {
         return 0 <= Time::compare($this, $other);
     }
 
-    public function isAfter(Time|Event|NativeEvent|DateTimeInterface $other): bool
+    public function isAfter(Time|Event|DateTimeInterface $other): bool
     {
         return 0 < Time::compare($this, $other);
     }
@@ -330,7 +330,7 @@ final class Time implements JsonSerializable
      *
      * @throws InvalidTime
      */
-    public function clamp(Time|Event|NativeEvent|DateTimeInterface $min, Time|Event|NativeEvent|DateTimeInterface $max): self
+    public function clamp(Time|Event|DateTimeInterface $min, Time|Event|DateTimeInterface $max): self
     {
         $min = InputNormalizer::time($min);
         $max = InputNormalizer::time($max);
@@ -350,7 +350,7 @@ final class Time implements JsonSerializable
      *
      * @throws TokeiException
      */
-    public function add(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    public function add(Duration|DateInterval|Interval|Task $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -364,7 +364,7 @@ final class Time implements JsonSerializable
      *
      * @throws TokeiException
      */
-    public function sub(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    public function sub(Duration|DateInterval|Interval|Task $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -421,7 +421,7 @@ final class Time implements JsonSerializable
      *
      * @throws TokeiException
      */
-    public function diff(Time|Event|NativeEvent|DateTimeInterface $other): Duration
+    public function diff(Time|Event|DateTimeInterface $other): Duration
     {
         $duration = InputNormalizer::time($other)->totalMicroseconds - $this->totalMicroseconds;
 
@@ -435,7 +435,7 @@ final class Time implements JsonSerializable
      *
      * @throws TokeiException
      */
-    public function distance(Time|Event|NativeEvent|DateTimeInterface $other): Duration
+    public function distance(Time|Event|DateTimeInterface $other): Duration
     {
         return Duration::of(microseconds: UnitTransformer::wrap(
             InputNormalizer::time($other)->totalMicroseconds - $this->totalMicroseconds,

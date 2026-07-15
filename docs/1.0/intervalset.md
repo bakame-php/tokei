@@ -63,14 +63,6 @@ IntervalSet::formatAll(
 ): list<string> //all interval are converted to their Interval::format string representation
 ```
 
-## Interacting with PHP's native Date API
-
-```php
-IntervalSet::toNative(DateTimeInterface $reference): array
-```
-
-Returns the list of  `Interval` instances converted using their `Interval::toNative` method.
-
 ## Temporal selection methods
 
 ```php

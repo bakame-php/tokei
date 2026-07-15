@@ -15,7 +15,6 @@ A time can be expressed using any of the following types:
 - `Time`
 - `Event`
 - `DateTimeInterface`
-- `NativeEvent`
 
 Example:
 
@@ -47,8 +46,6 @@ A duration can be expressed using any of the following types:
 - `DateInterval`
 - `Interval`
 - `Task`
-- `NativeInterval`
-- `NativeTask`
 
 Example:
 
@@ -87,8 +84,6 @@ An interval can be expressed using any of the following types:
 
 - `Interval`
 - `Task`
-- `NativeInterval`
-- `NativeTask`
 
 All remarks related to `DateTimeInterface` and `DateInterval` usages are
 applicable for interval types.
@@ -113,41 +108,25 @@ Timezone can be expressed using:
 
 ## Argument rules
 
-| Concept     | Accepted representations                                                       |
-|-------------|--------------------------------------------------------------------------------|
-| Time	       | `Time`, `Event`, `DateTimeInterface`, `NativeEvent`                            | 
-| Duration    | `Duration`, `DateInterval`, `Interval`, `Task`, `NativeInterval`, `NativeTask` |       
-| Interval    | `Interval`, `Task`, `NativeInterval`, `NativeTask`                             |   
-| Identifiers | `Identifiers`, `HasIdentifiers`, `string`, `iterable`                          |   
-| Timezone    | `DateTimeZone`, `DateTimeInterface`, `string`,                                 |
+| Concept     | Accepted representations                              |
+|-------------|-------------------------------------------------------|
+| Time	       | `Time`, `Event`, `DateTimeInterface`                  | 
+| Duration    | `Duration`, `DateInterval`, `Interval`, `Task`        |       
+| Interval    | `Interval`, `Task`                                    |   
+| Identifiers | `Identifiers`, `HasIdentifiers`, `string`, `iterable` |   
+| Timezone    | `DateTimeZone`, `DateTimeInterface`, `string`,        |
 
 Unless stated otherwise, any method accepting a temporal
 primitive also accepts any compatible representation of that primitive.
 
-## Time vs Native representations
+## Time representations
 
-`Tokei` distinguishes between two temporal domains:
-
-### Time-based types
+`Tokei` Time-based types represent time-of-day semantics only.  
+Date and timezone information are not part of their model.
 
 - `Time`
 - `Event`
 - `Interval`
 - `Task`
 
-These types represent time-of-day semantics only.  
-Date and timezone information are not part of their model.
-
-### Native types
-
-- `NativeEvent`
-- `NativeInterval`
-- `NativeTask`
-- `DateTimeInterface`
-
-These types represent real-world instants and preserve date and timezone information.
-
-### Conversion rule
-
 When a `DateTimeInterface` is used in a Time-based context, only the time-of-day is used.
-When used in a Native context, the full datetime (date + timezone) is preserved.

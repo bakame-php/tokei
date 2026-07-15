@@ -7,7 +7,6 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 ### Added
 
 - `Event`, `Task`, `EventSet`, `TaskSet`, `Identifiers` to work with identified Temporal Values.
-- `NativeInterval`, `NativeEvent`, `NativeTask` to allow better conversion to PHP Native Date API.
 - `IntervalSet::each`
 - `IntervalSet::transform`
 - `IntervalSet::chronological`

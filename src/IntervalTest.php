@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
-use DateInterval;
-use DateTimeImmutable;
-use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -886,18 +883,6 @@ final class IntervalTest extends TestCase
         self::assertTrue($interval->duration->equals(Duration::of(hours: 23)));
         self::assertEquals($interval->start, Time::at(hour: 11));
         self::assertEquals($interval->end, Time::at(hour: 10, minute: 00));
-    }
-
-    public function test_it_can_be_converted_to_using_php_native_objects(): void
-    {
-        $class = new class () extends DateTimeImmutable {};
-        $timeZoneName = 'Africa/Brazzaville';
-
-        $interval = Interval::between(Time::noon(), Time::at(18))->toNative(new $class('2025-03-02 23:12:59', new DateTimeZone($timeZoneName)));
-        self::assertInstanceOf($class::class, $interval->start);
-        self::assertSame($interval->start->getTimezone()->getName(), $timeZoneName);
-        self::assertSame('2025-03-02 12:00:00', $interval->start->format('Y-m-d H:i:s'));
-        self::assertEquals(new DateInterval('PT6H'), $interval->duration());
     }
 
     public function test_splitting_is_coherent(): void

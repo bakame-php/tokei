@@ -291,7 +291,7 @@ final class Duration implements JsonSerializable
     /**
      * Returns the shortest instance from a collection of instances.
      */
-    public static function minOf(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$durations): self
+    public static function minOf(Duration|DateInterval|Interval|Task ...$durations): self
     {
         [] !== $durations || throw new ArgumentCountError('minOf() expects at least one duration.');
 
@@ -304,7 +304,7 @@ final class Duration implements JsonSerializable
     /**
      * Returns the longest instance from a collection of instances.
      */
-    public static function maxOf(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$durations): self
+    public static function maxOf(Duration|DateInterval|Interval|Task ...$durations): self
     {
         [] !== $durations || throw new ArgumentCountError('maxOf() expects at least one duration.');
 
@@ -389,7 +389,7 @@ final class Duration implements JsonSerializable
     /**
      * @throws TokeiException
      */
-    public function add(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$duration): self
+    public function add(Duration|DateInterval|Interval|Task ...$duration): self
     {
         $totalMicroseconds = $this->totalMicroseconds;
         foreach ($duration as $item) {
@@ -407,7 +407,7 @@ final class Duration implements JsonSerializable
     /**
      * @throws TokeiException
      */
-    public function sub(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask ...$other): self
+    public function sub(Duration|DateInterval|Interval|Task ...$other): self
     {
         $totalMicroseconds = $this->totalMicroseconds;
         foreach ($other as $item) {
@@ -430,18 +430,18 @@ final class Duration implements JsonSerializable
      * @return int<-1, 1> If this duration is shorter, equal, or longer than the given duration.
      */
     public static function compare(
-        Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $that,
-        Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other
+        Duration|DateInterval|Interval|Task $that,
+        Duration|DateInterval|Interval|Task $other
     ): int {
         return InputNormalizer::duration($that)->totalMicroseconds <=> InputNormalizer::duration($other)->totalMicroseconds;
     }
 
-    public function isLongerThan(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
+    public function isLongerThan(Duration|DateInterval|Interval|Task $other): bool
     {
         return 0 < self::compare($this, $other);
     }
 
-    public function isLongerThanOrEqual(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
+    public function isLongerThanOrEqual(Duration|DateInterval|Interval|Task $other): bool
     {
         return 0 <= self::compare($this, $other);
     }
@@ -449,17 +449,17 @@ final class Duration implements JsonSerializable
     /**
      * Tells whether this instance is equal to the specified duration.
      */
-    public function equals(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
+    public function equals(Duration|DateInterval|Interval|Task $other): bool
     {
         return 0 === self::compare($this, $other);
     }
 
-    public function isShorterThanOrEqual(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
+    public function isShorterThanOrEqual(Duration|DateInterval|Interval|Task $other): bool
     {
         return 0 >= self::compare($this, $other);
     }
 
-    public function isShorterThan(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $other): bool
+    public function isShorterThan(Duration|DateInterval|Interval|Task $other): bool
     {
         return 0 > self::compare($this, $other);
     }
@@ -472,8 +472,8 @@ final class Duration implements JsonSerializable
      * @throws InvalidDuration
      */
     public function clamp(
-        Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $min,
-        Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $max
+        Duration|DateInterval|Interval|Task $min,
+        Duration|DateInterval|Interval|Task $max
     ): self {
         $max = InputNormalizer::duration($max);
         $min = InputNormalizer::duration($min);
@@ -531,7 +531,7 @@ final class Duration implements JsonSerializable
      *
      * @throws TokeiException
      */
-    public function dividedInto(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): DivisionResult
+    public function dividedInto(Duration|DateInterval|Interval|Task $duration): DivisionResult
     {
         $duration = InputNormalizer::duration($duration);
 

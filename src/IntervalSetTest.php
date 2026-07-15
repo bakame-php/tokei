@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
-use DateInterval;
-use DateTimeImmutable;
-use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use SortDirection;
@@ -526,21 +523,6 @@ final class IntervalSetTest extends TestCase
     public function test_json_encoded_set(): void
     {
         self::assertStringContainsString('"12:00:00/PT6H"', (string) json_encode(Business::shifts(), JSON_UNESCAPED_SLASHES));
-    }
-
-    public function test_native_conversion(): void
-    {
-        $class = new class () extends DateTimeImmutable {};
-        $timeZoneName = 'Africa/Brazzaville';
-
-        $converted = Business::shifts()->toNative(new $class('2025-03-02 23:12:59', new DateTimeZone($timeZoneName)));
-        self::assertCount(5, $converted);
-
-        $interval = $converted[1];
-        self::assertInstanceOf($class::class, $interval->start);
-        self::assertSame($interval->start->getTimezone()->getName(), $timeZoneName);
-        self::assertSame('2025-03-02 12:00:00', $interval->start->format('Y-m-d H:i:s'));
-        self::assertEquals(new DateInterval('PT6H'), $interval->duration());
     }
 
     public function test_it_can_be_iterated_with_foreach(): void

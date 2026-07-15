@@ -50,12 +50,6 @@ TaskSet::last(): ?Task
 TaskSet::formatAll(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): array
 ```
 
-## Interacting with PHP's native Date API
-
-```php
-TaskSet::toNative(DateTimeInterface $reference): array
-```
-
 ## Temporal selection methods
 
 ```php

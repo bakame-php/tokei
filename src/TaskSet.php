@@ -27,7 +27,7 @@ final class TaskSet implements TemporalSet
     /**
      * @throws TokeiException
      */
-    public function __construct(Task|NativeTask|TaskSet ...$items)
+    public function __construct(Task|TaskSet ...$items)
     {
         $this->items = self::sortChronologically($items);
     }
@@ -52,7 +52,7 @@ final class TaskSet implements TemporalSet
     /**
      * @throws TokeiException
      */
-    public static function fromEvents(EventSet $items, Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration, Bound $from = Bound::Start): self
+    public static function fromEvents(EventSet $items, Duration|DateInterval|Interval|Task $duration, Bound $from = Bound::Start): self
     {
         return new self(...$items->map(fn (Event $event): Task => Task::fromEvent($event, $duration, $from)));
     }
@@ -83,7 +83,7 @@ final class TaskSet implements TemporalSet
     }
 
     /**
-     * @param array<Task|TaskSet|NativeTask> $items
+     * @param array<Task|TaskSet> $items
      *
      * @throws TokeiException
      *
@@ -95,11 +95,6 @@ final class TaskSet implements TemporalSet
         foreach ($items as $task) {
             if ($task instanceof TaskSet) {
                 $res = [...$res, ...$task->items];
-                continue;
-            }
-
-            if ($task instanceof NativeTask) {
-                $res[] = Task::fromNative($task);
                 continue;
             }
 
@@ -125,14 +120,6 @@ final class TaskSet implements TemporalSet
     public function formatAll(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): array
     {
         return array_map(static fn (Task $item): string => $item->format($format, $unit), $this->items);
-    }
-
-    /**
-     * @return list<NativeTask>
-     */
-    public function toNative(DateTimeInterface $reference): array
-    {
-        return array_map(static fn (Task $item): NativeTask => $item->toNative($reference), $this->items);
     }
 
     public function duration(): Duration
@@ -263,17 +250,17 @@ final class TaskSet implements TemporalSet
         return $this->engine()->every($predicate);
     }
 
-    public function next(Time|Event|NativeEvent|DateTimeInterface $atOrAfter, SearchMode $mode, Bound $using = Bound::Start): self
+    public function next(Time|Event|DateTimeInterface $atOrAfter, SearchMode $mode, Bound $using = Bound::Start): self
     {
         return new self(...$this->engine($using)->next($atOrAfter, $mode));
     }
 
-    public function previous(Time|Event|NativeEvent|DateTimeInterface $before, SearchMode $mode, Bound $using = Bound::Start): self
+    public function previous(Time|Event|DateTimeInterface $before, SearchMode $mode, Bound $using = Bound::Start): self
     {
         return new self(...$this->engine($using)->previous($before, $mode));
     }
 
-    public function nearest(Time|Event|NativeEvent|DateTimeInterface $around, Bound $using = Bound::Start): self
+    public function nearest(Time|Event|DateTimeInterface $around, Bound $using = Bound::Start): self
     {
         return new self(...$this->engine($using)->nearest($around));
     }
@@ -334,7 +321,7 @@ final class TaskSet implements TemporalSet
         return $result;
     }
 
-    public function add(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    public function add(Duration|DateInterval|Interval|Task $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -343,7 +330,7 @@ final class TaskSet implements TemporalSet
             : $this->transform(static fn (Task $task): Task => $task->during($task->interval->add($duration)));
     }
 
-    public function sub(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    public function sub(Duration|DateInterval|Interval|Task $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -436,27 +423,27 @@ final class TaskSet implements TemporalSet
         return new self(...$intervals);
     }
 
-    public function abuts(Interval|Task|NativeInterval|NativeTask $interval): self
+    public function abuts(Interval|Task $interval): self
     {
         return $this->filter(fn (Task $task): bool => $task->interval->abuts($interval));
     }
 
-    public function overlaps(Interval|Task|NativeInterval|NativeTask $interval): self
+    public function overlaps(Interval|Task $interval): self
     {
         return $this->filter(fn (Task $task): bool => $task->interval->overlaps($interval));
     }
 
-    public function contains(Interval|Task|NativeInterval|NativeTask $interval): self
+    public function contains(Interval|Task $interval): self
     {
         return $this->filter(fn (Task $task): bool => $task->interval->contains($interval));
     }
 
-    public function includes(Time|Event|NativeEvent|DateTimeInterface $time): self
+    public function includes(Time|Event|DateTimeInterface $time): self
     {
         return $this->filter(fn (Task $task): bool => $task->interval->includes($time));
     }
 
-    public function outsideOf(Time|Event|NativeEvent|DateTimeInterface $time): self
+    public function outsideOf(Time|Event|DateTimeInterface $time): self
     {
         return $this->filter(fn (Task $task): bool => !$task->interval->includes($time));
     }
@@ -471,7 +458,7 @@ final class TaskSet implements TemporalSet
     }
 
     /**
-     * @param iterable<TaskSet|Task|NativeTask> $sets
+     * @param iterable<TaskSet|Task> $sets
      *
      * @throws TokeiException
      */

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Bakame\Tokei;
 
 use DateInterval;
-use DateTimeInterface;
 use JsonSerializable;
 
 use function explode;
@@ -41,7 +40,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
      *
      * @throws TemporalException
      */
-    public static function for(Interval|NativeInterval|Task|NativeTask $interval, Identifiers|HasIdentifiers|string $identifier = new Identifiers()): self
+    public static function for(Interval|Task $interval, Identifiers|HasIdentifiers|string $identifier = new Identifiers()): self
     {
         return new self(
             InputNormalizer::interval($interval),
@@ -49,7 +48,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
         );
     }
 
-    public static function fromEvent(Event $event, Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration, Bound $from): self
+    public static function fromEvent(Event $event, Duration|DateInterval|Interval|Task $duration, Bound $from): self
     {
         return self::for(
             Bound::Start === $from
@@ -91,7 +90,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
             && $this->identifiers->equals($other);
     }
 
-    public function during(Task|Interval|NativeInterval|NativeTask $interval): self
+    public function during(Task|Interval $interval): self
     {
         $interval = InputNormalizer::interval($interval);
 
@@ -108,15 +107,5 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
         $identifier = InputNormalizer::identifiers($identifier);
 
         return $identifier->equals($this->identifiers) ? $this : new self($this->interval, $identifier);
-    }
-
-    public function toNative(DateTimeInterface $reference): NativeTask
-    {
-        return new NativeTask($this->interval->toNative($reference), $this->identifiers);
-    }
-
-    public static function fromNative(NativeTask $task): self
-    {
-        return new self(Interval::fromNative($task->interval), $task->identifiers);
     }
 }

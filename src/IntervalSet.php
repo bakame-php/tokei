@@ -34,7 +34,7 @@ final class IntervalSet implements TemporalSet
     /**
      * @throws InvalidDuration
      */
-    public function __construct(Interval|NativeInterval|IntervalSet|Task|NativeTask|TaskSet ...$items)
+    public function __construct(Interval|IntervalSet|Task|TaskSet ...$items)
     {
         $this->items = self::flatten(...$items);
         $this->duration = Duration::zero()->add(...$this->items);
@@ -81,7 +81,7 @@ final class IntervalSet implements TemporalSet
      *
      * @throws InvalidDuration
      */
-    public static function chronological(Interval|NativeInterval|IntervalSet|Task|NativeTask|TaskSet ...$items): self
+    public static function chronological(Interval|IntervalSet|Task|TaskSet ...$items): self
     {
         return new self(...$items)->sorted();
     }
@@ -127,14 +127,6 @@ final class IntervalSet implements TemporalSet
         return array_map(static fn (Interval $item): string => $item->format($format, $unit), $this->items);
     }
 
-    /**
-     * @return list<NativeInterval>
-     */
-    public function toNative(DateTimeInterface $reference): array
-    {
-        return array_map(static fn (Interval $item): NativeInterval => $item->toNative($reference), $this->items);
-    }
-
     public function isEmpty(): bool
     {
         return [] === $this->items;
@@ -170,7 +162,7 @@ final class IntervalSet implements TemporalSet
     /**
      * Tells whether the given interval is present in the set.
      */
-    public function has(Interval|Task|NativeTask|NativeInterval ...$items): bool
+    public function has(Interval|Task ...$items): bool
     {
         $check = new self(...$items);
 
@@ -178,12 +170,12 @@ final class IntervalSet implements TemporalSet
             && $check->every(fn (Interval $item): bool => null !== $this->indexOf($item));
     }
 
-    public function indexOf(Interval|NativeInterval|Task|NativeTask $interval): ?int
+    public function indexOf(Interval|Task $interval): ?int
     {
         return array_find_key($this->items, fn (Interval $item) => $item->equals($interval));
     }
 
-    public function lastIndexOf(Interval|NativeInterval|Task|NativeTask $interval): ?int
+    public function lastIndexOf(Interval|Task $interval): ?int
     {
         for ($offset = count($this->items) - 1; $offset >= 0; --$offset) {
             if ($this->items[$offset]->equals($interval)) {
@@ -207,7 +199,7 @@ final class IntervalSet implements TemporalSet
     /**
      * @throws InvalidDuration
      */
-    public function push(Interval|NativeInterval|IntervalSet|Task|NativeTask|TaskSet ...$items): self
+    public function push(Interval|IntervalSet|Task|TaskSet ...$items): self
     {
         $items = self::flatten(...$items);
 
@@ -217,7 +209,7 @@ final class IntervalSet implements TemporalSet
     /**
      * @throws InvalidDuration
      */
-    public function unshift(Interval|NativeInterval|IntervalSet|Task|NativeTask|TaskSet ...$items): self
+    public function unshift(Interval|IntervalSet|Task|TaskSet ...$items): self
     {
         $set = new self(...$items);
 
@@ -228,7 +220,7 @@ final class IntervalSet implements TemporalSet
      * @throws InvalidDuration
      * @throws TimeException
      */
-    public function replace(int $offset, Interval|Task|NativeTask|NativeInterval $item): self
+    public function replace(int $offset, Interval|Task $item): self
     {
         if ($offset < 0) {
             $offset += count($this->items);
@@ -275,7 +267,7 @@ final class IntervalSet implements TemporalSet
     /**
      * @return list<Interval>
      */
-    private static function flatten(Interval|NativeInterval|IntervalSet|Task|NativeTask|TaskSet ...$items): array
+    private static function flatten(Interval|IntervalSet|Task|TaskSet ...$items): array
     {
         $res = [];
         foreach ($items as $item) {
@@ -283,8 +275,6 @@ final class IntervalSet implements TemporalSet
                 $item instanceof Interval => [$item],
                 $item instanceof TaskSet => self::chronological(...$item)->items,
                 $item instanceof Task => [$item->interval],
-                $item instanceof NativeInterval => [Interval::fromNative($item)],
-                $item instanceof NativeTask => [Task::fromNative($item)->interval],
                 $item instanceof IntervalSet => $item->items,
             }];
         }
@@ -324,47 +314,47 @@ final class IntervalSet implements TemporalSet
         return $this->engine()->every($predicate);
     }
 
-    public function next(Time|Event|NativeEvent|DateTimeInterface $atOrAfter, SearchMode $mode, Bound $using = Bound::Start): self
+    public function next(Time|Event|DateTimeInterface $atOrAfter, SearchMode $mode, Bound $using = Bound::Start): self
     {
         return new self(...$this->engine($using)->next($atOrAfter, $mode));
     }
 
-    public function previous(Time|Event|NativeEvent|DateTimeInterface $before, SearchMode $mode, Bound $using = Bound::Start): self
+    public function previous(Time|Event|DateTimeInterface $before, SearchMode $mode, Bound $using = Bound::Start): self
     {
         return new self(...$this->engine($using)->previous($before, $mode));
     }
 
-    public function nearest(Time|Event|NativeEvent|DateTimeInterface $around, Bound $using = Bound::Start): self
+    public function nearest(Time|Event|DateTimeInterface $around, Bound $using = Bound::Start): self
     {
         return new self(...$this->engine($using)->nearest($around));
     }
 
-    public function includes(Time|Event|NativeEvent|DateTimeInterface $time): self
+    public function includes(Time|Event|DateTimeInterface $time): self
     {
         return $this->filter(fn (Interval $interval): bool => $interval->includes($time));
     }
 
-    public function outsideOf(Time|Event|NativeEvent|DateTimeInterface $time): self
+    public function outsideOf(Time|Event|DateTimeInterface $time): self
     {
         return $this->filter(fn (Interval $interval): bool => !$interval->includes($time));
     }
 
-    public function abuts(Interval|Task|NativeTask|NativeInterval $interval): self
+    public function abuts(Interval|Task $interval): self
     {
         return $this->filter(fn (Interval $item): bool => $item->abuts($interval));
     }
 
-    public function overlaps(Interval|Task|NativeTask|NativeInterval $interval): self
+    public function overlaps(Interval|Task $interval): self
     {
         return $this->filter(fn (Interval $item): bool => $item->overlaps($interval));
     }
 
-    public function contains(Interval|Task|NativeTask|NativeInterval $interval): self
+    public function contains(Interval|Task $interval): self
     {
         return $this->filter(fn (Interval $item): bool => $item->contains($interval));
     }
 
-    public function add(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    public function add(Duration|DateInterval|Interval|Task $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -373,7 +363,7 @@ final class IntervalSet implements TemporalSet
             : $this->transform(fn (Interval $interval): Interval => $interval->add($duration));
     }
 
-    public function sub(Duration|DateInterval|Interval|Task|NativeInterval|NativeTask $duration): self
+    public function sub(Duration|DateInterval|Interval|Task $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -511,7 +501,7 @@ final class IntervalSet implements TemporalSet
     /**
      * @throws InvalidDuration|InvalidInterval
      */
-    public function difference(Interval|IntervalSet|Task|TaskSet|NativeInterval|NativeTask ...$others): self
+    public function difference(Interval|IntervalSet|Task|TaskSet ...$others): self
     {
         if ($this->isEmpty()) {
             return $this;
@@ -576,7 +566,7 @@ final class IntervalSet implements TemporalSet
     /**
      * @throws InvalidInterval|InvalidDuration
      */
-    public function intersect(Interval|IntervalSet|Task|TaskSet|NativeInterval|NativeTask ...$others): self
+    public function intersect(Interval|IntervalSet|Task|TaskSet ...$others): self
     {
         $other = self::chronological(...$others)->union();
         if ($other->isEmpty()) {
@@ -609,7 +599,7 @@ final class IntervalSet implements TemporalSet
     /**
      * @throws InvalidInterval|InvalidDuration
      */
-    public function union(Interval|IntervalSet|Task|TaskSet|NativeInterval|NativeTask ...$others): self
+    public function union(Interval|IntervalSet|Task|TaskSet ...$others): self
     {
         $set = $this->push(...$others)->sorted();
         if (1 >= count($set)) {

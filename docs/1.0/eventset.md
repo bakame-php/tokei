@@ -45,14 +45,6 @@ Supports the same formatting arguments as the `Time::format` method.
 EventSet::formatAll(TimeFormat $format = TimeFormat::Clock): array
 ````
 
-## Interacting with PHP's native Date API
-
-```php
-EventSet::toNative(DateTimeInterface $reference): array
-```
-
-Returns the list of `NativeEvent` instances converted using their `Event::toNative` method.
-
 ## Temporal selection methods
 
 ```php

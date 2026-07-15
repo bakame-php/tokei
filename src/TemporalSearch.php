@@ -57,7 +57,7 @@ final readonly class TemporalSearch
     /**
      * @return iterable<non-negative-int, TItem>
      */
-    public function next(Time|Event|NativeEvent|DateTimeInterface $atOrAfter, SearchMode $mode): iterable
+    public function next(Time|Event|DateTimeInterface $atOrAfter, SearchMode $mode): iterable
     {
         return SearchMode::Linear === $mode
             ? $this->forwardSearch(fn ($item): bool => ($this->resolver)($item)->isAfterOrEqual($atOrAfter))
@@ -77,7 +77,7 @@ final readonly class TemporalSearch
     /**
      * @return iterable<non-negative-int, TItem>
      */
-    public function previous(Time|Event|NativeEvent|DateTimeInterface $before, SearchMode $mode): iterable
+    public function previous(Time|Event|DateTimeInterface $before, SearchMode $mode): iterable
     {
         return SearchMode::Linear === $mode
             ? $this->forwardSearch(fn ($item): bool => ($this->resolver)($item)->isBefore($before))
@@ -97,7 +97,7 @@ final readonly class TemporalSearch
     /**
      * @return iterable<non-negative-int, TItem>
      */
-    public function nearest(Time|Event|NativeEvent|DateTimeInterface $around): iterable
+    public function nearest(Time|Event|DateTimeInterface $around): iterable
     {
         return $this->circularSearch(
             InputNormalizer::time($around)->totalMicroseconds,

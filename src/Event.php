@@ -41,7 +41,7 @@ final class Event implements HasIdentifiers, JsonSerializable
      * @throws TokeiException
      */
     public static function at(
-        Time|NativeEvent|DateTimeInterface|Event $time,
+        Time|DateTimeInterface|Event $time,
         Identifiers|HasIdentifiers|string $identifier = new Identifiers()
     ): self {
         return new self(InputNormalizer::time($time), InputNormalizer::identifiers($identifier));
@@ -60,11 +60,6 @@ final class Event implements HasIdentifiers, JsonSerializable
     public static function fromTask(Task $task, Bound $anchor): self
     {
         return new self(Bound::Start === $anchor ? $task->interval->start : $task->interval->end, $task->identifiers);
-    }
-
-    public static function fromNative(NativeEvent $event): self
-    {
-        return self::at(Time::fromDateTime($event->at), $event->identifiers);
     }
 
     /**
@@ -91,7 +86,7 @@ final class Event implements HasIdentifiers, JsonSerializable
             && $this->identifiers->equals($other);
     }
 
-    public function occursOn(Time|NativeEvent|DateTimeInterface|Event $at): self
+    public function occursOn(Time|DateTimeInterface|Event $at): self
     {
         $at = InputNormalizer::time($at);
 
@@ -108,10 +103,5 @@ final class Event implements HasIdentifiers, JsonSerializable
         $identifier = InputNormalizer::identifiers($identifier);
 
         return $identifier->equals($this->identifiers) ? $this : new self($this->at, $identifier);
-    }
-
-    public function toNative(DateTimeInterface $reference): NativeEvent
-    {
-        return new NativeEvent($this->at->applyTo($reference), $this->identifiers);
     }
 }
