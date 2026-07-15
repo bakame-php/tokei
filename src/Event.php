@@ -9,7 +9,7 @@ use JsonSerializable;
 
 use function explode;
 
-final class Event implements HasIdentifiers, JsonSerializable
+final readonly class Event implements HasIdentifiers, JsonSerializable
 {
     private function __construct(
         public Time $at,
