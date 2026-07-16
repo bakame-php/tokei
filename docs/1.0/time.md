@@ -88,6 +88,9 @@ $time->in(Unit::Minute);
 // 630.2520576
 $time->in(Unit::Second);
 // 37815.123456
+$time->offset();
+// returns the duration offset
+//from midnight as a Duration instance
 ```
 
 ## Formatting

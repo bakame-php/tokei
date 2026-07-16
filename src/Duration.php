@@ -63,7 +63,6 @@ final class Duration implements JsonSerializable
 
     private ?DurationParts $parts = null;
     private readonly int $ticks;
-    public int $totalMicroseconds { get => $this->ticks; }
     public int $microsecond { get => $this->parts()->microsecond; }
     public int $second { get => $this->parts()->second; }
     public int $minute { get => $this->parts()->minute; }
@@ -489,8 +488,14 @@ final class Duration implements JsonSerializable
         };
     }
 
-
-    public function wrapAround(Duration|DateInterval|Interval|Task $cycle): self
+    /**
+     * Returns this duration modulo the given cycle.
+     *
+     * The result is always non-negative and strictly less than the cycle.
+     *
+     * @throws TokeiException
+     */
+    public function modulo(Duration|DateInterval|Interval|Task $cycle): self
     {
         $cycle = InputNormalizer::duration($cycle);
 

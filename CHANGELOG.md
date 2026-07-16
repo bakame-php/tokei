@@ -30,12 +30,13 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Duration::isZero`
 - `Duration::component`
 - `Duration::in`
+- `Duration::modulo`
 - `Time::fromDateTime`
 - `Time::toDateTime`
 - `Time::fromFormat`
 - `Time::format`
 - `Time::sinceMidnight`
-- `Time::in`
+- `Time::offset`
 - `Time::add`
 - `Time::sub`
 - `Time::utc`

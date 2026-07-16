@@ -17,8 +17,6 @@ use function count;
  */
 final readonly class TemporalSearch
 {
-    private const int CYCLE = 86_400_000_000;
-
     /**
      * @param TemporalSet<TItem> $items
      * @param Closure(TItem): Time $resolver
@@ -62,15 +60,8 @@ final readonly class TemporalSearch
         return SearchMode::Linear === $mode
             ? $this->forwardSearch(fn ($item): bool => ($this->resolver)($item)->isAfterOrEqual($atOrAfter))
             : $this->circularSearch(
-                InputNormalizer::time($atOrAfter)->totalMicroseconds,
-                static function (int $at, int $reference): int {
-                    $delta = $at - $reference;
-                    if ($delta <= 0) {
-                        $delta += self::CYCLE;
-                    }
-
-                    return $delta;
-                }
+                InputNormalizer::time($atOrAfter),
+                static fn (Time $at, Time $reference): Duration => $reference->distance($at)
             );
     }
 
@@ -82,15 +73,8 @@ final readonly class TemporalSearch
         return SearchMode::Linear === $mode
             ? $this->forwardSearch(fn ($item): bool => ($this->resolver)($item)->isBefore($before))
             : $this->circularSearch(
-                InputNormalizer::time($before)->totalMicroseconds,
-                static function (int $at, int $reference): int {
-                    $delta = $reference - $at;
-                    if ($delta < 0) {
-                        $delta += self::CYCLE;
-                    }
-
-                    return $delta;
-                }
+                InputNormalizer::time($before),
+                static fn (Time $at, Time $reference): Duration => $at->distance($reference)
             );
     }
 
@@ -100,12 +84,11 @@ final readonly class TemporalSearch
     public function nearest(Time|Event|DateTimeInterface $around): iterable
     {
         return $this->circularSearch(
-            InputNormalizer::time($around)->totalMicroseconds,
-            static function (int $at, int $reference): int {
-                $calculate = static fn (int $value): int => ($value + self::CYCLE) % self::CYCLE;
-
-                return min($calculate($at - $reference), $calculate($reference - $at));
-            }
+            InputNormalizer::time($around),
+            static fn (Time $at, Time $reference): Duration => Duration::minOf(
+                $at->distance($reference),
+                $reference->distance($at),
+            )
         );
     }
 
@@ -124,23 +107,23 @@ final readonly class TemporalSearch
     }
 
     /**
-     * @param Closure(int, int): int $metrics
+     * @param Closure(Time, Time): Duration $metrics
      *
      * @return iterable<non-negative-int, TItem>
      */
-    private function circularSearch(int $current, Closure $metrics): iterable
+    private function circularSearch(Time $current, Closure $metrics): iterable
     {
         $bestDelta = null;
         $results = [];
         foreach ($this->items as $offset => $item) {
-            $delta = $metrics(($this->resolver)($item)->totalMicroseconds, $current);
-            if (null === $bestDelta || $delta < $bestDelta) {
+            $delta = $metrics(($this->resolver)($item), $current);
+            if (null === $bestDelta || $delta->isShorterThan($bestDelta)) {
                 $bestDelta = $delta;
                 $results = [$offset => $item];
                 continue;
             }
 
-            if ($delta === $bestDelta) {
+            if ($delta->equals($bestDelta)) {
                 $results[$offset] = $item;
             }
         }

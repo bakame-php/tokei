@@ -33,7 +33,7 @@ final class Interval implements JsonSerializable
     public readonly Time $end;
     public readonly IntervalType $type;
 
-    public Duration $linearStart { get => $this->start->durationSinceMidnight(); }
+    public Duration $linearStart { get => $this->start->offset(); }
     public Duration $linearEnd  { get => $this->linearStart->add($this->duration); }
 
     private function __construct(Time $start, Duration $duration)
@@ -289,7 +289,7 @@ final class Interval implements JsonSerializable
                 return $time->format(TimeFormat::Clock);
             }
 
-            $value = $time->in($unit);
+            $value = $time->offset()->in($unit);
 
             return is_int($value)
                 ? (string) $value
@@ -574,7 +574,7 @@ final class Interval implements JsonSerializable
             return false;
         }
 
-        $sinceMidnight = InputNormalizer::time($time)->durationSinceMidnight();
+        $sinceMidnight = InputNormalizer::time($time)->offset();
         $linearStart = $this->linearStart;
         $linearEnd = $this->linearEnd;
         if ($linearEnd->isLongerThan($linearStart) && $sinceMidnight->isShorterThan($linearStart)) {

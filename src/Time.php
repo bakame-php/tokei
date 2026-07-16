@@ -42,7 +42,6 @@ final class Time implements JsonSerializable
     private ?DurationParts $parts = null;
     /** @var non-negative-int */
     private readonly int $ticks;
-    public int $totalMicroseconds { get => $this->ticks; }
     public int $hour { get => $this->parts()->hour; }
     public int $minute { get => $this->parts()->minute; }
     public int $second { get => $this->parts()->second; }
@@ -61,7 +60,7 @@ final class Time implements JsonSerializable
      */
     public function __serialize(): array
     {
-        return [['total_microseconds' => $this->totalMicroseconds], []];
+        return [['total_microseconds' => $this->ticks], []];
     }
 
     /**
@@ -158,7 +157,11 @@ final class Time implements JsonSerializable
      */
     public static function sinceMidnight(Duration|DateInterval|Interval|Task $duration): self
     {
-        return new self(InputNormalizer::duration($duration)->totalMicroseconds);
+        return new self(
+            (int) InputNormalizer::duration($duration)
+                ->modulo(Duration::of(days: 1))
+                ->in(Unit::Microsecond)
+        );
     }
 
     public static function midnight(): self
@@ -221,14 +224,6 @@ final class Time implements JsonSerializable
     }
 
     /**
-     * Returns the time as the number of unit of time since midnight.
-     */
-    public function in(Unit $unit): int|float
-    {
-        return UnitTransformer::fromTicks($this->ticks, $unit);
-    }
-
-    /**
      * Encodes a Time into a specified string notation representation.
      *
      * @return non-empty-string
@@ -263,6 +258,16 @@ final class Time implements JsonSerializable
     public function toDateTime(DateTimeInterface|DateTimeZone|string $timeZone): DateTimeImmutable
     {
         return $this->applyTo(new DateTimeImmutable(timezone: InputNormalizer::timezone($timeZone)));
+    }
+
+    /**
+     * Returns the duration offset from midnight.
+     *
+     * @throws TokeiException
+     */
+    public function offset(): Duration
+    {
+        return Duration::of(microseconds: $this->ticks);
     }
 
     /**
@@ -419,10 +424,4 @@ final class Time implements JsonSerializable
             Unit::Day
         ));
     }
-
-    public function durationSinceMidnight(): Duration
-    {
-        return Duration::of(microseconds: $this->ticks);
-    }
-
 }

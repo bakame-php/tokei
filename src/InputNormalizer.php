@@ -40,7 +40,7 @@ final readonly class InputNormalizer
             $duration instanceof DateInterval => Duration::fromDateInterval($duration),
             $duration instanceof Time,
             $duration instanceof DateTimeInterface,
-            $duration instanceof Event => InputNormalizer::time($duration)->durationSinceMidnight(),
+            $duration instanceof Event => InputNormalizer::time($duration)->offset(),
             default => self::interval($duration)->duration,
         };
     }
