@@ -405,11 +405,7 @@ final class Time implements JsonSerializable
      */
     public function diff(Time|Event|DateTimeInterface $other): Duration
     {
-        $duration = InputNormalizer::time($other)->ticks - $this->ticks;
-
-        return 0 > $duration
-            ? Duration::of(microseconds: -$duration)->negated()
-            : Duration::of(microseconds: $duration);
+        return InputNormalizer::time($other)->offset()->sub($this->offset());
     }
 
     /**
@@ -419,9 +415,6 @@ final class Time implements JsonSerializable
      */
     public function distance(Time|Event|DateTimeInterface $other): Duration
     {
-        return Duration::of(microseconds: UnitTransformer::wrap(
-            InputNormalizer::time($other)->ticks - $this->ticks,
-            Unit::Day
-        ));
+        return $this->diff($other)->modulo(Duration::of(days: 1));
     }
 }

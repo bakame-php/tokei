@@ -59,10 +59,7 @@ final readonly class TemporalSearch
     {
         return SearchMode::Linear === $mode
             ? $this->forwardSearch(fn ($item): bool => ($this->resolver)($item)->isAfterOrEqual($atOrAfter))
-            : $this->circularSearch(
-                InputNormalizer::time($atOrAfter),
-                static fn (Time $at, Time $reference): Duration => $reference->distance($at)
-            );
+            : $this->circularSearch(InputNormalizer::time($atOrAfter), static fn (Time $at, Time $reference): Duration => $reference->distance($at));
     }
 
     /**
@@ -72,10 +69,7 @@ final readonly class TemporalSearch
     {
         return SearchMode::Linear === $mode
             ? $this->forwardSearch(fn ($item): bool => ($this->resolver)($item)->isBefore($before))
-            : $this->circularSearch(
-                InputNormalizer::time($before),
-                static fn (Time $at, Time $reference): Duration => $at->distance($reference)
-            );
+            : $this->circularSearch(InputNormalizer::time($before), static fn (Time $at, Time $reference): Duration => $at->distance($reference));
     }
 
     /**
