@@ -21,21 +21,34 @@ final readonly class UnitTransformer
     {
     }
 
+    private static function ticks(Unit $unit): int
+    {
+        return match ($unit) {
+            Unit::Week => 86_400_000_000 * 7,
+            Unit::Day => 86_400_000_000,
+            Unit::Hour => 3_600_000_000,
+            Unit::Minute => 60_000_000,
+            Unit::Second => 1_000_000,
+            Unit::Millisecond => 1_000,
+            Unit::Microsecond => 1,
+        };
+    }
+
     /**
      * @throws InvalidDuration
      */
-    public static function toMicroseconds(int|float $value, Unit $unit): int
+    public static function toTicks(int|float $value, Unit $unit): int
     {
-        $micro = $unit->inMicroseconds();
+        $ticks = self::ticks($unit);
 
-        ($value <= intdiv(PHP_INT_MAX, $micro) && $value >= intdiv(PHP_INT_MIN, $micro)) || throw InvalidDuration::dueToOverflow();
+        ($value <= intdiv(PHP_INT_MAX, $ticks) && $value >= intdiv(PHP_INT_MIN, $ticks)) || throw InvalidDuration::dueToOverflow();
 
-        return (int) round($micro * $value);
+        return (int) round($ticks * $value);
     }
 
-    public static function fromMicroseconds(int $valueInMicro, Unit $unit): int|float
+    public static function fromTicks(int $valueInTicks, Unit $unit): int|float
     {
-        return $valueInMicro / $unit->inMicroseconds();
+        return $valueInTicks / self::ticks($unit);
     }
 
     /**
@@ -43,31 +56,31 @@ final readonly class UnitTransformer
      */
     public static function divmod(int $valueInMicro, Unit $unit): array
     {
-        $micro = $unit->inMicroseconds();
+        $ticks = self::ticks($unit);
 
-        return [intdiv($valueInMicro, $micro), $valueInMicro % $micro];
+        return [intdiv($valueInMicro, $ticks), $valueInMicro % $ticks];
     }
 
     public static function round(int $valueInMicro, Unit $unit, SnapMode $mode = SnapMode::Nearest): int
     {
-        $micro = $unit->inMicroseconds();
+        $ticks = self::ticks($unit);
 
-        return (int) ($micro * match ($mode) {
-            SnapMode::Floor => floor($valueInMicro / $micro),
-            SnapMode::Ceil => ceil($valueInMicro / $micro),
-            SnapMode::Nearest => round($valueInMicro / $micro),
+        return (int) ($ticks * match ($mode) {
+            SnapMode::Floor => floor($valueInMicro / $ticks),
+            SnapMode::Ceil => ceil($valueInMicro / $ticks),
+            SnapMode::Nearest => round($valueInMicro / $ticks),
         });
     }
 
     /**
      * @return non-negative-int
      */
-    public static function wrap(int $valueInMicro, Unit $unit): int
+    public static function wrap(int $valueInTicks, Unit $unit): int
     {
-        $micro = $unit->inMicroseconds();
+        $ticks = self::ticks($unit);
 
         /** @var non-negative-int $value */
-        $value = ($valueInMicro % $micro + $micro) % $micro;
+        $value = ($valueInTicks % $ticks + $ticks) % $ticks;
 
         return $value;
     }

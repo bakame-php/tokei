@@ -41,19 +41,19 @@ final class Time implements JsonSerializable
 
     private ?DurationParts $parts = null;
     /** @var non-negative-int */
-    public readonly int $totalMicroseconds;
-
+    private readonly int $ticks;
+    public int $totalMicroseconds { get => $this->ticks; }
     public int $hour { get => $this->parts()->hour; }
     public int $minute { get => $this->parts()->minute; }
     public int $second { get => $this->parts()->second; }
     public int $microsecond { get => $this->parts()->microsecond; }
 
     /**
-     * @param int $totalMicroseconds Time since midnight expressed in the library base unit
+     * @param int $ticks Time since midnight expressed in the library base unit
      */
-    private function __construct(int $totalMicroseconds)
+    private function __construct(int $ticks)
     {
-        $this->totalMicroseconds = UnitTransformer::wrap($totalMicroseconds, Unit::Day);
+        $this->ticks = UnitTransformer::wrap($ticks, Unit::Day);
     }
 
     /**
@@ -70,12 +70,12 @@ final class Time implements JsonSerializable
     public function __unserialize(array $data): void
     {
         [$properties] = $data;
-        $this->totalMicroseconds = new self($properties['total_microseconds'])->totalMicroseconds;
+        $this->ticks = new self($properties['total_microseconds'])->ticks;
     }
 
     private function parts(): DurationParts
     {
-        return $this->parts ??= DurationParts::parse($this->totalMicroseconds);
+        return $this->parts ??= DurationParts::parse($this->ticks);
     }
 
     /**
@@ -163,26 +163,17 @@ final class Time implements JsonSerializable
 
     public static function midnight(): self
     {
-        /** @var ?self $time */
-        static $time = null;
-
-        return $time ??= new self(0);
+        return new self(0);
     }
 
     public static function noon(): self
     {
-        /** @var ?self $time */
-        static $time = null;
-
-        return $time ??= new self(UnitTransformer::toMicroseconds(12, Unit::Hour));
+        return self::sinceMidnight(Duration::of(hours: 12));
     }
 
     public static function endOfDay(): self
     {
-        /** @var ?self $time */
-        static $time = null;
-
-        return $time ??= new self(-1);
+        return new self(-1);
     }
 
     /**
@@ -211,7 +202,7 @@ final class Time implements JsonSerializable
         [] !== $times || throw new ArgumentCountError('minOf() expects at least one time');
 
         $times = array_map(InputNormalizer::time(...), $times);
-        usort($times, Time::compare(...));
+        usort($times, Duration::compare(...));
 
         return $times[array_key_first($times)];
     }
@@ -224,7 +215,7 @@ final class Time implements JsonSerializable
         [] !== $times || throw new ArgumentCountError('maxOf() expects at least one time');
 
         $times = array_map(InputNormalizer::time(...), $times);
-        usort($times, Time::compare(...));
+        usort($times, Duration::compare(...));
 
         return $times[array_key_last($times)];
     }
@@ -234,7 +225,7 @@ final class Time implements JsonSerializable
      */
     public function in(Unit $unit): int|float
     {
-        return UnitTransformer::fromMicroseconds($this->totalMicroseconds, $unit);
+        return UnitTransformer::fromTicks($this->ticks, $unit);
     }
 
     /**
@@ -284,43 +275,29 @@ final class Time implements JsonSerializable
         return $this->format(TimeFormat::Clock);
     }
 
-    /**
-     * Compare this instance with another.
-     *
-     * @throws InvalidTime
-     *
-     * @return int<-1, 1> If this time is before, on, or after the given time.
-     */
-    public static function compare(
-        Time|Event|DateTimeInterface $that,
-        Time|Event|DateTimeInterface $other
-    ): int {
-        return InputNormalizer::time($that)->totalMicroseconds <=> InputNormalizer::time($other)->totalMicroseconds;
-    }
-
     public function isBefore(Time|Event|DateTimeInterface $other): bool
     {
-        return 0 > Time::compare($this, $other);
+        return 0 > Duration::compare($this, $other);
     }
 
     public function isBeforeOrEqual(Time|Event|DateTimeInterface $other): bool
     {
-        return 0 >= Time::compare($this, $other);
+        return 0 >= Duration::compare($this, $other);
     }
 
     public function equals(Time|Event|DateTimeInterface $other): bool
     {
-        return 0 === Time::compare($this, $other);
+        return 0 === Duration::compare($this, $other);
     }
 
     public function isAfterOrEqual(Time|Event|DateTimeInterface $other): bool
     {
-        return 0 <= Time::compare($this, $other);
+        return 0 <= Duration::compare($this, $other);
     }
 
     public function isAfter(Time|Event|DateTimeInterface $other): bool
     {
-        return 0 < Time::compare($this, $other);
+        return 0 < Duration::compare($this, $other);
     }
 
     /**
@@ -354,7 +331,7 @@ final class Time implements JsonSerializable
     {
         $duration = InputNormalizer::duration($duration);
 
-        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->totalMicroseconds)->add($duration));
+        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->ticks)->add($duration));
     }
 
     /**
@@ -368,7 +345,7 @@ final class Time implements JsonSerializable
     {
         $duration = InputNormalizer::duration($duration);
 
-        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->totalMicroseconds)->sub($duration));
+        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->ticks)->sub($duration));
     }
 
     /**
@@ -399,9 +376,9 @@ final class Time implements JsonSerializable
      */
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
-        $rounded = UnitTransformer::round($this->totalMicroseconds, $unit, $mode);
+        $rounded = UnitTransformer::round($this->ticks, $unit, $mode);
 
-        return $this->totalMicroseconds === $rounded ? $this : new self($rounded);
+        return $this->ticks === $rounded ? $this : new self($rounded);
     }
 
     /**
@@ -423,7 +400,7 @@ final class Time implements JsonSerializable
      */
     public function diff(Time|Event|DateTimeInterface $other): Duration
     {
-        $duration = InputNormalizer::time($other)->totalMicroseconds - $this->totalMicroseconds;
+        $duration = InputNormalizer::time($other)->ticks - $this->ticks;
 
         return 0 > $duration
             ? Duration::of(microseconds: -$duration)->negated()
@@ -438,8 +415,14 @@ final class Time implements JsonSerializable
     public function distance(Time|Event|DateTimeInterface $other): Duration
     {
         return Duration::of(microseconds: UnitTransformer::wrap(
-            InputNormalizer::time($other)->totalMicroseconds - $this->totalMicroseconds,
+            InputNormalizer::time($other)->ticks - $this->ticks,
             Unit::Day
         ));
     }
+
+    public function durationSinceMidnight(): Duration
+    {
+        return Duration::of(microseconds: $this->ticks);
+    }
+
 }

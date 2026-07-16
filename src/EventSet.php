@@ -83,7 +83,7 @@ final class EventSet implements TemporalSet
             $res[] = $item;
         }
 
-        usort($res, Time::compare(...));
+        usort($res, Duration::compare(...));
 
         return $res;
     }

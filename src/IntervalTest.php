@@ -367,7 +367,7 @@ final class IntervalTest extends TestCase
             Time::at(hour: 12),
         );
 
-        $expanded = $range->expand(Duration::of(hours: 24));
+        $expanded = $range->expand(Duration::of(days: 1));
 
         self::assertTrue($range->equals($expanded));
         self::assertTrue($range->equals(Task::for($expanded)));
@@ -413,7 +413,7 @@ final class IntervalTest extends TestCase
 
         self::assertEquals($time, $interval->start);
         self::assertEquals($time, $interval->end);
-        self::assertTrue($interval->duration->equals(Duration::of(hours: 24)));
+        self::assertTrue($interval->duration->equals(Duration::of(days: 1)));
         self::assertSame(IntervalType::Circular, $interval->type);
     }
 
@@ -601,7 +601,7 @@ final class IntervalTest extends TestCase
         self::assertTrue(
             Duration::zero()
                 ->add($range, $range->complement())
-                ->equals(Duration::of(hours: 24))
+                ->equals(Duration::of(days: 1))
         );
     }
 

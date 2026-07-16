@@ -16,8 +16,6 @@ use function array_pop;
 use function array_shift;
 use function count;
 use function in_array;
-use function max;
-use function min;
 use function usort;
 
 /**
@@ -521,7 +519,7 @@ final class IntervalSet implements TemporalSet
 
             $current = IntervalType::Circular !== $item->type
                 ? [[$item->linearStart, $item->linearEnd]]
-                : [[0, Unit::Day->inMicroseconds()]];
+                : [[Duration::zero(), Duration::of(days: 1)]];
 
             foreach ($otherIntervals as $otherInterval) {
                 if (IntervalType::Collapsed === $otherInterval->type) {
@@ -564,7 +562,7 @@ final class IntervalSet implements TemporalSet
     }
 
     /**
-     * @throws InvalidInterval|InvalidDuration
+     * @throws TokeiException
      */
     public function intersect(Interval|IntervalSet|Task|TaskSet ...$others): self
     {
@@ -577,8 +575,8 @@ final class IntervalSet implements TemporalSet
         $bSpans = $other->items;
         foreach ($this->union()->items as $aItem) {
             foreach ($bSpans as $bItem) {
-                $start = max($aItem->linearStart, $bItem->linearStart);
-                $end = min($aItem->linearEnd, $bItem->linearEnd);
+                $start = Duration::maxOf($aItem->linearStart, $bItem->linearStart);
+                $end = Duration::minOf($aItem->linearEnd, $bItem->linearEnd);
                 if ($start < $end) {
                     $intersections[] = Interval::fromLinearSpan($start, $end);
                 }
@@ -611,8 +609,8 @@ final class IntervalSet implements TemporalSet
             if ([] !== $merged) {
                 $lastIndex = array_key_last($merged);
                 $prevSpan = $merged[$lastIndex];
-                if ($item->linearStart <= $prevSpan->linearEnd) {
-                    $merged[$lastIndex] = Interval::fromLinearSpan($prevSpan->linearStart, max($prevSpan->linearEnd, $item->linearEnd));
+                if ($item->linearStart->isShorterThanOrEqual($prevSpan->linearEnd)) {
+                    $merged[$lastIndex] = Interval::fromLinearSpan($prevSpan->linearStart, Duration::maxOf($prevSpan->linearEnd, $item->linearEnd));
                     continue;
                 }
             }
@@ -627,7 +625,7 @@ final class IntervalSet implements TemporalSet
                 array_shift($merged);
                 array_pop($merged);
 
-                $merged[] = Interval::fromLinearSpan($last->linearStart, $first->linearEnd + Unit::Day->inMicroseconds());
+                $merged[] = Interval::fromLinearSpan($last->linearStart, $first->linearEnd->add(Duration::of(hours:  24)));
             }
         }
 
@@ -693,8 +691,8 @@ final class IntervalSet implements TemporalSet
         $boundaries = [];
 
         foreach ($this->sorted() as $interval) {
-            $boundaries[$interval->start->totalMicroseconds] = $interval->start;
-            $boundaries[$interval->end->totalMicroseconds] = $interval->end;
+            $boundaries[$interval->start->format(TimeFormat::Compact)] = $interval->start;
+            $boundaries[$interval->end->format(TimeFormat::Compact)] = $interval->end;
         }
 
         ksort($boundaries);
@@ -709,12 +707,12 @@ final class IntervalSet implements TemporalSet
     {
         $directionFactor = SortDirection::Ascending === $direction ? 1 : -1;
         $keyExtractor = match ($bound) {
-            Bound::Start => static fn (Interval $i): int => $i->linearStart,
-            Bound::End => static fn (Interval $i): int => $i->linearEnd,
+            Bound::Start => static fn (Interval $i): Duration => $i->linearStart,
+            Bound::End => static fn (Interval $i): Duration => $i->linearEnd,
         };
 
         return static function (Interval $a, Interval $b) use ($keyExtractor, $directionFactor): int {
-            $result = ($keyExtractor($a) <=> $keyExtractor($b)) * $directionFactor;
+            $result = Duration::compare($keyExtractor($a), $keyExtractor($b)) * $directionFactor;
 
             return 0 !== $result ? $result : Duration::compare($a, $b);
         };

@@ -18,11 +18,11 @@ class InvalidDuration extends TimeException
     {
         $containsUnsupportedUnits = str_contains($format, 'Y') || self::containsMonthComponent($format);
 
-        $message = $containsUnsupportedUnits
-            ? "The submitted duration `$format` contains unsupported ISO 8601 duration components."
-            : "The submitted duration `$format` is not a valid ISO 8601 duration.";
-
-        return new self($message);
+        return new self(
+            $containsUnsupportedUnits
+                ? "The submitted duration `$format` contains unsupported ISO 8601 duration components."
+                : "The submitted duration `$format` is not a valid ISO 8601 duration."
+        );
     }
 
     private static function containsMonthComponent(string $data): bool

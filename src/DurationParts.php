@@ -51,9 +51,9 @@ final readonly class DurationParts
     public function build(): int
     {
         return $this->sign * (
-            UnitTransformer::toMicroseconds($this->hour, Unit::Hour)
-            + UnitTransformer::toMicroseconds($this->minute, Unit::Minute)
-            + UnitTransformer::toMicroseconds($this->second, Unit::Second)
+            UnitTransformer::toTicks($this->hour, Unit::Hour)
+            + UnitTransformer::toTicks($this->minute, Unit::Minute)
+            + UnitTransformer::toTicks($this->second, Unit::Second)
             + $this->microsecond
         );
     }
@@ -69,7 +69,7 @@ final readonly class DurationParts
         $interval->i = $this->minute;
         $interval->s = $this->second;
         if (0 !== $this->microsecond) {
-            $interval->f = UnitTransformer::fromMicroseconds($this->microsecond, Unit::Second);
+            $interval->f = UnitTransformer::fromTicks($this->microsecond, Unit::Second);
         }
         $interval->invert = -1 === $this->sign ? 1 : 0;
         if (null === $relativeTo) {
@@ -139,7 +139,8 @@ final readonly class DurationParts
      * Returns the ISO8601 string representation of the duration.
      *
      * - fractional values are only allowed on seconds
-     * - only D, H, M and S are allowed; M represents the minutes
+     * - only Hour (H), Minute (M) and Seconds (S) are allowed
+     * - Fraction are allowed attached only to the seconds
      * - negative marker is allowed in front of the expression
      *
      * @return non-empty-string

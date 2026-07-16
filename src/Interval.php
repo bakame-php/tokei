@@ -22,30 +22,25 @@ use const FILTER_VALIDATE_INT;
 /**
  * Represents a start-inclusive, end-exclusive interval between two times on a 24-hour circular clock.
  */
-final readonly class Interval implements JsonSerializable
+final class Interval implements JsonSerializable
 {
     private const string REGEXP_ISO80000 = '/^\[(?<start>[^,)]*),(?<end>[^,)]*)\)$/';
     private const string REGEXP_BOURBAKI = '/^\[(?<start>[^,\[]*),(?<end>[^,\[]*)\[$/';
     private const string REGEXP_ISO8601 = '/^(?<start>[^\/]+)\/(?<end>[^\/]+)$/';
 
-    public Time $start;
-    public Time $end;
-    public Duration $duration;
-    public IntervalType $type;
-    /** @var non-negative-int the linearized start expressed in microseconds */
-    public int $linearStart;
-    /** @var non-negative-int the linearized end expressed in microseconds */
-    public int $linearEnd;
+    public readonly Time $start;
+    public readonly Duration $duration;
+    public readonly Time $end;
+    public readonly IntervalType $type;
+
+    public Duration $linearStart { get => $this->start->durationSinceMidnight(); }
+    public Duration $linearEnd  { get => $this->linearStart->add($this->duration); }
 
     private function __construct(Time $start, Duration $duration)
     {
         $this->start = $start;
         $this->duration = $duration;
-        $this->linearStart = $this->start->totalMicroseconds;
-        /** @var non-negative-int $linearEnd */
-        $linearEnd = $this->linearStart + $duration->totalMicroseconds;
-        $this->linearEnd = $linearEnd;
-        $this->end = Time::sinceMidnight(Duration::of(microseconds: $this->linearEnd));
+        $this->end = $this->start->add($this->duration);
         $this->type = $this->setType();
     }
 
@@ -65,17 +60,13 @@ final readonly class Interval implements JsonSerializable
         [$properties] = $data;
         $this->start = $properties['start'];
         $this->duration = $properties['duration'];
-        $this->linearStart = $this->start->totalMicroseconds;
-        /** @var non-negative-int $linearEnd */
-        $linearEnd = $this->linearStart + $properties['duration']->totalMicroseconds;
-        $this->linearEnd = $linearEnd;
-        $this->end = Time::sinceMidnight(Duration::of(microseconds: $this->linearEnd));
+        $this->end = Time::sinceMidnight($this->linearEnd);
         $this->type = $this->setType();
     }
 
     private function setType(): IntervalType
     {
-        return match (Time::compare($this->start, $this->end)) {
+        return match (Duration::compare($this->start, $this->end)) {
             1 => IntervalType::Overflow,
             -1 => IntervalType::Linear,
             0 => 0 === $this->duration->sign ? IntervalType::Collapsed : IntervalType::Circular,
@@ -235,7 +226,7 @@ final readonly class Interval implements JsonSerializable
         null !== $unit || throw InvalidInterval::dueToMalformedFormat($data, $format);
 
         /** @var non-negative-int $microseconds */
-        $microseconds = UnitTransformer::toMicroseconds($value, $unit);
+        $microseconds = UnitTransformer::toTicks($value, $unit);
 
         return Time::sinceMidnight(Duration::of(microseconds: $microseconds));
     }
@@ -258,20 +249,14 @@ final readonly class Interval implements JsonSerializable
     /**
      * Returns a new instance from linear start end ending point.
      *
-     * @param int $linearStart the starting time represented on a linear span in microseconds
-     * @param int $linearEnd the ending time represented on a linear span in microseconds
-     *
-     * @throws InvalidInterval|InvalidDuration
+     * @throws TokeiException
      */
-    public static function fromLinearSpan(int $linearStart, int $linearEnd): self
+    public static function fromLinearSpan(Duration $linearStart, Duration $linearEnd): self
     {
-        $duration = $linearEnd - $linearStart;
+        $duration = $linearEnd->sub($linearStart);
+        -1 !== $duration->sign || throw new InvalidInterval('Invalid linear span: the start must be shorter or equal to the end linear span.');
 
-        0 <= $duration || throw new InvalidInterval('Invalid linear span: the start must be shorter or equal to the end linear span.');
-
-        $linearStartDuration = 0 > $linearStart ? Duration::of(microseconds: -$linearStart)->negated() : Duration::of(microseconds: $linearStart);
-
-        return new self(Time::sinceMidnight($linearStartDuration), Duration::of(microseconds: $duration));
+        return new self(Time::sinceMidnight($linearStart->abs()), $duration);
     }
 
     /**
@@ -279,10 +264,7 @@ final readonly class Interval implements JsonSerializable
      */
     public static function fullDay(): self
     {
-        /** @var ?self $interval */
-        static $interval = null;
-
-        return $interval ??= self::circular(Time::midnight());
+        return self::circular(Time::midnight());
     }
 
     public static function circular(Event|Time|DateTimeInterface $at): self
@@ -506,22 +488,13 @@ final readonly class Interval implements JsonSerializable
             return new IntervalSet();
         }
 
-        $step = $duration->totalMicroseconds;
-        $start = $this->start->totalMicroseconds;
-        $end = $this->end->totalMicroseconds;
         $forward = Bound::Start === $from;
-        /** @var non-negative-int $cursor */
-        $cursor = $forward ? $start : $end;
-        $limit = $forward ? $end : $start;
+        $cursor = ($forward ? $this->start : $this->end);
+        $limit = ($forward ? $this->end : $this->start);
         $result = [];
-        while ($forward ? $cursor < $limit : $cursor > $limit) {
-            /** @var non-negative-int $next */
-            $next = $forward ? min($cursor + $step, $limit) : max($cursor - $step, $limit);
-            $nextTime = Time::sinceMidnight(Duration::of(microseconds: $next));
-            $cursorTime = Time::sinceMidnight(Duration::of(microseconds: $cursor));
-            $result[] = $forward
-                ? self::between($cursorTime, $nextTime)
-                : self::between($nextTime, $cursorTime);
+        while ($forward ? $cursor->isBefore($limit) : $cursor->isAfter($limit)) {
+            $next = $forward ? Time::minOf($cursor->add($duration), $limit) : Time::maxOf($cursor->sub($duration), $limit);
+            $result[] = $forward ? self::between($cursor, $next) : self::between($next, $cursor);
 
             $cursor = $next;
         }
@@ -601,15 +574,15 @@ final readonly class Interval implements JsonSerializable
             return false;
         }
 
-        $time = InputNormalizer::time($time);
-
-        $timeInMicro = $time->totalMicroseconds;
-        if ($this->linearEnd > $this->linearStart && $timeInMicro < $this->linearStart) {
-            $timeInMicro += Unit::Day->inMicroseconds();
+        $sinceMidnight = InputNormalizer::time($time)->durationSinceMidnight();
+        $linearStart = $this->linearStart;
+        $linearEnd = $this->linearEnd;
+        if ($linearEnd->isLongerThan($linearStart) && $sinceMidnight->isShorterThan($linearStart)) {
+            $sinceMidnight = $sinceMidnight->add(Duration::of(days: 1));
         }
 
-        return $timeInMicro >= $this->linearStart
-            && $timeInMicro < $this->linearEnd;
+        return $sinceMidnight->isLongerThanOrEqual($linearStart)
+            && $sinceMidnight->isShorterThan($linearEnd);
     }
 
     public function contains(Interval|Task $other): bool

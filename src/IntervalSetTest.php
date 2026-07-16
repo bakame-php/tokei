@@ -180,11 +180,11 @@ final class IntervalSetTest extends TestCase
         $interval = Interval::between(Time::at(12), Time::at(14));
         $expectedSet = new IntervalSet($interval);
 
-        self::assertEquals($emptySet, $emptySet->union());
-        self::assertEquals($emptySet, $emptySet->union($emptySet));
-        self::assertEquals($expectedSet, $emptySet->union($interval));
-        self::assertEquals($expectedSet, $expectedSet->union($emptySet));
-        self::assertEquals($expectedSet, $expectedSet->union($interval));
+        self::assertSame($emptySet->formatAll(), $emptySet->union()->formatAll());
+        self::assertSame($emptySet->formatAll(), $emptySet->union($emptySet)->formatAll());
+        self::assertSame($expectedSet->formatAll(), $emptySet->union($interval)->formatAll());
+        self::assertSame($expectedSet->formatAll(), $expectedSet->union($emptySet)->formatAll());
+        self::assertSame($expectedSet->formatAll(), $expectedSet->union($interval)->formatAll());
     }
 
     public function test_normalize_merges_overlapping_intervals(): void
@@ -398,16 +398,10 @@ final class IntervalSetTest extends TestCase
         );
 
         $result = $set->map(fn (Interval $i) => $i);
-
+        $formatter = static fn (Interval $i) => $i->format(IntervalFormat::Iso80000);
         self::assertSame(
-            array_map(
-                fn (Interval $i) => $i->start->totalMicroseconds,
-                $set->all()
-            ),
-            array_map(
-                fn (Interval $i) => $i->start->totalMicroseconds,
-                iterator_to_array($result)
-            )
+            array_map($formatter, $set->all()),
+            array_map($formatter, iterator_to_array($result))
         );
     }
 
@@ -419,10 +413,7 @@ final class IntervalSetTest extends TestCase
             $this->i(5, 6),
         );
 
-        $filtered = $set->filter(
-            fn (Interval $i): bool =>
-                $i->start->totalMicroseconds >= Time::at(3)->totalMicroseconds
-        );
+        $filtered = $set->filter(fn (Interval $i): bool => $i->start->isAfterOrEqual(Time::at(3)));
 
         self::assertCount(2, $filtered);
 
@@ -492,11 +483,7 @@ final class IntervalSetTest extends TestCase
         );
 
         self::assertInstanceOf(Interval::class, $result);
-
-        self::assertSame(
-            $this->i(10, 20)->start->totalMicroseconds,
-            $result->start->totalMicroseconds
-        );
+        self::assertTrue($this->i(10, 20)->start->equals($result->start));
     }
 
     public function test_reduce_empty_set_returns_initial_value(): void

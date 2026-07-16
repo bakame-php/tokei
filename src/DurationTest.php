@@ -675,7 +675,7 @@ final class DurationTest extends TestCase
         $restored = unserialize(serialize($duration));
 
         self::assertInstanceOf(Duration::class, $restored);
-        self::assertEquals($duration, $restored);
+        self::assertTrue($duration->equals($restored));
     }
 
     public function test_duration_can_be_json_serialized(): void
