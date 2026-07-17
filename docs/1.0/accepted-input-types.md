@@ -46,6 +46,9 @@ A duration can be expressed using any of the following types:
 - `DateInterval`
 - `Interval`
 - `Task`
+- `Time`
+- `Event`
+- `DateTimeInterface`
 
 Example:
 
@@ -62,6 +65,7 @@ Interval::since(
 ```
 
 For Interval types, the interval `duration` property will be used.
+For Time types, the Tine `offset()` resutl will be used.
 
 <p class="message-warning"><code>DateInterval</code> instances which do not 
 use deterministic component will  be rejected and throw an <code>InvalidDuration</code>
@@ -108,13 +112,13 @@ Timezone can be expressed using:
 
 ## Argument rules
 
-| Concept     | Accepted representations                              |
-|-------------|-------------------------------------------------------|
-| Time	       | `Time`, `Event`, `DateTimeInterface`                  | 
-| Duration    | `Duration`, `DateInterval`, `Interval`, `Task`        |       
-| Interval    | `Interval`, `Task`                                    |   
-| Identifiers | `Identifiers`, `HasIdentifiers`, `string`, `iterable` |   
-| Timezone    | `DateTimeZone`, `DateTimeInterface`, `string`,        |
+| Concept     | Accepted representations                                                             |
+|-------------|--------------------------------------------------------------------------------------|
+| Time	       | `Time`, `Event`, `DateTimeInterface`                                                 | 
+| Duration    | `Duration`, `DateInterval`, `Interval`, `Task`, `Time`, `Event`, `DateTimeInterface` |       
+| Interval    | `Interval`, `Task`                                                                   |   
+| Identifiers | `Identifiers`, `HasIdentifiers`, `string`, `iterable`                                |   
+| Timezone    | `DateTimeZone`, `DateTimeInterface`, `string`,                                       |
 
 Unless stated otherwise, any method accepting a temporal
 primitive also accepts any compatible representation of that primitive.

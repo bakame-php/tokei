@@ -28,7 +28,6 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Duration::sub`
 - `Duration::dividedInto`
 - `Duration::isZero`
-- `Duration::component`
 - `Duration::in`
 - `Duration::modulo`
 - `Time::fromDateTime`

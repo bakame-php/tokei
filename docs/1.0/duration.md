@@ -123,6 +123,7 @@ Duration::sub(Duration ...$duration): Duration
 Duration::multipliedBy(int $factor): Duration
 Duration::dividedBy(int $factor): Duration
 Duration::dividedInto(Duration $factor): DivisionResult
+Duration::modulo(Duration $factor): DUration
 Duration::roundTo(Unit $precision, SnapMode $mode): Duration
 Duration::clamp(Duration $min, Duration $max): Duration
 ```

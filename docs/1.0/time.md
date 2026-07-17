@@ -72,7 +72,7 @@ Once instantiated you can access each time component  directly.
 - `minute`
 - `hour`
 
-The `in()` method allow access the total duration in a specific unit
+The `offset()` method allow access the time total duration since midnight.
 
 ```php
 $time = Time::fromFormat("10:30:15.123456", TimeFormat::Clock);
@@ -84,13 +84,10 @@ $time->second;
 // 15
 $time->microsecond;
 // 123456
-$time->in(Unit::Minute);
+$time->offset()->in(Unit::Minute);
 // 630.2520576
-$time->in(Unit::Second);
+$time->offset()->in(Unit::Second);
 // 37815.123456
-$time->offset();
-// returns the duration offset
-//from midnight as a Duration instance
 ```
 
 ## Formatting
@@ -115,7 +112,7 @@ echo $time->format();
 // 10:30:15.123456
 echo $time->format(TimeFormat::Compact);
 // 10h30m15s123456µs
-echo $time->in(Unit::Second);
+echo $time->offset()->in(Unit::Second);
 // 37815.123456
 echo $time->toLocaleString('en-US');
 // 10:30:15 AM
@@ -183,33 +180,21 @@ $t->roundTo(Unit::Minutes, SnapMode::Nearest)->format();  // returns "00:53:00"
 
 ## Comparing times
 
-It is possible to compare two `Time` instances using the `Time::compareTo` method.
+It is possible to compare two `Time` instances using the `Duration::compare` method.
+The method will use the result of `Time::offset` to compare both times.
 
-```php
-Time::compare(Time $that, Time $other): int;
-```
-> [!IMPORTANT]
-> The method is static to allow broader usage with other PHP sorting functions.
-
-
-the method returns:
-
-- `-1` if earlier
-- `0` if equal
-- `1` if later
-
-Convenient methods derived from `Time::compareTo` are also available to ease usage:
+Convenient methods derived from `Duratio::compare` are also available to ease usage:
 
 ```php
 $time = Time::at(hour: 10);
 $other = Time::noon();
 
-Time::compare($time, $other);    // returns -1
-$time->isBefore($other);         // returns true
-$time->isAfter($other);          // returns false
-$time->isBeforeOrEqual($other);  // returns true
-$time->isAfterOrEqual($other);   // returns false
-$time->equals($other);           // returns false
+Duration::compare($time, $other); // returns -1
+$time->isBefore($other);          // returns true
+$time->isAfter($other);           // returns false
+$time->isBeforeOrEqual($other);   // returns true
+$time->isAfterOrEqual($other);    // returns false
+$time->equals($other);            // returns false
 ```
 
 ## Differences
