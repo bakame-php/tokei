@@ -2,7 +2,7 @@
 
 All Notable changes to `bakame/tokei` will be documented in this file.
 
-## [Next](https://github.com/bakame-php/stackwatch/compare/0.1.0...main) - TBD
+## [0.2.0 - botan](https://github.com/bakame-php/stackwatch/compare/0.1.0...0.2.0) - 2026-07-17
 
 ### Added
 

@@ -99,11 +99,16 @@ Out of the box, to following formatting algorithm are possible:
 
 ```php
 $interval = Interval::between(Time::midnight(), Time::noon());
-$interval->format(IntervalFormat::Iso8601StartDuration); // returns 00:00:00/PT12H
-$interval->format(IntervalFormat::Iso8601StartEnd);      // returns 00:00:00/12:00:00
-$interval->format(IntervalFormat::Iso8601DurationEnd);   // returns PT12H/00:00:00
-$interval->format(IntervalFormat::Iso80000);             // returns [00:00:00,12:00:00)
-$interval->format(IntervalFormat::Bourbaki);             // returns [00:00:00,12:00:00[
+$interval->format(IntervalFormat::Iso8601StartDuration);
+// 00:00:00/PT12H
+$interval->format(IntervalFormat::Iso8601StartEnd);
+// 00:00:00/12:00:00
+$interval->format(IntervalFormat::Iso8601DurationEnd);
+// PT12H/00:00:00
+$interval->format(IntervalFormat::Iso80000);
+// [00:00:00,12:00:00)
+$interval->format(IntervalFormat::Bourbaki);
+// [00:00:00,12:00:00[
 ```
 
 ## Iterations
