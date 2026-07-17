@@ -94,9 +94,12 @@ $duration->format(DurationFormat::Iso8601); // returns 'P1DT1H5S'
 $duration->format(DurationFormat::Timer);   // returns '25:00:05'
 ```
 
-> [!IMPORTANT]
-> - **Only deterministic duration interval are used `Y`, `M` for year and month are not used**
-> - to have a predictive representation `W` is not used; `7D` multiple are used instead.
+<div class="message-warning">
+<ul>
+<li><strong>Only deterministic duration interval are used <code>Y</code>, <code>M</code> for year and month are not used</strong></li>
+<li>to have a predictive representation <code>W</code> is not used; <code>70</code> multiple are used instead.</li>
+</ul>
+</div>
 
 ```php
 $duration = Duration::fromFormat('-P2W', DurationFormat::Iso8601); 
