@@ -64,8 +64,8 @@ Interval::since(
 );
 ```
 
-For Interval types, the interval `duration` property will be used.
-For Time types, the Tine `offset()` resutl will be used.
+- For Interval types, the interval `duration` property will be used.
+- For Time types, the Tine `offset()` resutl will be used.
 
 <p class="message-warning"><code>DateInterval</code> instances which do not 
 use deterministic component will  be rejected and throw an <code>InvalidDuration</code>
