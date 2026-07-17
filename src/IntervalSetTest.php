@@ -180,11 +180,11 @@ final class IntervalSetTest extends TestCase
         $interval = Interval::between(Time::at(12), Time::at(14));
         $expectedSet = new IntervalSet($interval);
 
-        self::assertSame($emptySet->formatAll(), $emptySet->union()->formatAll());
-        self::assertSame($emptySet->formatAll(), $emptySet->union($emptySet)->formatAll());
-        self::assertSame($expectedSet->formatAll(), $emptySet->union($interval)->formatAll());
-        self::assertSame($expectedSet->formatAll(), $expectedSet->union($emptySet)->formatAll());
-        self::assertSame($expectedSet->formatAll(), $expectedSet->union($interval)->formatAll());
+        self::assertSame($emptySet->formatAll(IntervalFormat::Iso8601DurationEnd), $emptySet->union()->formatAll(IntervalFormat::Iso8601DurationEnd));
+        self::assertSame($emptySet->formatAll(IntervalFormat::Iso8601StartEnd), $emptySet->union($emptySet)->formatAll(IntervalFormat::Iso8601StartEnd));
+        self::assertSame($expectedSet->formatAll(IntervalFormat::Iso8601StartDuration), $emptySet->union($interval)->formatAll(IntervalFormat::Iso8601StartDuration));
+        self::assertSame($expectedSet->formatAll(IntervalFormat::Iso8601StartDuration), $expectedSet->union($emptySet)->formatAll(IntervalFormat::Iso8601StartDuration));
+        self::assertSame($expectedSet->formatAll(IntervalFormat::Iso8601StartDuration), $expectedSet->union($interval)->formatAll(IntervalFormat::Iso8601StartDuration));
     }
 
     public function test_normalize_merges_overlapping_intervals(): void
@@ -503,7 +503,7 @@ final class IntervalSetTest extends TestCase
         $set = new IntervalSet($this->i(1, 2), $this->i(3, 4));
 
         self::assertSame([$this->i(1, 2)->format(IntervalFormat::Iso80000), $this->i(3, 4)->format(IntervalFormat::Iso80000)], $set->formatAll(IntervalFormat::Iso80000));
-        self::assertSame([$this->i(1, 2)->format(IntervalFormat::Iso8601StartDuration), $this->i(3, 4)->format(IntervalFormat::Iso8601StartDuration)], $set->formatAll());
+        self::assertSame([$this->i(1, 2)->format(IntervalFormat::Iso8601StartDuration), $this->i(3, 4)->format(IntervalFormat::Iso8601StartDuration)], $set->formatAll(IntervalFormat::Iso8601StartDuration));
         self::assertSame([$this->i(1, 2)->format(IntervalFormat::Bourbaki), $this->i(3, 4)->format(IntervalFormat::Bourbaki)], $set->formatAll(IntervalFormat::Bourbaki));
     }
 
@@ -635,7 +635,10 @@ final class IntervalSetTest extends TestCase
             Interval::between(Time::noon(), Time::midnight()),
         );
 
-        self::assertEquals($expected->formatAll(), $set->complement()->formatAll());
+        self::assertEquals(
+            $expected->formatAll(IntervalFormat::Iso8601StartEnd),
+            $set->complement()->formatAll(IntervalFormat::Iso8601StartEnd)
+        );
     }
 
     public function testComplementIntervalAtStart(): void
@@ -643,7 +646,10 @@ final class IntervalSetTest extends TestCase
         $set = new IntervalSet(Interval::between(Time::midnight(), Time::at(3)));
         $expected = new IntervalSet(Interval::between(Time::at(3, 0), Time::midnight()));
 
-        self::assertEquals($expected->formatAll(), $set->complement()->formatAll());
+        self::assertEquals(
+            $expected->formatAll(IntervalFormat::Bourbaki),
+            $set->complement()->formatAll(IntervalFormat::Bourbaki)
+        );
     }
 
     public function testComplementIntervalAtEnd(): void
@@ -651,7 +657,10 @@ final class IntervalSetTest extends TestCase
         $set = new IntervalSet(Interval::between(Time::at(22, 0), Time::midnight()));
         $expected = new IntervalSet(Interval::between(Time::midnight(), Time::at(22)));
 
-        self::assertEquals($expected->formatAll(), $set->complement()->formatAll());
+        self::assertEquals(
+            $expected->formatAll(IntervalFormat::Iso80000),
+            $set->complement()->formatAll(IntervalFormat::Iso80000)
+        );
     }
 
     public function testComplementMultipleIntervals(): void
@@ -667,7 +676,10 @@ final class IntervalSetTest extends TestCase
             Interval::between(Time::noon(), Time::midnight()),
         );
 
-        self::assertEquals($expected->formatAll(), $set->complement()->formatAll());
+        self::assertEquals(
+            $expected->formatAll(IntervalFormat::Iso8601StartDuration),
+            $set->complement()->formatAll(IntervalFormat::Iso8601StartDuration),
+        );
     }
 
     public function testComplementOfCircularInterval(): void
@@ -681,7 +693,10 @@ final class IntervalSetTest extends TestCase
     {
         $set = new IntervalSet(Interval::between(Time::at(3), Time::at(7)));
 
-        self::assertEquals($set->formatAll(), $set->complement()->complement()->formatAll());
+        self::assertEquals(
+            $set->formatAll(IntervalFormat::Iso8601StartDuration),
+            $set->complement()->complement()->formatAll(IntervalFormat::Iso8601StartDuration)
+        );
     }
 
     public function test_intersect_returns_itself_with_empty_intervals(): void
@@ -745,11 +760,11 @@ final class IntervalSetTest extends TestCase
 
         $diff1 = (new IntervalSet(Interval::circular(Time::at(hour: 10))))
             ->difference($intervalSet)
-            ->formatAll();
+            ->formatAll(IntervalFormat::Iso8601StartDuration);
 
         $diff2 = (new IntervalSet(Interval::fullDay()))
             ->difference($intervalSet)
-            ->formatAll();
+            ->formatAll(IntervalFormat::Iso8601StartDuration);
 
         self::assertEquals($diff1, $diff2);
     }

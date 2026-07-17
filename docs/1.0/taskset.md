@@ -47,7 +47,7 @@ TaskSet::last(): ?Task
 ## Formatting
 
 ```php
-TaskSet::formatAll(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): array
+TaskSet::formatAll(IntervalFormat $format, ?Unit $unit = null): array
 ```
 
 ## Temporal selection methods

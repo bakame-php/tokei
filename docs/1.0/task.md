@@ -24,7 +24,7 @@ title: Task
 ```php
 Task::for(Interval $interval, Identifiers|string $identifier = new Identifiers()): self
 Task::fromEvent(Event $event, Duration $duration, Bound $from): self
-Task::fromFormat(string $value, IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): self
+Task::fromFormat(string $value, IntervalFormat $format, ?Unit $unit = null): self
 ```
 
 ## Accessors

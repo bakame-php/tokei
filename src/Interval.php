@@ -260,7 +260,7 @@ final class Interval implements JsonSerializable
     }
 
     /**
-     * Returns a Circular interval using midnight as endpoint.
+     * Returns the full circular interval starting at midnight.
      */
     public static function fullDay(): self
     {
@@ -269,7 +269,7 @@ final class Interval implements JsonSerializable
 
     public static function circular(Event|Time|DateTimeInterface $at): self
     {
-        return new self(InputNormalizer::time($at), Duration::of(days: 1));
+        return new self(InputNormalizer::time($at), Duration::fullDay());
     }
 
     public static function collapsed(Event|Time|DateTimeInterface $at): self
@@ -578,7 +578,7 @@ final class Interval implements JsonSerializable
         $linearStart = $this->linearStart;
         $linearEnd = $this->linearEnd;
         if ($linearEnd->isLongerThan($linearStart) && $sinceMidnight->isShorterThan($linearStart)) {
-            $sinceMidnight = $sinceMidnight->add(Duration::of(days: 1));
+            $sinceMidnight = $sinceMidnight->add(Duration::fullDay());
         }
 
         return $sinceMidnight->isLongerThanOrEqual($linearStart)

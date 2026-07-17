@@ -120,7 +120,7 @@ final class IntervalSet implements TemporalSet
      *
      * @return list<non-empty-string>
      */
-    public function formatAll(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): array
+    public function formatAll(IntervalFormat $format, ?Unit $unit = null): array
     {
         return array_map(static fn (Interval $item): string => $item->format($format, $unit), $this->items);
     }
@@ -519,7 +519,7 @@ final class IntervalSet implements TemporalSet
 
             $current = IntervalType::Circular !== $item->type
                 ? [[$item->linearStart, $item->linearEnd]]
-                : [[Duration::zero(), Duration::of(days: 1)]];
+                : [[Duration::zero(), Duration::fullDay()]];
 
             foreach ($otherIntervals as $otherInterval) {
                 if (IntervalType::Collapsed === $otherInterval->type) {

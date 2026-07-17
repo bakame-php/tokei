@@ -117,7 +117,7 @@ final class TaskSet implements TemporalSet
      *
      * @return list<non-empty-string>
      */
-    public function formatAll(IntervalFormat $format = IntervalFormat::Iso8601StartDuration, ?Unit $unit = null): array
+    public function formatAll(IntervalFormat $format, ?Unit $unit = null): array
     {
         return array_map(static fn (Task $item): string => $item->format($format, $unit), $this->items);
     }

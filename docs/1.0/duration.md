@@ -34,6 +34,12 @@ $duration = Duration::fromFormat('P2025Y3DT25s', DurationFormat::Iso8601);
 // throws a Bakame\Tokei\InvalidDuration exception 
 // because of the presence of the Y component
 ```
+Four specific named constructors are added to represent special semantic values.
+
+- `Duration::zero()` represents a duration of 0 second.
+- `Duration::fullDay()` represents a complete 24-hour clock duration
+- `Duration::min()` represents the smallest representable duration
+- `Duration::max()` represents the largest representable duration
 
 ## Accessors
 
@@ -164,11 +170,11 @@ $a->roundTo(Unit::Minute, SnapMode::Floor)->format(DurationFormat::Timer);
 $a->roundTo(Unit::Minute, SnapMode::Ceil)->format(DurationFormat::Timer);
 // returns "1:03:00"
 
-$duration = Duration::fromFormat('-PT5H30M');
+$duration = Duration::fromFormat('-PT5H30M', DurationFormat::Iso8601);
 $oneHour = Duration::of(hours: 1);
 $result = $duration->dividedInto($oneHour);
 
-$duration->format();
+$duration->format(DurationFormat::Iso8601);
 // returns '-PT5H30M'
 $result->quotient;
 // returns '-5'
@@ -202,7 +208,7 @@ Convenient methods based on <code>Duration::compare</code> are also available:
 
 ```php
 $duration = Duration::of(microseconds: 3_661_500_000);
-$other = Duration::fromFormat('PT1H1S');
+$other = Duration::fromFormat('PT1H1S', DurationFormat::Iso8601);
 
 Duration::compare($duration, $other);    //returns 1
 $duration->isShorterThan($other);        // returns false

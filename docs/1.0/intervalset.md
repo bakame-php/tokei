@@ -57,10 +57,8 @@ IntervalSet::isEmpty(): bool
 Supports the same formatting arguments as the `Interval::format` method.
 
 ```php
-IntervalSet::formatAll(
-    IntervalFormat $format = IntervalFormat::Iso8601StartDuration,
-    ?Unit $unit = null,
-): list<string> //all interval are converted to their Interval::format string representation
+IntervalSet::formatAll(IntervalFormat $format, ?Unit $unit = null,): list<string>
+//all interval are converted to their Interval::format string representation
 ```
 
 ## Temporal selection methods

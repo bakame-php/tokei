@@ -23,7 +23,7 @@ title: Event
 
 ```php
 Event::at(Time $at, Identifiers|string $identifier = new Identifiers()): self
-Event::fromFormat(string $value, TimeFormat $format = TimeFormat::Clock): self
+Event::fromFormat(string $value, TimeFormat $format): self
 ```
 
 ## Accessors

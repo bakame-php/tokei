@@ -150,7 +150,7 @@ final class Duration implements JsonSerializable
 
         return new self(
             new DurationParts(
-                hour: ($days) * 24 + $interval->h,
+                hour: ($days * 24) + $interval->h,
                 minute: $interval->i,
                 second: $interval->s,
                 microsecond: UnitTransformer::toTicks($interval->f, Unit::Second),
@@ -271,6 +271,14 @@ final class Duration implements JsonSerializable
     public static function zero(): self
     {
         return new self(0);
+    }
+
+    /**
+     * Returns the duration of a complete 24-hour day.
+     */
+    public static function fullDay(): self
+    {
+        return self::of(days: 1);
     }
 
     /**

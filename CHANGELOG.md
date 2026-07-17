@@ -23,6 +23,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Interval::roundDurationTo`
 - `Duration::fromDateInterval`
 - `Duration::fromFormat`
+- `Duration::fullDay`
 - `Duration::format`
 - `Duration::add`
 - `Duration::sub`

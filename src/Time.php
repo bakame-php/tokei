@@ -159,7 +159,7 @@ final class Time implements JsonSerializable
     {
         return new self(
             (int) InputNormalizer::duration($duration)
-                ->modulo(Duration::of(days: 1))
+                ->modulo(Duration::fullDay())
                 ->in(Unit::Microsecond)
         );
     }
@@ -415,6 +415,6 @@ final class Time implements JsonSerializable
      */
     public function distance(Time|Event|DateTimeInterface $other): Duration
     {
-        return $this->diff($other)->modulo(Duration::of(days: 1));
+        return $this->diff($other)->modulo(Duration::fullDay());
     }
 }

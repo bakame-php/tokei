@@ -25,7 +25,7 @@ Time::at(
 
 Time::fromFormat(
     string $value,
-    TimeFormat $format = TimeFormat::Clock
+    TimeFormat $format
 ): Time
 
 Time::sinceMidnight(Duration $value): Time
