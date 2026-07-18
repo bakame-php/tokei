@@ -5,15 +5,10 @@ declare(strict_types=1);
 namespace Bakame\Tokei;
 
 use ArrayAccess;
-use TypeError;
 use ValueError;
 
-use function array_key_exists;
-use function is_int;
-use function is_string;
-
 /**
- * @implements ArrayAccess<mixed, int|Duration>
+ * @implements ArrayAccess<int, int|Duration>
  */
 final readonly class DivisionResult implements ArrayAccess
 {
@@ -23,37 +18,27 @@ final readonly class DivisionResult implements ArrayAccess
     ) {
     }
 
-    /**
-     * @return array{0: int, 1: Duration}
-     */
-    private function asTuple(): array
-    {
-        return [$this->quotient, $this->remainder];
-    }
-
     public function offsetExists(mixed $offset): bool
     {
-        return (is_int($offset) || is_string($offset))
-            && array_key_exists($offset, $this->asTuple());
+        return 1 === $offset || 0 === $offset;
     }
 
-    /**
-     * @return int|Duration
-     */
-    public function offsetGet(mixed $offset): mixed
+    public function offsetGet(mixed $offset): Duration|int
     {
-        is_int($offset) || is_string($offset) || throw new TypeError('The offset must be a string or an integer.');
-
-        return $this->asTuple()[$offset] ?? throw new ValueError('Unable to retrieve the value of $offset; only 0 and 1 are allowed for '.  self::class);
+        return match ($offset) {
+            0 => $this->quotient,
+            1 => $this->remainder,
+            default => throw new ValueError('Only offsets 0 and 1 are supported.'),
+        };
     }
 
-    public function offsetSet(mixed $offset, mixed $value): void
+    public function offsetSet(mixed $offset, mixed $value): never
     {
-        throw new TokeiException(self::class.' is immutable');
+        throw TokeiError::dueToImmutability(self::class);
     }
 
-    public function offsetUnset(mixed $offset): void
+    public function offsetUnset(mixed $offset): never
     {
-        throw new TokeiException(self::class.' is immutable');
+        throw TokeiError::dueToImmutability(self::class);
     }
 }

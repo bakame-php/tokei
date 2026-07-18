@@ -12,6 +12,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
+use ValueError;
 
 use function json_encode;
 use function ltrim;
@@ -1069,6 +1070,22 @@ final class DurationTest extends TestCase
 
         self::assertSame(2, $result->quotient);
         self::assertTrue($result->remainder->equals(Duration::of(hours: 1)));
+        [$quotient, $remainder] = $result;
+        self::assertSame($quotient, $result->quotient);
+        self::assertInstanceOf(Duration::class, $remainder);
+        self::assertTrue($result->remainder->equals($remainder));
+    }
+
+    public function testDividedIntoThrowsOnInvalidOffset(): void
+    {
+        $duration = Duration::of(hours: 5);
+        $other = Duration::of(hours: 2);
+        $result = $duration->dividedInto($other);
+
+        self::assertFalse(isset($result[2]));
+
+        $this->expectException(ValueError::class);
+        $result[2]; /* @phpstan-ignore-line */
     }
 
     public function testCountOfReturnsZeroWhenDurationIsSmaller(): void
