@@ -3,7 +3,7 @@ version:
         Getting Started:
             Installation: '/1.0/'
         Temporal Primitives:
-            Principes: '/1.0/principes/'
+            Principles: '/1.0/principles/'
             Duration: '/1.0/duration/'
             Time: '/1.0/time/'
             Interval: '/1.0/interval/'
@@ -11,6 +11,7 @@ version:
             Available Enums: '/1.0/enums/'
             Accepted Input: '/1.0/accepted-input-types/'
         Annotated Values:
+            Introduction: '/1.0/annotated-operations/'
             Identifiers: '/1.0/identifiers'
             Event: '/1.0/event/'
             EventSet: '/1.0/eventset/'

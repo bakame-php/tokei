@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Time
+title: Interval
 ---
 
 # Interval

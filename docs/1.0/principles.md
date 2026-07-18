@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Principes
+title: Principles
 ---
 
 # Principles

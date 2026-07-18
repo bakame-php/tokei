@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Duration
+title: Accepted Input types
 ---
 
 # Accepted Input Types
