@@ -97,7 +97,7 @@ $duration->format(DurationFormat::Timer);   // returns '25:00:05'
 <div class="message-warning">
 <ul>
 <li><strong>Only deterministic duration interval are used <code>Y</code>, <code>M</code> for year and month are not used</strong></li>
-<li>to have a predictive representation <code>W</code> is not used; <code>70</code> multiple are used instead.</li>
+<li>to have a predictive representation <code>W</code> is not used; <code>168H</code> multiple are used instead.</li>
 </ul>
 </div>
 
