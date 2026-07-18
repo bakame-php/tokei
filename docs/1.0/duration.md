@@ -195,7 +195,7 @@ $oneHour
 Support for dividing one duration by another is enabled using  the `dividedInto()` or `modulo()` method.
 The `dividedInto()` method returns a DTO, `DivisionResult`, exposing the quotient and remainder,
 giving developers the flexibility to access the result either through its properties
-or by using array destructuring with `DivisionResult::asTuple()`. 
+or by using array destructuring on `DivisionResult`. 
 
 ```php
 $duration = Duration::fromFormat('-PT5H30M', DurationFormat::Iso8601);
@@ -206,7 +206,7 @@ $result->quotient;
 $result->remainder->format(DurationFormat::Iso8601);
 // returns '-PT30M'
 
-[$quotient, $remainder] = $result->asTuple();
+[$quotient, $remainder] = $result;
 $quotient;
 // returns '-5'
 $remainder->format(DurationFormat::Iso8601);

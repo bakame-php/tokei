@@ -2,11 +2,11 @@
 
 All Notable changes to `bakame/tokei` will be documented in this file.
 
-## [0.2.1 - botan](https://github.com/bakame-php/stackwatch/compare/0.2.0...0.2.1) - 2026-07-18
+## [Next - Title](https://github.com/bakame-php/stackwatch/compare/0.2.0...main) - TBD
 
 ### Added
 
-- None
+- **BC BREAK:** `DivisionResult` implements `ArrayAccess`
 
 ### Fixed
 
@@ -20,7 +20,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Removed
 
-- None
+- **BC BREAK:** `DivisionResult::asTuple` is removed use `ArrayAccess` for direct destructuring
 
 ## [0.2.0 - botan](https://github.com/bakame-php/stackwatch/compare/0.1.0...0.2.0) - 2026-07-17
 
