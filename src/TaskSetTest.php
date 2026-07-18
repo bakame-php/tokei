@@ -37,7 +37,7 @@ final class TaskSetTest extends TestCase
     {
         $set = new TaskSet($this->task('A', Interval::between(Time::at(9), Time::at(12))));
 
-        $result = $set->union([$this->task('B', Interval::between(Time::at(11), Time::at(14)))]);
+        $result = $set->union($this->task('B', Interval::between(Time::at(11), Time::at(14))));
 
         self::assertEquals([
             '[09:00:00,11:00:00);A',
@@ -57,7 +57,7 @@ final class TaskSetTest extends TestCase
             $this->task('A', Interval::between(Time::at(10), Time::at(14)))
         );
 
-        $result = $a->intersect([$b]);
+        $result = $a->intersect($b);
 
         self::assertEquals([
             '[10:00:00,12:00:00);A',
@@ -72,7 +72,7 @@ final class TaskSetTest extends TestCase
             $this->task('B', Interval::between(Time::at(13), Time::at(15)))
         );
 
-        self::assertEmpty($a->intersect([]));
+        self::assertEmpty($a->intersect());
     }
 
     public function test_gaps_detect_missing_time(): void
@@ -94,7 +94,7 @@ final class TaskSetTest extends TestCase
             $this->task('B', Interval::between(Time::at(13), Time::at(15)))
         );
 
-        self::assertSame($a, $a->difference([]));
+        self::assertSame($a, $a->difference());
     }
 
     public function test_difference_removes_middle_overlap(): void

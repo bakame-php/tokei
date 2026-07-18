@@ -458,11 +458,9 @@ final class TaskSet implements TemporalSet
     }
 
     /**
-     * @param iterable<TaskSet|Task> $sets
-     *
      * @throws TokeiException
      */
-    public function intersect(iterable $sets): self
+    public function intersect(TaskSet|Task|Interval|IntervalSet ...$sets): self
     {
         $splitTasks = static fn (TaskSet $set): TaskSet => $set
             ->transform(
@@ -509,7 +507,7 @@ final class TaskSet implements TemporalSet
                 ? null
                 : Task::for(Interval::between($from, $to), $labelsA->merge($labelsB));
 
-        $others = new self(...$sets);
+        $others = new self(...self::filterTasks(...$sets));
         if ($this->isEmpty() || $others->isEmpty()) {
             return new self();
         }
@@ -548,16 +546,14 @@ final class TaskSet implements TemporalSet
     }
 
     /**
-     * @param iterable<TaskSet|Task|Interval|IntervalSet> $sets
-     *
      * @throws TokeiException
      */
-    public function union(iterable $sets = []): self
+    public function union(Task|TaskSet|Interval|IntervalSet ...$sets): self
     {
         $set = $this->push(...$sets);
 
         return new self(
-            ...IntervalSet::chronological($set)
+            ...IntervalSet::chronological(...$set)
                 ->atomic()
                 ->map(fn (Interval $interval): Task => Task::for($interval, new Identifiers($set->overlaps($interval))))
         );
@@ -575,11 +571,9 @@ final class TaskSet implements TemporalSet
     }
 
     /**
-     * @param iterable<TaskSet|Task|Interval|IntervalSet> $sets
-     *
-     * @throws InvalidDuration|InvalidInterval|TemporalException
+     * @throws TokeiException
      */
-    public function difference(iterable $sets): self
+    public function difference(Task|TaskSet|Interval|IntervalSet ...$sets): self
     {
         $others = new self(...self::filterTasks(...$sets));
 

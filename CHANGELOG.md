@@ -2,6 +2,26 @@
 
 All Notable changes to `bakame/tokei` will be documented in this file.
 
+## [0.2.1 - botan](https://github.com/bakame-php/stackwatch/compare/0.2.0...0.2.1) - 2026-07-18
+
+### Added
+
+- None
+
+### Fixed
+
+- **BC BREAK:** `TaskSet::union` align signature with `IntervalSet::union`
+- **BC BREAK:** `TaskSet::intersect` align signature with `IntervalSet::intersect`
+- **BC BREAK:** `TaskSet::difference` align signature with `IntervalSet::difference`
+
+### Deprecated
+
+- None
+
+### Removed
+
+- None
+
 ## [0.2.0 - botan](https://github.com/bakame-php/stackwatch/compare/0.1.0...0.2.0) - 2026-07-17
 
 ### Added
