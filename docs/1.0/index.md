@@ -7,7 +7,8 @@ title: Installation
 
 ## System Requirements
 
-**PHP >= 8.4** is required but the latest stable version of PHP is recommended.
+- **PHP >= 8.4** is required but the latest stable version of PHP is recommended.
+- **The library does not support 32bit PHP**
 
 ## Installation
 

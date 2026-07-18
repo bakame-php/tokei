@@ -192,6 +192,57 @@ $oneHour
 
 <p class="message-info">Use <code>Duration::add</code> or <code>Duration::sub</code> to aggregate signed duration objects.</p>
 
+Support for dividing one duration by another is enabled using  the `dividedInto()` or `modulo()` method.
+The `dividedInto()` method returns a DTO, `DivisionResult`, exposing the quotient and remainder,
+giving developers the flexibility to access the result either through its properties
+or by using array destructuring with `DivisionResult::asTuple()`. 
+
+```php
+$duration = Duration::fromFormat('-PT5H30M', DurationFormat::Iso8601);
+$oneHour = Duration::of(hours: 1);
+$result = $duration->dividedInto($oneHour);
+$result->quotient;
+// returns '-5'
+$result->remainder->format(DurationFormat::Iso8601);
+// returns '-PT30M'
+
+[$quotient, $remainder] = $result->asTuple();
+$quotient;
+// returns '-5'
+$remainder->format(DurationFormat::Iso8601);
+// returns '-PT30M'
+```
+The `modulo()` method complements `dividedInto()` by providing an easy way to retrieve
+the remainder of a duration division. This is especially useful when dealing with
+circular ranges, as the result of `modulo()` is always a non-negative `Duration` instance
+
+```php
+$duration = Duration::of(hours: 3, seconds: 35);
+$factor = Duration::of(hours: 1);
+
+echo $duration
+    ->modulo($factor)
+    ->format(DurationFormat::Compact), PHP_EOL;
+//returns 35s;
+
+echo $duration
+    ->dividedInto($factor)
+    ->remainder->format(DurationFormat::Compact), PHP_EOL;
+//returns 35s;
+
+echo $duration
+    ->negated()
+    ->modulo($factor)
+    ->format(DurationFormat::Compact), PHP_EOL;
+//returns 59m25s;
+
+echo $duration
+    ->negated()
+    ->dividedInto($factor)
+    ->remainder->format(DurationFormat::Compact), PHP_EOL;
+//returns -35s;
+```
+
 ## Comparing duration
 
 It is possible to compare duration using common methods terminology
