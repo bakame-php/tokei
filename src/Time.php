@@ -282,27 +282,27 @@ final class Time implements JsonSerializable
 
     public function isBefore(Time|Event|DateTimeInterface $other): bool
     {
-        return 0 > Duration::compare($this, $other);
+        return 0 > Duration::compare($this, InputNormalizer::time($other));
     }
 
     public function isBeforeOrEqual(Time|Event|DateTimeInterface $other): bool
     {
-        return 0 >= Duration::compare($this, $other);
+        return 0 >= Duration::compare($this, InputNormalizer::time($other));
     }
 
     public function equals(Time|Event|DateTimeInterface $other): bool
     {
-        return 0 === Duration::compare($this, $other);
+        return 0 === Duration::compare($this, InputNormalizer::time($other));
     }
 
     public function isAfterOrEqual(Time|Event|DateTimeInterface $other): bool
     {
-        return 0 <= Duration::compare($this, $other);
+        return 0 <= Duration::compare($this, InputNormalizer::time($other));
     }
 
     public function isAfter(Time|Event|DateTimeInterface $other): bool
     {
-        return 0 < Duration::compare($this, $other);
+        return 0 < Duration::compare($this, InputNormalizer::time($other));
     }
 
     /**

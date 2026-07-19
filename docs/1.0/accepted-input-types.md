@@ -48,7 +48,6 @@ A duration can be expressed using any of the following types:
 - `Task`
 - `Time`
 - `Event`
-- `DateTimeInterface`
 
 Example:
 

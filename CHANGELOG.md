@@ -10,9 +10,10 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Fixed
 
-- **BC BREAK:** `TaskSet::union` align signature with `IntervalSet::union`
-- **BC BREAK:** `TaskSet::intersect` align signature with `IntervalSet::intersect`
-- **BC BREAK:** `TaskSet::difference` align signature with `IntervalSet::difference`
+- **BC BREAK:** `TaskSet::union` aligns signature with `IntervalSet::union`
+- **BC BREAK:** `TaskSet::intersect` aligns signature with `IntervalSet::intersect`
+- **BC BREAK:** `TaskSet::difference` aligns signature with `IntervalSet::difference`
+- **BC BREAK:** `Duration::compare` no longer accept direct `DateTimeInterface` instances
 
 ### Deprecated
 
@@ -21,6 +22,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 ### Removed
 
 - **BC BREAK:** `DivisionResult::asTuple` is removed use `ArrayAccess` for direct destructuring
+- **BC BREAK:** `InputNormalizer::duration` no longer accepts `DateTimeInterface` implementing class
 
 ## [0.2.0 - botan](https://github.com/bakame-php/stackwatch/compare/0.1.0...0.2.0) - 2026-07-17
 

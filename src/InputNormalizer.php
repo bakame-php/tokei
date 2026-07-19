@@ -33,13 +33,12 @@ final readonly class InputNormalizer
     /**
      * @throws InvalidDuration
      */
-    public static function duration(Duration|DateInterval|Interval|Task|Time|Event|DateTimeInterface $duration): Duration
+    public static function duration(Duration|DateInterval|Interval|Task|Time|Event $duration): Duration
     {
         return match (true) {
             $duration instanceof Duration => $duration,
             $duration instanceof DateInterval => Duration::fromDateInterval($duration),
             $duration instanceof Time,
-            $duration instanceof DateTimeInterface,
             $duration instanceof Event => InputNormalizer::time($duration)->offset(),
             default => self::interval($duration)->duration,
         };

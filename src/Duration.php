@@ -439,8 +439,8 @@ final class Duration implements JsonSerializable
      * @return int<-1, 1> If this duration is shorter, equal, or longer than the given duration.
      */
     public static function compare(
-        Duration|DateInterval|Interval|Task|Time|Event|DateTimeInterface $that,
-        Duration|DateInterval|Interval|Task|Time|Event|DateTimeInterface $other
+        Duration|DateInterval|Interval|Task|Time|Event $that,
+        Duration|DateInterval|Interval|Task|Time|Event $other
     ): int {
         return InputNormalizer::duration($that)->ticks <=> InputNormalizer::duration($other)->ticks;
     }
@@ -497,20 +497,6 @@ final class Duration implements JsonSerializable
     }
 
     /**
-     * Returns this duration modulo the given cycle.
-     *
-     * The result is always non-negative and strictly less than the cycle.
-     *
-     * @throws TokeiException
-     */
-    public function modulo(Duration|DateInterval|Interval|Task $cycle): self
-    {
-        $cycle = InputNormalizer::duration($cycle);
-
-        return new self(($this->ticks % $cycle->ticks + $cycle->ticks) % $cycle->ticks);
-    }
-
-    /**
      * @throws TokeiException
      */
     public function multipliedBy(int $factor): self
@@ -564,5 +550,19 @@ final class Duration implements JsonSerializable
                 remainder: new self($this->ticks % $duration->ticks),
             )
             : throw new DivisionByZeroError('Cannot divide by zero duration.');
+    }
+
+    /**
+     * Returns this duration modulo the given cycle.
+     *
+     * The result is always non-negative and strictly less than the cycle.
+     *
+     * @throws TokeiException
+     */
+    public function modulo(Duration|DateInterval|Interval|Task $cycle): self
+    {
+        $cycle = InputNormalizer::duration($cycle);
+
+        return new self(($this->ticks % $cycle->ticks + $cycle->ticks) % $cycle->ticks);
     }
 }
