@@ -7,9 +7,11 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 ### Added
 
 - **BC BREAK:** `DivisionResult` implements `ArrayAccess`
+- `Time::add` and `Time::sub` support variadics for duration argument.
 
 ### Fixed
 
+- `Duration::format(DurationFormat::Compact)` for negative duration.
 - **BC BREAK:** `TaskSet::union` aligns signature with `IntervalSet::union`
 - **BC BREAK:** `TaskSet::intersect` aligns signature with `IntervalSet::intersect`
 - **BC BREAK:** `TaskSet::difference` aligns signature with `IntervalSet::difference`

@@ -187,7 +187,7 @@ final readonly class DurationParts
     private function toCompactString(string $type): string
     {
         $isClock = self::COMPACT_TIME === $type;
-        [$weeks, $remainder] = UnitTransformer::divmod($this->build(), Unit::Week);
+        [$weeks, $remainder] = UnitTransformer::divmod($this->build() * $this->sign, Unit::Week);
         [$days, $remainder] = UnitTransformer::divmod($remainder, Unit::Day);
         [$hours] = UnitTransformer::divmod($remainder, Unit::Hour);
 

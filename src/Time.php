@@ -332,11 +332,11 @@ final class Time implements JsonSerializable
      *
      * @throws TokeiException
      */
-    public function add(Duration|DateInterval|Interval|Task $duration): self
+    public function add(Duration|DateInterval|Interval|Task ...$duration): self
     {
-        $duration = InputNormalizer::duration($duration);
+        $offset = Duration::zero()->add(...array_map(InputNormalizer::duration(...), $duration));
 
-        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->ticks)->add($duration));
+        return $offset->isZero() ? $this : self::sinceMidnight($this->offset()->add($offset));
     }
 
     /**
@@ -346,11 +346,11 @@ final class Time implements JsonSerializable
      *
      * @throws TokeiException
      */
-    public function sub(Duration|DateInterval|Interval|Task $duration): self
+    public function sub(Duration|DateInterval|Interval|Task ...$duration): self
     {
-        $duration = InputNormalizer::duration($duration);
+        $offset = Duration::zero()->add(...array_map(InputNormalizer::duration(...), $duration));
 
-        return $duration->isZero() ? $this : self::sinceMidnight(Duration::of(microseconds: $this->ticks)->sub($duration));
+        return $offset->isZero() ? $this : self::sinceMidnight($this->offset()->sub($offset));
     }
 
     /**

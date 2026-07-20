@@ -179,7 +179,7 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(microseconds: 500000)->negated();
 
-        self::assertEquals($duration, $duration->abs()->negated());
+        self::assertTrue($duration->equals($duration->abs()->negated()));
     }
 
     #[DataProvider('iso8601Provider')]
@@ -601,6 +601,16 @@ final class DurationTest extends TestCase
         $this->expectException(InvalidDuration::class);
 
         Duration::fromFormat($notation, $format);
+    }
+
+    public function testItCanRepresentsNegativeDuration(): void
+    {
+        self::assertSame(
+            '-4w3d2s1µs',
+            Duration::of(weeks: 4, days: 3, seconds: 2, microseconds: 1)
+                ->negated()
+                ->format(DurationFormat::Compact)
+        );
     }
 
     public function testItParsesWeeks(): void

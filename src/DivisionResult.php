@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Bakame\Tokei;
 
 use ArrayAccess;
+use Override;
 use ValueError;
 
 /**
- * @implements ArrayAccess<int, int|Duration>
+ * @implements ArrayAccess<non-negative-int, Duration|int>
  */
 final readonly class DivisionResult implements ArrayAccess
 {
@@ -18,11 +19,16 @@ final readonly class DivisionResult implements ArrayAccess
     ) {
     }
 
+    #[Override]
     public function offsetExists(mixed $offset): bool
     {
         return 1 === $offset || 0 === $offset;
     }
 
+    /**
+     * @return ($offset is 0 ? int : Duration)
+     */
+    #[Override]
     public function offsetGet(mixed $offset): Duration|int
     {
         return match ($offset) {
@@ -32,11 +38,13 @@ final readonly class DivisionResult implements ArrayAccess
         };
     }
 
+    #[Override]
     public function offsetSet(mixed $offset, mixed $value): never
     {
         throw TokeiError::dueToImmutability(self::class);
     }
 
+    #[Override]
     public function offsetUnset(mixed $offset): never
     {
         throw TokeiError::dueToImmutability(self::class);

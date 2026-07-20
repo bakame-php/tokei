@@ -294,7 +294,7 @@ final class Duration implements JsonSerializable
      */
     public static function min(): self
     {
-        return new self(PHP_INT_MIN + 2);
+        return new self(PHP_INT_MIN + 1);
     }
 
     /**
@@ -382,7 +382,7 @@ final class Duration implements JsonSerializable
      */
     public function abs(): self
     {
-        return $this->ticks < 0 ? $this->negated() : $this;
+        return 0 > $this->ticks ? $this->negated() : $this;
     }
 
     /**
@@ -398,19 +398,14 @@ final class Duration implements JsonSerializable
     /**
      * @throws TokeiException
      */
-    public function add(Duration|DateInterval|Interval|Task ...$duration): self
+    public function add(Duration|DateInterval|Interval|Task ...$other): self
     {
-        $totalMicroseconds = $this->ticks;
-        foreach ($duration as $item) {
-            $value = InputNormalizer::duration($item)->ticks;
-            if (($value > 0 && $totalMicroseconds > PHP_INT_MAX - $value) || ($value < 0 && $totalMicroseconds < PHP_INT_MIN - $value)) {
-                throw InvalidDuration::dueToOverflow();
-            }
-
-            $totalMicroseconds += $value;
+        $ticks = $this->ticks;
+        foreach ($other as $item) {
+            $ticks = self::addTicks($ticks, InputNormalizer::duration($item)->ticks);
         }
 
-        return $totalMicroseconds === $this->ticks ? $this : new self($totalMicroseconds);
+        return $ticks === $this->ticks ? $this : new self($ticks);
     }
 
     /**
@@ -418,17 +413,22 @@ final class Duration implements JsonSerializable
      */
     public function sub(Duration|DateInterval|Interval|Task ...$other): self
     {
-        $totalMicroseconds = $this->ticks;
+        $ticks = $this->ticks;
         foreach ($other as $item) {
-            $value = InputNormalizer::duration($item)->ticks;
-            if (($value > 0 && $totalMicroseconds > PHP_INT_MAX - $value) || ($value < 0 && $totalMicroseconds < PHP_INT_MIN - $value)) {
-                throw InvalidDuration::dueToOverflow();
-            }
-
-            $totalMicroseconds -= $value;
+            $ticks = self::addTicks($ticks, -InputNormalizer::duration($item)->ticks);
         }
 
-        return $totalMicroseconds === $this->ticks ? $this : new self($totalMicroseconds);
+        return $ticks === $this->ticks ? $this : new self($ticks);
+    }
+
+    /**
+     * @throws TokeiException
+     */
+    private static function addTicks(int $left, int $right): int
+    {
+        return (($right > 0 && $left > PHP_INT_MAX - $right) || ($right < 0 && $left < PHP_INT_MIN - $right))
+            ? throw InvalidDuration::dueToOverflow()
+            : $left + $right;
     }
 
     /**

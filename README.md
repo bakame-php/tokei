@@ -30,8 +30,8 @@ $shouldStopAt = $startedNewShiftAt->add($remaining);
 echo "I have to work ", $target->format(DurationFormat::Compact), " today", PHP_EOL;
 echo "I have already worked for ", $alreadyDone->format(DurationFormat::Compact), PHP_EOL;
 echo "I still have to work ", $remaining->format(DurationFormat::Compact), PHP_EOL;
-echo "If I start working again at ", $startedNewShiftAt->format(), PHP_EOL;
-echo "I will end today's shit at ", $shouldStopAt->format(), PHP_EOL;
+echo "If I start working again at ", $startedNewShiftAt->format(DurationFormat::Timer), PHP_EOL;
+echo "I will end today's shit at ", $shouldStopAt->format(DurationFormat::Timer), PHP_EOL;
 
 // Gives the following:
 

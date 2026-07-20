@@ -132,8 +132,8 @@ with the following methods:
 - `Time::clamp` will adjust the time against two other time references;
 
 ```php
-Time::add(Duration $duration): Time
-Time::sub(Duration $duration): Time
+Time::add(Duration ...$duration): Time
+Time::sub(Duration ...$duration): Time
 Time::with(
     ?int $hour = null,
     ?int $minute = null,
