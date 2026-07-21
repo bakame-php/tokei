@@ -8,6 +8,7 @@ use DateInterval;
 use DateTimeInterface;
 use DateTimeZone;
 use Throwable;
+use Time\Duration as TimeDuration;
 
 /**
  * @internal
@@ -33,13 +34,14 @@ final readonly class InputNormalizer
     /**
      * @throws InvalidDuration
      */
-    public static function duration(Duration|DateInterval|Interval|Task|Time|Event $duration): Duration
+    public static function duration(Duration|DateInterval|Interval|Task|Time|Event|TimeDuration $duration): Duration
     {
         return match (true) {
             $duration instanceof Duration => $duration,
             $duration instanceof DateInterval => Duration::fromDateInterval($duration),
             $duration instanceof Time,
             $duration instanceof Event => InputNormalizer::time($duration)->offset(),
+            $duration instanceof TimeDuration => Duration::fromNative($duration),
             default => self::interval($duration)->duration,
         };
     }

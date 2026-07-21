@@ -18,7 +18,10 @@
   </coverage>
   <testsuites>
     <testsuite name="Aide Time Test Suite">
-      <directory suffix="Test.php">src</directory>
+      <directory suffix="Test.php">tests/Tokei</directory>
+    </testsuite>
+    <testsuite name="Polyfill Test Suite">
+      <directory suffix="Test.php">tests/Time</directory>
     </testsuite>
   </testsuites>
   <logging>
@@ -27,9 +30,7 @@
   <source>
     <include>
       <directory suffix=".php">src</directory>
+      <directory suffix=".php">lib</directory>
     </include>
-    <exclude>
-      <directory suffix="Test.php">src</directory>
-    </exclude>
   </source>
 </phpunit>

@@ -10,13 +10,14 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use JsonSerializable;
+use Time\Duration as TimeDuration;
 
 use function array_key_first;
 use function array_key_last;
 use function array_map;
+use function intdiv;
 use function preg_match;
 use function str_pad;
-use function substr;
 use function trim;
 use function usort;
 
@@ -26,7 +27,7 @@ final class Time implements JsonSerializable
         (?<hour>\d{1,2}):
         (?<minute>\d{1,2})
         (:(?<second>\d{1,2}))?
-        (?:\.(?<microsecond>\d{1,6}))?
+        (?:\.(?<fractions>\d{1,9}))?
     $@x';
 
     private const string REGEXP_COMPACT = '@^
@@ -34,8 +35,8 @@ final class Time implements JsonSerializable
         (?<minute>\d{1,2})\s*m\s*
         (?:(?<second>\d{1,2})\s*s\s*)?
         (?:
-            (?<fvalue>\d{1,6})\s*
-            (?<funit>µs|us|ms)\s*
+            (?<fvalue>\d{1,9})\s*
+            (?<funit>µs|us|ms|ns)\s*
         )?
     $@x';
 
@@ -129,33 +130,54 @@ final class Time implements JsonSerializable
         1 === preg_match($regexp, $notation, $parts) || throw new InvalidTime('Unknown or bad format `'.$value.'`'.'`.');
 
         if (self::REGEXP_ISO8601 === $regexp) {
+
+            $nanoseconds = (int) (str_pad($parts['fractions'] ?? '0', 9, '0'));
+
             return Time::at(
                 hour: (int) $parts['hour'],
                 minute: (int) $parts['minute'],
                 second: (int) ($parts['second'] ?? 0),
-                microsecond: (int) str_pad(substr($parts['microsecond'] ?? '0', 0, 6), 6, '0'),
+                microsecond: intdiv($nanoseconds, 1000),
             );
-        }
-
-        $fractionValue = (int) ($parts['fvalue'] ?? 0);
-        $fractionUnit = $parts['funit'] ?? 'µs';
-        if ('ms' === $fractionUnit) {
-            ($fractionValue <= 999) || throw new InvalidDuration('millisecond fraction value cannot be greater than 999.');
-            $fractionValue *= 1000;
         }
 
         return Time::at(
             hour: (int) $parts['hour'],
             minute: (int) $parts['minute'],
             second: (int) ($parts['second'] ?? 0),
-            microsecond: $fractionValue,
+            microsecond: self::getMicrosecondPart($parts),
         );
+    }
+
+    /**
+     * @param array{fvalue?: string, funit?: ?non-empty-string} $parts
+     *
+     * @throws InvalidDuration
+     */
+    private static function getMicrosecondPart(array $parts): int
+    {
+        $fractionValue = (int)($parts['fvalue'] ?? 0);
+        $fractionUnit = $parts['funit'] ?? 'us';
+        if ('ms' === $fractionUnit) {
+            ($fractionValue <= 999) || throw new InvalidDuration('millisecond fraction value cannot be greater than 999.');
+            return $fractionValue * 1000;
+        }
+
+        if ('µs' === $fractionUnit || 'us' === $fractionUnit) {
+            ($fractionValue <= 999_999) || throw new InvalidDuration('microsecond fraction value cannot be greater than 999_999.');
+
+            return $fractionValue;
+        }
+
+        ($fractionValue <= 999_999_999) || throw new InvalidDuration('nanosecond fraction value cannot be greater than 999_999_999.');
+
+        return intdiv($fractionValue, 1000);
     }
 
     /**
      * Returns a new instance from a number of unit of time since midnight.
      */
-    public static function sinceMidnight(Duration|DateInterval|Interval|Task $duration): self
+    public static function sinceMidnight(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         return new self(
             (int) InputNormalizer::duration($duration)
@@ -332,7 +354,7 @@ final class Time implements JsonSerializable
      *
      * @throws TokeiException
      */
-    public function add(Duration|DateInterval|Interval|Task ...$duration): self
+    public function add(Duration|DateInterval|Interval|Task|TimeDuration ...$duration): self
     {
         $offset = Duration::zero()->add(...array_map(InputNormalizer::duration(...), $duration));
 
@@ -346,7 +368,7 @@ final class Time implements JsonSerializable
      *
      * @throws TokeiException
      */
-    public function sub(Duration|DateInterval|Interval|Task ...$duration): self
+    public function sub(Duration|DateInterval|Interval|Task|TimeDuration ...$duration): self
     {
         $offset = Duration::zero()->add(...array_map(InputNormalizer::duration(...), $duration));
 

@@ -2,8 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Bakame\Tokei;
+namespace Tests\Tokei;
 
+use Bakame\Tokei\Duration;
+use Bakame\Tokei\DurationFormat;
+use Bakame\Tokei\DurationParts;
+use Bakame\Tokei\InputNormalizer;
+use Bakame\Tokei\InvalidDuration;
+use Bakame\Tokei\InvalidTime;
+use Bakame\Tokei\SnapMode;
+use Bakame\Tokei\Unit;
+use Bakame\Tokei\UnitTransformer;
 use DateInterval;
 use DateTime;
 use DateTimeImmutable;
@@ -13,7 +22,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 use ValueError;
-
 use function json_encode;
 use function ltrim;
 use function serialize;
@@ -40,7 +48,7 @@ final class DurationTest extends TestCase
 
     public function testParseNegativeMicroseconds(): void
     {
-        $duration = Duration::of(microseconds: 1_500_000)->negated();
+        $duration = Duration::of(microseconds: 1_500_000)->negate();
 
         self::assertSame(-1, $duration->sign);
         self::assertSame('-1s500ms', $duration->format(DurationFormat::Compact));
@@ -58,7 +66,7 @@ final class DurationTest extends TestCase
 
     public function testFormatNegativeMicroseconds(): void
     {
-        self::assertSame('-04:05:06', Duration::of(hours: 4, minutes: 5, seconds: 6)->negated()->format(DurationFormat::Timer));
+        self::assertSame('-04:05:06', Duration::of(hours: 4, minutes: 5, seconds: 6)->negate()->format(DurationFormat::Timer));
     }
 
     public function testMicrosecondsToDateInterval(): void
@@ -91,7 +99,7 @@ final class DurationTest extends TestCase
 
     public function testNegativeMicrosecondsToDateInterval(): void
     {
-        $interval = Duration::of(microseconds:5_000_000)->negated()->toDateInterval();
+        $interval = Duration::of(microseconds:5_000_000)->negate()->toDateInterval();
 
         self::assertSame(1, $interval->invert);
         self::assertSame(5, $interval->s);
@@ -99,7 +107,7 @@ final class DurationTest extends TestCase
 
     public function testToDateIntervalWithRelativeDate(): void
     {
-        $duration = Duration::of(weeks: 5, minutes: 32, seconds: 23, microseconds: 456)->negated();
+        $duration = Duration::of(weeks: 5, minutes: 32, seconds: 23, microseconds: 456)->negate();
         $pureInterval = $duration->toDateInterval();
         self::assertFalse($pureInterval->days);
     }
@@ -154,7 +162,7 @@ final class DurationTest extends TestCase
     public function test_add_negative_duration(): void
     {
         $a = Duration::of(hours: 5);
-        $b = Duration::of(hours: 2)->negated();
+        $b = Duration::of(hours: 2)->negate();
 
         self::assertSame('03:00:00', $a->add($b)->format(DurationFormat::Timer));
     }
@@ -162,7 +170,7 @@ final class DurationTest extends TestCase
     public function test_add_result_can_be_negative(): void
     {
         $a = Duration::of(hours: 1);
-        $b = Duration::of(hours: 3)->negated();
+        $b = Duration::of(hours: 3)->negate();
 
         self::assertSame('-02:00:00', $a->add($b)->format(DurationFormat::Timer));
     }
@@ -177,16 +185,16 @@ final class DurationTest extends TestCase
 
     public function test_abs_negate(): void
     {
-        $duration = Duration::of(microseconds: 500000)->negated();
+        $duration = Duration::of(microseconds: 500000)->negate();
 
-        self::assertTrue($duration->equals($duration->abs()->negated()));
+        self::assertTrue($duration->equals($duration->absolute()->negate()));
     }
 
     #[DataProvider('iso8601Provider')]
     public function test_to_iso8601(int $microseconds, string $expected): void
     {
         $duration = 0 > $microseconds
-            ? Duration::of(microseconds: -$microseconds)->negated()
+            ? Duration::of(microseconds: -$microseconds)->negate()
             : Duration::of(microseconds: $microseconds);
 
         self::assertSame($expected, $duration->format(DurationFormat::Iso8601));
@@ -219,7 +227,7 @@ final class DurationTest extends TestCase
     ): void {
 
         $duration = 0 > $microseconds
-            ? Duration::of(microseconds: -$microseconds)->negated()
+            ? Duration::of(microseconds: -$microseconds)->negate()
             : Duration::of(microseconds: $microseconds);
 
         self::assertSame(
@@ -282,7 +290,7 @@ final class DurationTest extends TestCase
         Unit $unit,
     ): void {
         $duration = 0 > $microseconds
-            ? Duration::of(microseconds: -$microseconds)->negated()
+            ? Duration::of(microseconds: -$microseconds)->negate()
             : Duration::of(microseconds:$microseconds);
 
         $result = $duration->roundTo($unit, SnapMode::Floor);
@@ -303,7 +311,7 @@ final class DurationTest extends TestCase
     public function test_truncate_preserves_sign_consistency(): void
     {
         $positive = Duration::of(microseconds:3_661_500_000);
-        $negative = Duration::of(microseconds:3_661_500_000)->negated();
+        $negative = Duration::of(microseconds:3_661_500_000)->negate();
 
         self::assertTrue($positive->roundTo(Unit::Minute, SnapMode::Floor)->in(Unit::Microsecond) > 0);
         self::assertTrue($negative->roundTo(Unit::Minute, SnapMode::Floor)->in(Unit::Microsecond) < 0);
@@ -347,7 +355,7 @@ final class DurationTest extends TestCase
         ];
 
         yield 'negative vs positive' => [
-            Duration::of(hours: 1)->negated(),
+            Duration::of(hours: 1)->negate(),
             Duration::of(hours: 1),
             -1,
         ];
@@ -593,9 +601,8 @@ final class DurationTest extends TestCase
         Duration::fromFormat('invalid', DurationFormat::Iso8601);
     }
 
-    #[TestWith(['PT1.0000001S', DurationFormat::Iso8601])]
-    #[TestWith(['00:00:00"0000001', DurationFormat::Timer])]
-    #[TestWith(['0000001us', DurationFormat::Compact])]
+    #[TestWith(['PT1.0000000001S', DurationFormat::Iso8601])]
+    #[TestWith(['00:00:00"0000000001', DurationFormat::Timer])]
     public function testItRejectsInvalidDurationWithSubMicrosecondsPrecision(string $notation, DurationFormat $format): void
     {
         $this->expectException(InvalidDuration::class);
@@ -608,7 +615,7 @@ final class DurationTest extends TestCase
         self::assertSame(
             '-4w3d2s1µs',
             Duration::of(weeks: 4, days: 3, seconds: 2, microseconds: 1)
-                ->negated()
+                ->negate()
                 ->format(DurationFormat::Compact)
         );
     }
@@ -650,8 +657,8 @@ final class DurationTest extends TestCase
 
     public function test_predefined_instances(): void
     {
-        $max = Duration::max();
-        $min = Duration::min();
+        $max = Duration::maximum();
+        $min = Duration::minimum();
         $zero = Duration::zero();
 
         self::assertTrue($max->isLongerThan($min));
@@ -664,20 +671,20 @@ final class DurationTest extends TestCase
     {
         $this->expectException(InvalidDuration::class);
 
-        Duration::max()->multipliedBy(3);
+        Duration::maximum()->multiplyBy(3);
     }
 
     public function testItRejectsDivideByZero(): void
     {
         $this->expectException(DivisionByZeroError::class);
 
-        Duration::max()->dividedBy(0);
+        Duration::maximum()->divideBy(0);
     }
 
     public function testItMultiplyTheDuration(): void
     {
-        self::assertSame('PT4H', Duration::of(hours: 2)->multipliedBy(2)->format(DurationFormat::Iso8601));
-        self::assertSame('PT4M', Duration::of(minutes: 2)->multipliedBy(2)->format(DurationFormat::Iso8601));
+        self::assertSame('PT4H', Duration::of(hours: 2)->multiplyBy(2)->format(DurationFormat::Iso8601));
+        self::assertSame('PT4M', Duration::of(minutes: 2)->multiplyBy(2)->format(DurationFormat::Iso8601));
     }
 
     public function test_duration_can_be_serialized_and_unserialized(): void
@@ -700,7 +707,7 @@ final class DurationTest extends TestCase
     public function test_round_to(int $input, Unit $precision, int $expected): void
     {
         $duration = 0 > $input
-            ? Duration::of(microseconds:  -$input)->negated()
+            ? Duration::of(microseconds:  -$input)->negate()
             : Duration::of(microseconds:  $input);
 
         self::assertSame($expected, $duration->roundTo($precision)->in(Unit::Microsecond));
@@ -746,7 +753,7 @@ final class DurationTest extends TestCase
     #[DataProvider('minOfProvider')]
     public function testMinOf(array $durations, Duration $expected): void
     {
-        self::assertTrue(Duration::minOf(...$durations)->equals($expected));
+        self::assertTrue(Duration::minimumOf(...$durations)->equals($expected));
     }
 
     /**
@@ -784,7 +791,7 @@ final class DurationTest extends TestCase
     #[DataProvider('maxOfProvider')]
     public function testMaxOf(array $durations, Duration $expected): void
     {
-        self::assertTrue(Duration::maxOf(...$durations)->equals($expected));
+        self::assertTrue(Duration::maximumOf(...$durations)->equals($expected));
     }
 
     /**
@@ -969,7 +976,7 @@ final class DurationTest extends TestCase
     public function test_clock_factory(string $data, int $seconds, ?int $milliseconds = 0): void
     {
         $duration = 0 > $seconds
-            ? Duration::of(seconds: -$seconds, milliseconds: $milliseconds ?? 0)->negated()
+            ? Duration::of(seconds: -$seconds, milliseconds: $milliseconds ?? 0)->negate()
             : Duration::of(seconds: $seconds, milliseconds: $milliseconds ?? 0);
 
         self::assertTrue(Duration::fromFormat($data, DurationFormat::Timer)->equals($duration));
@@ -1008,7 +1015,7 @@ final class DurationTest extends TestCase
             'missing seconds' => ['01:02'],
             'invalid seconds' => ['01:02:60'],
             'invalid minutes' => ['01:60:59'],
-            'invalid microseconds' => ['01:59:59.10000000'],
+            'invalid microseconds' => ['01:59:59.10000000000'],
             'letters' => ['aa:bb:cc'],
             'empty' => [''],
             'wrong separator' => ['01-02-03'],
@@ -1024,7 +1031,7 @@ final class DurationTest extends TestCase
     public function test_compact_factory(string $value, int $seconds, ?int $microseconds = 0): void
     {
         $duration = 0 > $seconds
-            ? Duration::of(seconds: -$seconds, microseconds: $microseconds ?? 0)->negated()
+            ? Duration::of(seconds: -$seconds, microseconds: $microseconds ?? 0)->negate()
             : Duration::of(seconds: $seconds, microseconds: $microseconds ?? 0);
 
         self::assertTrue(Duration::fromFormat($value, DurationFormat::Compact)->equals($duration));
@@ -1076,7 +1083,7 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(hours: 5);
         $other = Duration::of(hours: 2);
-        $result = $duration->dividedInto($other);
+        $result = $duration->divideInto($other);
 
         self::assertSame(2, $result->quotient);
         self::assertTrue($result->remainder->equals(Duration::of(hours: 1)));
@@ -1090,7 +1097,7 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(hours: 5);
         $other = Duration::of(hours: 2);
-        $result = $duration->dividedInto($other);
+        $result = $duration->divideInto($other);
 
         self::assertFalse(isset($result[2]));
 
@@ -1102,7 +1109,7 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(minutes: 30);
         $other = Duration::of(hours: 1);
-        $result = $duration->dividedInto($other);
+        $result = $duration->divideInto($other);
 
         self::assertSame(0, $result->quotient);
         self::assertTrue($result->remainder->equals($duration));
@@ -1112,7 +1119,7 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(hours: 6);
         $other = Duration::of(hours: 2);
-        $result = $duration->dividedInto($other);
+        $result = $duration->divideInto($other);
 
         self::assertSame(3, $result->quotient);
         self::assertTrue($result->remainder->isZero());
@@ -1123,14 +1130,14 @@ final class DurationTest extends TestCase
         $this->expectException(DivisionByZeroError::class);
         $this->expectExceptionMessageIsOrContains('Cannot divide by zero duration.');
 
-        Duration::of(hours: 1)->dividedInto(Duration::zero());
+        Duration::of(hours: 1)->divideInto(Duration::zero());
     }
 
     public function testRemainderReturnsRemainingDuration(): void
     {
         $duration = Duration::of(hours: 5);
         $other = Duration::of(hours: 2);
-        $result = $duration->dividedInto($other);
+        $result = $duration->divideInto($other);
 
         self::assertSame(2, $result->quotient);
         self::assertEquals(Duration::of(hours: 1), $result->remainder);
@@ -1140,7 +1147,7 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(hours: 6);
         $other = Duration::of(hours: 2);
-        $result = $duration->dividedInto($other);
+        $result = $duration->divideInto($other);
 
         self::assertSame(3, $result->quotient);
         self::assertTrue($result->remainder->isZero());
@@ -1150,7 +1157,7 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(minutes: 30);
         $other = Duration::of(hours: 1);
-        $result = $duration->dividedInto($other);
+        $result = $duration->divideInto($other);
 
         self::assertSame(0, $result->quotient);
         self::assertEquals(Duration::of(minutes: 30), $result->remainder);
@@ -1161,18 +1168,18 @@ final class DurationTest extends TestCase
         $this->expectException(DivisionByZeroError::class);
         $this->expectExceptionMessageIsOrContains('Cannot divide by zero duration.');
 
-        Duration::of(hours: 1)->dividedInto(Duration::zero());
+        Duration::of(hours: 1)->divideInto(Duration::zero());
     }
 
     public function testCountOfAndRemainderRespectDivisionIdentity(): void
     {
         $duration = Duration::of(hours: 5);
-        $other = Duration::of(hours: 2)->negated();
-        $result = $duration->dividedInto($other);
+        $other = Duration::of(hours: 2)->negate();
+        $result = $duration->divideInto($other);
 
         self::assertEquals(
             $duration,
-            $other->multipliedBy($result->quotient)->add($result->remainder)
+            $other->multiplyBy($result->quotient)->add($result->remainder)
         );
     }
 

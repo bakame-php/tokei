@@ -6,6 +6,7 @@ namespace Bakame\Tokei;
 
 use DateInterval;
 use DateTimeInterface;
+use Time\Duration as TimeDuration;
 use Traversable;
 
 use function array_map;
@@ -52,7 +53,7 @@ final class TaskSet implements TemporalSet
     /**
      * @throws TokeiException
      */
-    public static function fromEvents(EventSet $items, Duration|DateInterval|Interval|Task $duration, Bound $from = Bound::Start): self
+    public static function fromEvents(EventSet $items, Duration|DateInterval|Interval|Task|TimeDuration $duration, Bound $from = Bound::Start): self
     {
         return new self(...$items->map(fn (Event $event): Task => Task::fromEvent($event, $duration, $from)));
     }
@@ -321,7 +322,7 @@ final class TaskSet implements TemporalSet
         return $result;
     }
 
-    public function add(Duration|DateInterval|Interval|Task $duration): self
+    public function add(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -330,7 +331,7 @@ final class TaskSet implements TemporalSet
             : $this->transform(static fn (Task $task): Task => $task->during($task->interval->add($duration)));
     }
 
-    public function sub(Duration|DateInterval|Interval|Task $duration): self
+    public function sub(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 

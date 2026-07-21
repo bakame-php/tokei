@@ -69,12 +69,18 @@
             "lib"
         ]
     },
+    "autoload-dev" : {
+        "psr-4": {
+            "Tests\\": "tests"
+        }
+    },
     "scripts": {
         "phpcs": "php-cs-fixer fix -vvv --diff --dry-run --allow-risky=yes --ansi",
         "phpcs:fix": "php-cs-fixer fix -vvv --allow-risky=yes --ansi",
         "phpstan": "phpstan analyse -c phpstan.neon --ansi --memory-limit=256M",
         "phpunit": "XDEBUG_MODE=coverage phpunit --coverage-text",
         "phpunit:no-coverage": "phpunit --no-coverage",
+        "phpunit:no-polyfill": "phpunit --no-coverage --exclude-group=time-polyfill",
         "test": [
             "@phpunit",
             "@phpstan",

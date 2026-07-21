@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Bakame\Tokei;
+namespace Tests\Tokei;
 
+use Bakame\Tokei\Identifiers;
+use Bakame\Tokei\TemporalException;
+use Bakame\Tokei\TokeiException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use SortDirection;
 use stdClass;
-
 use function serialize;
 use function unserialize;
 

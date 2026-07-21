@@ -2,6 +2,25 @@
 
 All Notable changes to `bakame/tokei` will be documented in this file.
 
+## [next - title](https://github.com/bakame-php/stackwatch/compare/0.3.0...main) - TBD
+
+### Added
+
+- Support for PHP8.6 `Time\Duration` using a Polyfill.
+
+### Fixed
+
+- **BC Break:**  mathematical operation methods of `Duration` use full names
+- Fix autoloading for the polyfills in the manual autoload script.
+
+### Deprecated
+
+- None
+
+### Removed
+
+- None
+
 ## [0.3.0 - Chidorisō](https://github.com/bakame-php/stackwatch/compare/0.2.0...0.3.0) - 2026-07-21
 
 ### Added

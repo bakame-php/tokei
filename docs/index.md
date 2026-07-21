@@ -20,7 +20,7 @@ use Bakame\Tokei\TimeFormat;
 
 $target = Duration::of(hours: 7, minutes: 33);
 $alreadyDone = Duration::of(hours: 5, minutes: 17);
-$remaining = $target->sub($alreadyDone);
+$remaining = $target->subtract($alreadyDone);
 $startedNewShiftAt = Time::at(hour: 21, minute: 31);
 $shouldStopAt = $startedNewShiftAt->add($remaining);
 

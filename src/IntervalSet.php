@@ -575,8 +575,8 @@ final class IntervalSet implements TemporalSet
         $bSpans = $other->items;
         foreach ($this->union()->items as $aItem) {
             foreach ($bSpans as $bItem) {
-                $start = Duration::maxOf($aItem->linearStart, $bItem->linearStart);
-                $end = Duration::minOf($aItem->linearEnd, $bItem->linearEnd);
+                $start = Duration::maximumOf($aItem->linearStart, $bItem->linearStart);
+                $end = Duration::minimumOf($aItem->linearEnd, $bItem->linearEnd);
                 if ($start < $end) {
                     $intersections[] = Interval::fromLinearSpan($start, $end);
                 }
@@ -610,7 +610,7 @@ final class IntervalSet implements TemporalSet
                 $lastIndex = array_key_last($merged);
                 $prevSpan = $merged[$lastIndex];
                 if ($item->linearStart->isShorterThanOrEqual($prevSpan->linearEnd)) {
-                    $merged[$lastIndex] = Interval::fromLinearSpan($prevSpan->linearStart, Duration::maxOf($prevSpan->linearEnd, $item->linearEnd));
+                    $merged[$lastIndex] = Interval::fromLinearSpan($prevSpan->linearStart, Duration::maximumOf($prevSpan->linearEnd, $item->linearEnd));
                     continue;
                 }
             }

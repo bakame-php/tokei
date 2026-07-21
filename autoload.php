@@ -1,9 +1,23 @@
 <?php
 
-if (PHP_VERSION_ID < 80600 && !enum_exists('SortDirection', false)) {
+if (PHP_VERSION_ID < 80600 && !enum_exists('SortDirection')) {
     spl_autoload_register(static function (string $class): void {
         if ('SortDirection' === $class) {
             require __DIR__ . '/lib/SortDirection.php';
+        }
+    });
+}
+
+if (PHP_VERSION_ID < 80600 && !class_exists('Time\Duration')) {
+    spl_autoload_register(static function (string $class): void {
+        $path = match ($class) {
+            'Time\\Duration' => __DIR__ . '/lib/Time/Duration.php',
+            'Time\\TimeException' => __DIR__ . '/lib/Time/TimeException.php',
+            default => null,
+        };
+
+        if (null !== $path) {
+            require $path;
         }
     });
 }

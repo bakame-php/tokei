@@ -2,18 +2,32 @@
 
 declare(strict_types=1);
 
-namespace Bakame\Tokei;
+namespace Tests\Tokei;
 
+use Bakame\Tokei\Bound;
+use Bakame\Tokei\Duration;
+use Bakame\Tokei\DurationFormat;
+use Bakame\Tokei\Interval;
+use Bakame\Tokei\IntervalFormat;
+use Bakame\Tokei\IntervalSet;
+use Bakame\Tokei\IntervalType;
+use Bakame\Tokei\InvalidDuration;
+use Bakame\Tokei\InvalidInterval;
+use Bakame\Tokei\InvalidTime;
+use Bakame\Tokei\SnapMode;
+use Bakame\Tokei\Task;
+use Bakame\Tokei\Time;
+use Bakame\Tokei\TimeException;
+use Bakame\Tokei\TimeFormat;
+use Bakame\Tokei\Unit;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Throwable;
-
 use function iterator_to_array;
 use function json_encode;
 use function serialize;
 use function unserialize;
-
 use const JSON_UNESCAPED_SLASHES;
 
 #[CoversClass(IntervalSet::class)]
@@ -355,7 +369,7 @@ final class IntervalTest extends TestCase
     public function test_expand_can_shrink_range(): void
     {
         $range = Interval::between(Time::at(hour: 10), Time::at(hour: 14));
-        $shrunk = $range->expand(Duration::of(hours: 1)->negated());
+        $shrunk = $range->expand(Duration::of(hours: 1)->negate());
 
         self::assertSame('[11:00:00,13:00:00)', $shrunk->format(IntervalFormat::Iso80000));
     }
@@ -388,7 +402,7 @@ final class IntervalTest extends TestCase
     public function test_expand_can_collapse_range_to_empty(): void
     {
         $range = Interval::between(Time::at(hour: 10), Time::at(hour: 12));
-        $collapsed = $range->expand(Duration::of(hours: 1)->negated());
+        $collapsed = $range->expand(Duration::of(hours: 1)->negate());
 
         self::assertSame('[11:00:00,11:00:00)', $collapsed->format(IntervalFormat::Iso80000));
     }

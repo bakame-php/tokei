@@ -7,6 +7,7 @@ namespace Bakame\Tokei;
 use DateInterval;
 use DateTimeInterface;
 use JsonSerializable;
+use Time\Duration as TimeDuration;
 
 use function array_map;
 use function filter_var;
@@ -80,7 +81,7 @@ final class Interval implements JsonSerializable
      */
     public static function since(
         Time|Event|DateTimeInterface $start,
-        Duration|DateInterval|Interval|Task $duration
+        Duration|DateInterval|Interval|Task|TimeDuration $duration
     ): self {
         $start = InputNormalizer::time($start);
 
@@ -96,7 +97,7 @@ final class Interval implements JsonSerializable
      */
     public static function until(
         Time|Event|DateTimeInterface $end,
-        Duration|DateInterval|Interval|Task $duration
+        Duration|DateInterval|Interval|Task|TimeDuration $duration
     ): self {
         $end = InputNormalizer::time($end);
         $start = $end->sub(InputNormalizer::duration($duration));
@@ -111,12 +112,12 @@ final class Interval implements JsonSerializable
      */
     public static function around(
         Time|Event|DateTimeInterface $midRange,
-        Duration|DateInterval|Interval|Task $duration
+        Duration|DateInterval|Interval|Task|TimeDuration $duration
     ): self {
         $midRange = InputNormalizer::time($midRange);
         $duration = InputNormalizer::duration($duration);
 
-        $start = $midRange->add($duration->dividedBy(2)->negated());
+        $start = $midRange->add($duration->divideBy(2)->negate());
 
         return self::between($start, $start->add($duration));
     }
@@ -232,7 +233,7 @@ final class Interval implements JsonSerializable
     }
 
     /**
-     * @throws InvalidInterval|InvalidTime|InvalidDuration
+     * @throws TokeiException
      */
     private static function parseIso8601Interval(string $start, string $end, string $notation, IntervalFormat $format): Interval
     {
@@ -256,7 +257,7 @@ final class Interval implements JsonSerializable
         $duration = $linearEnd->sub($linearStart);
         -1 !== $duration->sign || throw new InvalidInterval('Invalid linear span: the start must be shorter or equal to the end linear span.');
 
-        return new self(Time::sinceMidnight($linearStart->abs()), $duration);
+        return new self(Time::sinceMidnight($linearStart->absolute()), $duration);
     }
 
     /**
@@ -335,7 +336,7 @@ final class Interval implements JsonSerializable
     /**
      * Returns a new instance with a new end time.
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
     public function endingOn(Event|Time|DateTimeInterface $time): self
     {
@@ -347,9 +348,9 @@ final class Interval implements JsonSerializable
     /**
      * Returns a new instance with both endpoints shifted by duration.
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
-    public function add(Duration|DateInterval|Interval|Task $duration): self
+    public function add(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -359,9 +360,9 @@ final class Interval implements JsonSerializable
     /**
      * Returns a new instance with both endpoints shifted by duration.
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
-    public function sub(Duration|DateInterval|Interval|Task $duration): self
+    public function sub(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -373,9 +374,9 @@ final class Interval implements JsonSerializable
      *
      * The shifted endpoint is specified by the bound.
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
-    public function shiftBound(Duration|DateInterval|Interval|Task $duration, Bound $to): self
+    public function shiftBound(Duration|DateInterval|Interval|Task|TimeDuration $duration, Bound $to): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -391,16 +392,16 @@ final class Interval implements JsonSerializable
      *
      * The specified endpoint is not shifted; the other is.
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
-    public function lasting(Duration|DateInterval|Interval|Task $duration, Bound $from): self
+    public function lasting(Duration|DateInterval|Interval|Task|TimeDuration $duration, Bound $from): self
     {
         $duration = InputNormalizer::duration($duration);
 
         return match (true) {
             $duration->isZero() => $this,
             Bound::Start === $from => self::between($this->start, $this->start->add($duration)),
-            Bound::End === $from => self::between($this->end->add($duration->negated()), $this->end),
+            Bound::End === $from => self::between($this->end->add($duration->negate()), $this->end),
         };
     }
 
@@ -409,13 +410,13 @@ final class Interval implements JsonSerializable
      *
      * The result is based on the specified duration sign.
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
-    public function expand(Duration|DateInterval|Interval|Task $duration): self
+    public function expand(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
-        $new = self::between($this->start->add($duration->negated()), $this->end->add($duration));
+        $new = self::between($this->start->add($duration->negate()), $this->end->add($duration));
 
         return $new->equals($this) ? $this : $new;
     }
@@ -453,12 +454,12 @@ final class Interval implements JsonSerializable
      * Yields the start time of each sub-interval produced by splitting this
      * interval by the given duration.
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      *
      * @return iterable<Time>
      */
     public function steps(
-        Duration|DateInterval|Interval|Task $duration,
+        Duration|DateInterval|Interval|Task|TimeDuration $duration,
         Bound $from = Bound::Start
     ): iterable {
         foreach ($this->splitBy($duration, $from) as $interval) {
@@ -476,10 +477,10 @@ final class Interval implements JsonSerializable
      * The $from parameter determines whether the split starts from the
      * interval start or end boundary.
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
     public function splitBy(
-        Duration|DateInterval|Interval|Task $duration,
+        Duration|DateInterval|Interval|Task|TimeDuration $duration,
         Bound $from = Bound::Start
     ): IntervalSet {
         $duration = InputNormalizer::duration($duration);
@@ -531,27 +532,27 @@ final class Interval implements JsonSerializable
         return new IntervalSet(...$result);
     }
 
-    public function sameDurationAs(Duration|DateInterval|Interval|Task $other): bool
+    public function sameDurationAs(Duration|DateInterval|Interval|Task|TimeDuration $other): bool
     {
         return 0 === Duration::compare($this, $other);
     }
 
-    public function isLongerThan(Duration|DateInterval|Interval|Task $other): bool
+    public function isLongerThan(Duration|DateInterval|Interval|Task|TimeDuration $other): bool
     {
         return 0 < Duration::compare($this, $other);
     }
 
-    public function isLongerThanOrEqual(Duration|DateInterval|Interval|Task $other): bool
+    public function isLongerThanOrEqual(Duration|DateInterval|Interval|Task|TimeDuration $other): bool
     {
         return 0 <= Duration::compare($this, $other);
     }
 
-    public function isShorterThan(Duration|DateInterval|Interval|Task $other): bool
+    public function isShorterThan(Duration|DateInterval|Interval|Task|TimeDuration $other): bool
     {
         return 0 > Duration::compare($this, $other);
     }
 
-    public function isShorterThanOrEqual(Duration|DateInterval|Interval|Task $other): bool
+    public function isShorterThanOrEqual(Duration|DateInterval|Interval|Task|TimeDuration $other): bool
     {
         return 0 >= Duration::compare($this, $other);
     }

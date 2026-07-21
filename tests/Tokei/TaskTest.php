@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Bakame\Tokei;
+namespace Tests\Tokei;
 
+use Bakame\Tokei\Identifiers;
+use Bakame\Tokei\Interval;
+use Bakame\Tokei\Task;
+use Bakame\Tokei\Time;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
-
 use function serialize;
 use function unserialize;
 

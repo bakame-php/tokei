@@ -2,8 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Bakame\Tokei;
+namespace Tests\Tokei;
 
+use Bakame\Tokei\Duration;
+use Bakame\Tokei\DurationParts;
+use Bakame\Tokei\InputNormalizer;
+use Bakame\Tokei\InvalidDuration;
+use Bakame\Tokei\InvalidTime;
+use Bakame\Tokei\LocaleTimeFormatter;
+use Bakame\Tokei\LocaleVerbosity;
+use Bakame\Tokei\SnapMode;
+use Bakame\Tokei\Time;
+use Bakame\Tokei\TimeException;
+use Bakame\Tokei\TimeFormat;
+use Bakame\Tokei\Unit;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -12,7 +24,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 use ValueError;
-
 use function json_encode;
 use function serialize;
 use function unserialize;
@@ -436,7 +447,7 @@ final class TimeTest extends TestCase
 
         $this->expectExceptionObject(InvalidDuration::dueToOverflow());
 
-        $time->add(Duration::max());
+        $time->add(Duration::maximum());
     }
 
     public function test_time_can_be_serialized_and_unserialized(): void

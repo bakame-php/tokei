@@ -7,4 +7,6 @@ parameters:
     level: max
     paths:
         - src
+        - lib
     ignoreErrors:
+        - identifier: smaller.alwaysTrue

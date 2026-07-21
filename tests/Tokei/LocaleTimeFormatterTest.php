@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Bakame\Tokei;
+namespace Tests\Tokei;
 
+use Bakame\Tokei\LocaleTimeFormatter;
+use Bakame\Tokei\LocaleVerbosity;
+use Bakame\Tokei\Time;
+use Bakame\Tokei\TimeException;
 use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

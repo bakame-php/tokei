@@ -6,6 +6,7 @@ namespace Bakame\Tokei;
 
 use DateInterval;
 use JsonSerializable;
+use Time\Duration as TimeDuration;
 
 use function explode;
 
@@ -48,7 +49,7 @@ final readonly class Task implements HasIdentifiers, JsonSerializable
         );
     }
 
-    public static function fromEvent(Event $event, Duration|DateInterval|Interval|Task $duration, Bound $from): self
+    public static function fromEvent(Event $event, Duration|DateInterval|Interval|Task|TimeDuration $duration, Bound $from): self
     {
         return self::for(
             Bound::Start === $from

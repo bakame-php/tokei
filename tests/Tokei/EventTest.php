@@ -2,8 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Bakame\Tokei;
+namespace Tests\Tokei;
 
+use Bakame\Tokei\Event;
+use Bakame\Tokei\Identifiers;
+use Bakame\Tokei\Time;
+use Bakame\Tokei\TimeFormat;
+use Bakame\Tokei\TokeiException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

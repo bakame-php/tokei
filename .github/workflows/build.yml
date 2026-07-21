@@ -63,7 +63,7 @@ jobs:
 
       - name: Run Unit tests without coverage (nightly)
         if: ${{ matrix.php == '8.6' }}
-        run: composer phpunit:no-coverage
+        run: composer phpunit:no-polyfill
         continue-on-error: true
 
       # STATIC ANALYSIS (only once)
