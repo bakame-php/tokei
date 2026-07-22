@@ -37,11 +37,12 @@ if (PHP_VERSION_ID < 80600 && !class_exists('Time\Duration')) {
         private const string REGEXP_ISO8601 = '@^
             (?<sign>[+-])?
             PT
-            (?=(?:\d+H |\d+M |\d+(?:[\.,]\d{1,9})?S)) # look ahead to avoid PT without argument
+            (?=(?:\d+H|\d+M|\d+(?:[\.,]\d{1,9})?S)) # look ahead to avoid PT without argument
             (?:(?<hours>\d+)H)?
             (?:(?<minutes>\d+)M)?
-            (?:(?<seconds>\d+)
-            (?:[\.,](?<nanoseconds>\d{1,9}))
+            (?:
+                (?<seconds>\d+)
+                (?:[\.,](?<nanoseconds>\d{1,9}))
             ?S)?
         $@x';
 
@@ -56,7 +57,7 @@ if (PHP_VERSION_ID < 80600 && !class_exists('Time\Duration')) {
             $seconds >= 0 || throw new ValueError('$seconds must be a non negative integer.');
             $nanoseconds >= 0 || throw new ValueError('$nanoseconds must be a non negative integer.');
             $seconds <= self::MAX_SECONDS || throw new TimeException('$seconds must be between 0 and '.self::MAX_SECONDS.' seconds (roughly 292 years)');
-            $nanoseconds < self::NANOS_PER_SECOND || throw new TimeException('$nanoseconds must be between 0 and 999_999_999');
+            $nanoseconds < self::NANOS_PER_SECOND || throw new TimeException('$nanoseconds must be between 0 and 999_999_999 nanoseconds.');
         }
 
         /**
@@ -97,7 +98,6 @@ if (PHP_VERSION_ID < 80600 && !class_exists('Time\Duration')) {
         }
 
         /**
-         * @param non-negative-int $value
          * @param positive-int $factor
          * @param non-empty-string $fromUnit
          * @param non-empty-string $toUnit
@@ -108,7 +108,9 @@ if (PHP_VERSION_ID < 80600 && !class_exists('Time\Duration')) {
          */
         private static function convertTo(int $value, int $factor, string $fromUnit, string $toUnit): int
         {
-            intdiv(PHP_INT_MAX, $factor) >= $value || throw new TimeException("Cannot convert $value $fromUnit to $toUnit: the resulting value exceeds the supported integer range.");
+            $value >= 0 || throw new ValueError("$value must be a non negative integer.");
+
+            intdiv(PHP_INT_MAX, $factor) >= $value || throw new TimeException("Cannot convert $value $fromUnit to $toUnit: the resulting value exceeds the supported duration range.");
 
             return $value * $factor;
         }
@@ -157,15 +159,19 @@ if (PHP_VERSION_ID < 80600 && !class_exists('Time\Duration')) {
         {
             1 === preg_match(self::REGEXP_ISO8601, $specification, $parts) || throw new TimeException("The submitted duration `$specification` is invalid or contains unsupported ISO 8601 duration components.");
 
-            $seconds = ((int) ($parts['hours'] ?? 0)) * 3_600
-                + ((int)($parts['minutes'] ?? 0)) * 60
-                + (int) ($parts['seconds'] ?? 0);
+            $hours = self::convertTo((int) ($parts['hours'] ?? 0), 3_600, 'hours', 'seconds');
+            $minutes = self::convertTo((int)($parts['minutes'] ?? 0), 60, 'minutes', 'seconds');
+            $seconds = (int) ($parts['seconds'] ?? 0);
             $nanoseconds = (int) (str_pad($parts['nanoseconds'] ?? '0', 9, '0', STR_PAD_RIGHT));
 
+            (PHP_INT_MAX - $hours - $minutes >= $seconds) || throw new TimeException('Can not convert `'.$specification.'` specification; the resulting value exceeds the supported duration range.');
+
+            $totalSeconds = $hours + $minutes + $seconds;
+
             return new self(
-                $seconds,
+                $totalSeconds,
                 $nanoseconds,
-                negative: (0 !== $seconds || 0 !== $nanoseconds) && '-' === ($parts['sign'] ?? '')
+                negative: '-' === ($parts['sign'] ?? '') && (0 !== $totalSeconds || 0 !== $nanoseconds),
             );
         }
 

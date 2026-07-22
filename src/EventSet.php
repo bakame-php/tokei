@@ -6,6 +6,7 @@ namespace Bakame\Tokei;
 
 use DateInterval;
 use DateTimeInterface;
+use Time\Duration as TimeDuration;
 use Traversable;
 
 use function array_diff_key;
@@ -449,7 +450,7 @@ final class EventSet implements TemporalSet
         return new self(...$this->engine()->nearest($around));
     }
 
-    public function add(Duration|DateInterval|Interval|Task $duration): self
+    public function add(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -458,7 +459,7 @@ final class EventSet implements TemporalSet
             : $this->transform(fn (Event $event): Event => $event->occursOn($event->at->add($duration)));
     }
 
-    public function sub(Duration|DateInterval|Interval|Task $duration): self
+    public function sub(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 

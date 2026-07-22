@@ -447,7 +447,7 @@ final class TimeTest extends TestCase
 
         $this->expectExceptionObject(InvalidDuration::dueToOverflow());
 
-        $time->add(Duration::maximum());
+        $time->add(Duration::max());
     }
 
     public function test_time_can_be_serialized_and_unserialized(): void
@@ -734,5 +734,81 @@ final class TimeTest extends TestCase
         yield 'with seconds' => [Time::at(1, 30, 45), '1h30m45s'];
         yield 'midnight' => [Time::midnight(), '0h0m'];
         yield 'microseconds' => [Time::at(1, microsecond: 256), '1h0m0s256µs'];
+    }
+
+    public function test_it_truncates_sub_microsecond_precision(): void
+    {
+        self::assertEquals(
+            Time::at(12, 34, 56),
+            Time::fromFormat('12:34:56.000000009', TimeFormat::Clock),
+        );
+    }
+
+    public function test_it_truncates_nanoseconds_to_microseconds(): void
+    {
+        self::assertEquals(
+            Time::at(12, 34, 56, 123_456),
+            Time::fromFormat('12:34:56.123456789', TimeFormat::Clock),
+        );
+    }
+
+    public function test_it_preserves_exact_microsecond_precision(): void
+    {
+        self::assertEquals(
+            Time::at(12, 34, 56, 123_456),
+            Time::fromFormat('12:34:56.123456', TimeFormat::Clock),
+        );
+    }
+
+    public function test_it_preserves_microseconds_when_nanoseconds_are_a_multiple_of_one_thousand(): void
+    {
+        self::assertEquals(
+            Time::at(12, 34, 56, 123_456),
+            Time::fromFormat('12:34:56.123456000', TimeFormat::Clock),
+        );
+    }
+
+    public function test_it_truncates_nanoseconds_at_the_end_of_the_day(): void
+    {
+        self::assertEquals(
+            Time::at(23, 59, 59, 999_999),
+            Time::fromFormat('23:59:59.999999999', TimeFormat::Clock),
+        );
+    }
+
+    public function test_it_truncates_sub_microsecond_precision_in_compact_format(): void
+    {
+        self::assertTrue(
+            Time::at(1, 28)->equals(
+                Time::fromFormat('1h28m9ns', TimeFormat::Compact)
+            )
+        );
+    }
+
+    public function test_it_truncates_nanoseconds_to_microseconds_in_compact_format(): void
+    {
+        self::assertTrue(
+            Time::at(1, 28, 0, 28)->equals(
+                Time::fromFormat('1h28m28009ns', TimeFormat::Compact)
+            )
+        );
+    }
+
+    public function test_it_preserves_microseconds_in_compact_format(): void
+    {
+        self::assertTrue(
+            Time::at(1, 28, 0, 28)->equals(
+                Time::fromFormat('1h28m28us', TimeFormat::Compact)
+            )
+        );
+    }
+
+    public function test_it_preserves_exact_microsecond_precision_in_compact_format(): void
+    {
+        self::assertTrue(
+            Time::at(1, 28, 0, 280)->equals(
+                Time::fromFormat('1h28m280000ns', TimeFormat::Compact)
+            )
+        );
     }
 }

@@ -8,6 +8,7 @@ use Closure;
 use DateInterval;
 use DateTimeInterface;
 use SortDirection;
+use Time\Duration as TimeDuration;
 use Traversable;
 
 use function array_key_last;
@@ -352,7 +353,7 @@ final class IntervalSet implements TemporalSet
         return $this->filter(fn (Interval $item): bool => $item->contains($interval));
     }
 
-    public function add(Duration|DateInterval|Interval|Task $duration): self
+    public function add(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -361,7 +362,7 @@ final class IntervalSet implements TemporalSet
             : $this->transform(fn (Interval $interval): Interval => $interval->add($duration));
     }
 
-    public function sub(Duration|DateInterval|Interval|Task $duration): self
+    public function sub(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -575,8 +576,8 @@ final class IntervalSet implements TemporalSet
         $bSpans = $other->items;
         foreach ($this->union()->items as $aItem) {
             foreach ($bSpans as $bItem) {
-                $start = Duration::maximumOf($aItem->linearStart, $bItem->linearStart);
-                $end = Duration::minimumOf($aItem->linearEnd, $bItem->linearEnd);
+                $start = Duration::maxOf($aItem->linearStart, $bItem->linearStart);
+                $end = Duration::minOf($aItem->linearEnd, $bItem->linearEnd);
                 if ($start < $end) {
                     $intersections[] = Interval::fromLinearSpan($start, $end);
                 }
@@ -610,7 +611,7 @@ final class IntervalSet implements TemporalSet
                 $lastIndex = array_key_last($merged);
                 $prevSpan = $merged[$lastIndex];
                 if ($item->linearStart->isShorterThanOrEqual($prevSpan->linearEnd)) {
-                    $merged[$lastIndex] = Interval::fromLinearSpan($prevSpan->linearStart, Duration::maximumOf($prevSpan->linearEnd, $item->linearEnd));
+                    $merged[$lastIndex] = Interval::fromLinearSpan($prevSpan->linearStart, Duration::maxOf($prevSpan->linearEnd, $item->linearEnd));
                     continue;
                 }
             }

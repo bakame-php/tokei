@@ -21,7 +21,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
+use Time\Duration as TimeDuration;
 use ValueError;
+
 use function json_encode;
 use function ltrim;
 use function serialize;
@@ -44,6 +46,8 @@ final class DurationTest extends TestCase
         self::assertSame(1, $duration->sign);
         self::assertSame(3_550_542_123_456, $duration->in(Unit::Microsecond));
         self::assertSame('5w6d2h15m42s123456µs', $duration->format(DurationFormat::Compact));
+        self::assertSame(123_456, $duration->microseconds);
+        self::assertSame(3_550_542, $duration->seconds);
     }
 
     public function testParseNegativeMicroseconds(): void
@@ -52,6 +56,8 @@ final class DurationTest extends TestCase
 
         self::assertSame(-1, $duration->sign);
         self::assertSame('-1s500ms', $duration->format(DurationFormat::Compact));
+        self::assertSame(500_000, $duration->microseconds);
+        self::assertSame(1, $duration->seconds);
     }
 
     public function testFormatMicrosecondsWithoutFraction(): void
@@ -603,7 +609,7 @@ final class DurationTest extends TestCase
 
     #[TestWith(['PT1.0000000001S', DurationFormat::Iso8601])]
     #[TestWith(['00:00:00"0000000001', DurationFormat::Timer])]
-    public function testItRejectsInvalidDurationWithSubMicrosecondsPrecision(string $notation, DurationFormat $format): void
+    public function testItRejectsInvalidDurationWithSuNanosecondsPrecision(string $notation, DurationFormat $format): void
     {
         $this->expectException(InvalidDuration::class);
 
@@ -657,8 +663,8 @@ final class DurationTest extends TestCase
 
     public function test_predefined_instances(): void
     {
-        $max = Duration::maximum();
-        $min = Duration::minimum();
+        $max = Duration::max();
+        $min = Duration::min();
         $zero = Duration::zero();
 
         self::assertTrue($max->isLongerThan($min));
@@ -671,14 +677,14 @@ final class DurationTest extends TestCase
     {
         $this->expectException(InvalidDuration::class);
 
-        Duration::maximum()->multiplyBy(3);
+        Duration::max()->multiplyBy(3);
     }
 
     public function testItRejectsDivideByZero(): void
     {
         $this->expectException(DivisionByZeroError::class);
 
-        Duration::maximum()->divideBy(0);
+        Duration::max()->divideBy(0);
     }
 
     public function testItMultiplyTheDuration(): void
@@ -753,7 +759,7 @@ final class DurationTest extends TestCase
     #[DataProvider('minOfProvider')]
     public function testMinOf(array $durations, Duration $expected): void
     {
-        self::assertTrue(Duration::minimumOf(...$durations)->equals($expected));
+        self::assertTrue(Duration::minOf(...$durations)->equals($expected));
     }
 
     /**
@@ -791,7 +797,7 @@ final class DurationTest extends TestCase
     #[DataProvider('maxOfProvider')]
     public function testMaxOf(array $durations, Duration $expected): void
     {
-        self::assertTrue(Duration::maximumOf(...$durations)->equals($expected));
+        self::assertTrue(Duration::maxOf(...$durations)->equals($expected));
     }
 
     /**
@@ -1191,6 +1197,148 @@ final class DurationTest extends TestCase
             $compact,
             Duration::fromFormat($compact, DurationFormat::Compact)
                 ->format(DurationFormat::Compact)
+        );
+    }
+
+    public function test_it_creates_a_zero_duration(): void
+    {
+        $native = TimeDuration::fromSeconds(0, 0);
+        $duration = Duration::fromNative($native);
+
+        self::assertSame(0, $duration->microseconds);
+        self::assertSame(0, $duration->sign);
+    }
+
+    public function test_it_creates_a_positive_duration(): void
+    {
+        $native = TimeDuration::fromSeconds(42, 123_456_000);
+        $duration = Duration::fromNative($native);
+
+        self::assertSame(42, $duration->seconds);
+        self::assertSame(123_456, $duration->microseconds);
+        self::assertSame(1, $duration->sign);
+    }
+
+    public function test_it_creates_a_negative_duration(): void
+    {
+        $native = TimeDuration::fromSeconds(42, 123_456_000)->negate();
+        $duration = Duration::fromNative($native);
+
+        self::assertSame(42, $duration->seconds);
+        self::assertSame(123_456, $duration->microseconds);
+        self::assertSame(-1, $duration->sign);
+    }
+
+    public function test_it_truncates_sub_microsecond_precision(): void
+    {
+        $native = TimeDuration::fromSeconds(1, 123_456_789);
+        $duration = Duration::fromNative($native);
+
+        self::assertSame(1, $duration->seconds);
+        self::assertSame(123_456, $duration->microseconds);
+    }
+
+    public function test_it_accepts_the_maximum_supported_duration(): void
+    {
+        $native = TimeDuration::fromSeconds(9_223_372_035, 999_999_999);
+        $duration = Duration::fromNative($native);
+
+        self::assertSame(9_223_372_035, $duration->seconds);
+        self::assertSame(999_999, $duration->microseconds);
+        self::assertSame(1, $duration->sign);
+    }
+
+    public function test_it_accepts_the_minimum_supported_duration(): void
+    {
+        $native = TimeDuration::fromSeconds(9_223_372_035, 999_999_999,)->negate();
+        $duration = Duration::fromNative($native);
+
+        self::assertSame(9_223_372_035, $duration->seconds);
+        self::assertSame(999_999, $duration->microseconds);
+        self::assertSame(-1, $duration->sign);
+    }
+
+    public function test_it_truncates_nanoseconds_smaller_than_one_microsecond(): void
+    {
+        self::assertEquals(
+            Duration::zero(),
+            Duration::fromFormat('PT0.000000009S', DurationFormat::Iso8601),
+        );
+    }
+
+    public function test_it_truncates_nanoseconds_to_the_nearest_lower_microsecond(): void
+    {
+        self::assertEquals(
+            Duration::of(microseconds: 123_456),
+            Duration::fromFormat('PT0.123456789S', DurationFormat::Iso8601)
+        );
+    }
+
+    public function test_it_preserves_exact_microsecond_precision(): void
+    {
+        self::assertEquals(
+            Duration::of(microseconds: 123_456),
+            Duration::fromFormat('PT0.123456S', DurationFormat::Iso8601)
+        );
+    }
+
+    public function test_it_preserves_microseconds_when_nanoseconds_are_a_multiple_of_one_thousand(): void
+    {
+        self::assertEquals(
+            Duration::of(microseconds: 123_456),
+            Duration::fromFormat('PT0.123456000S', DurationFormat::Iso8601)
+        );
+    }
+
+    public function test_it_truncates_nanoseconds_after_whole_seconds(): void
+    {
+        self::assertEquals(
+            Duration::of(seconds: 1, microseconds: 123_456),
+            Duration::fromFormat('PT1.123456789S', DurationFormat::Iso8601)
+        );
+    }
+
+    public function test_it_truncates_negative_nanoseconds_after_whole_seconds(): void
+    {
+        self::assertEquals(
+            Duration::of(seconds: 1, microseconds: 123_456)->negate(),
+            Duration::fromFormat('-PT1.123456789S', DurationFormat::Iso8601)
+        );
+    }
+
+    public function test_it_truncates_sub_microsecond_precision_in_compact_format(): void
+    {
+        self::assertTrue(
+            Duration::zero()->equals(
+                Duration::fromFormat('9ns', DurationFormat::Compact)
+            )
+        );
+    }
+
+    public function test_it_truncates_nanoseconds_to_microseconds_in_compact_format(): void
+    {
+        self::assertTrue(
+            Duration::of(hours: 1, microseconds: 28)->equals(
+                Duration::fromFormat('1h28009ns', DurationFormat::Compact)
+            )
+        );
+    }
+
+    public function test_it_preserves_microseconds_in_compact_format(): void
+    {
+        self::assertTrue(
+            Duration::of(hours: 1, microseconds: 28)->equals(
+                Duration::fromFormat('1h28us', DurationFormat::Compact)
+            )
+        );
+    }
+
+    public function test_it_preserves_exact_microsecond_precision_in_compact_format(): void
+    {
+        self::assertTrue(
+            Duration::of(hours: 1, microseconds: 280)->equals(
+                Duration::fromFormat('1h280000ns', DurationFormat::Compact)
+            )
         );
     }
 }

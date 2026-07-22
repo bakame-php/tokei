@@ -6,11 +6,12 @@ namespace Tests\Time;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
-use Throwable;
 use Time\Duration;
 use Time\TimeException;
 use ValueError;
+
 use const PHP_INT_MAX;
 
 #[Group('time-polyfill')]
@@ -25,7 +26,8 @@ final class DurationTest extends TestCase
         self::assertFalse($duration->negative);
     }
 
-    #[DataProvider('invalidSecondsProvider')]
+    #[TestWith([-1, ValueError::class], 'negative')]
+    #[TestWith([9_223_372_036, TimeException::class], 'too large')]
     public function testFromSecondsRejectsInvalidSeconds(int $seconds, string $exceptionClassname): void
     {
         $this->expectException($exceptionClassname);
@@ -33,30 +35,13 @@ final class DurationTest extends TestCase
         Duration::fromSeconds($seconds);
     }
 
-    /**
-     * @return iterable<non-empty-string, array{0: int, 1:class-string<Throwable>}>
-     */
-    public static function invalidSecondsProvider(): iterable
-    {
-        yield 'negative' => [-1, ValueError::class];
-        yield 'too large' => [9_223_372_036, TimeException::class];
-    }
-
-    #[DataProvider('invalidNanosecondsProvider')]
+    #[TestWith([-1, ValueError::class], 'negative')]
+    #[TestWith([1_000_000_000, TimeException::class], 'too large')]
     public function testFromSecondsRejectsInvalidNanoseconds(int $nanoseconds, string $exceptionClassname): void
     {
         $this->expectException($exceptionClassname);
 
         Duration::fromSeconds(1, $nanoseconds);
-    }
-
-    /**
-     * @return iterable<non-empty-string, array{0: int, 1:class-string<Throwable>}>
-     */
-    public static function invalidNanosecondsProvider(): iterable
-    {
-        yield 'negative' => [-1, ValueError::class];
-        yield 'too large' => [1_000_000_000, TimeException::class];
     }
 
     public function testFromNanoseconds(): void
@@ -85,18 +70,12 @@ final class DurationTest extends TestCase
 
     public function testFromMinutes(): void
     {
-        self::assertSame(
-            120,
-            Duration::fromMinutes(2)->seconds
-        );
+        self::assertSame(120, Duration::fromMinutes(2)->seconds);
     }
 
     public function testFromHours(): void
     {
-        self::assertSame(
-            7200,
-            Duration::fromHours(2)->seconds
-        );
+        self::assertSame(7200, Duration::fromHours(2)->seconds);
     }
 
     public function testItRejectOverflowInteger(): void
@@ -257,21 +236,13 @@ final class DurationTest extends TestCase
         self::assertSame(2, $result->nanoseconds);
     }
 
-    #[DataProvider('invalidDivisorsProvider')]
+    #[TestWith([0], 'division with zero')]
+    #[TestWith([-1], 'division with negative factor')]
     public function testDivideByRejectsInvalidDivisor(int $divisor): void
     {
         $this->expectException(ValueError::class);
 
         Duration::fromSeconds(1)->divideBy($divisor);
-    }
-
-    /**
-     * @return iterable<array{0: int}>
-     */
-    public static function invalidDivisorsProvider(): iterable
-    {
-        yield [0];
-        yield [-1];
     }
 
     public function testCompare(): void
@@ -318,5 +289,46 @@ final class DurationTest extends TestCase
                 Duration::fromSeconds(1)
             )
         );
+    }
+
+    #[DataProvider('invalidIso8601Durations')]
+    public function test_it_rejects_invalid_iso8601_durations(string $specification): void
+    {
+        $this->expectException(TimeException::class);
+
+        Duration::fromIso8601String($specification);
+    }
+
+    public static function invalidIso8601Durations(): iterable
+    {
+        yield 'empty string' => [''];
+
+        yield 'invalid prefix' => ['1H'];
+
+        yield 'missing time designator' => ['P1H'];
+
+        yield 'missing value' => ['PT'];
+
+        yield 'unsupported years component' => ['P1Y'];
+
+        yield 'unsupported months component' => ['P1M'];
+
+        yield 'unsupported weeks component' => ['P1W'];
+
+        yield 'unsupported days component' => ['P1D'];
+
+        yield 'invalid fraction format' => ['PT1.S'];
+
+        yield 'invalid unit' => ['PT1X'];
+
+        yield 'invalid duplicated seconds' => ['PT1S2S'];
+
+        yield 'invalid duplicated fraction' => ['PT1.5.5S'];
+
+        yield 'hours overflow integer range' => ['PT2562047789H'];
+
+        yield 'combined components overflow integer range' => ['PT2562047788H59M59S'];
+
+        yield 'combined components exceeds integer range' => ['PT2562047788015215H59M59S'];
     }
 }

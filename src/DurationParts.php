@@ -22,6 +22,8 @@ final readonly class DurationParts
     private const string COMPACT_DURATION = 'compact_duration';
     private const string COMPACT_TIME = 'compact_time';
 
+    public int $seconds;
+
     public function __construct(
         public int $hour,
         public int $minute,
@@ -29,6 +31,7 @@ final readonly class DurationParts
         public int $microsecond,
         public int $sign,
     ) {
+        $this->seconds = ($hour * 3_600) + ($minute * 60) + $second;
     }
 
     public static function parse(int $value): self

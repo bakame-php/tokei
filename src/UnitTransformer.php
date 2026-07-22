@@ -46,6 +46,16 @@ final readonly class UnitTransformer
         return (int) round($ticks * $value);
     }
 
+    /**
+     * @throws InvalidDuration
+     */
+    public static function addTicks(int $left, int $right): int
+    {
+        ($right <= PHP_INT_MAX - $left) || throw InvalidDuration::dueToOverflow();
+
+        return $left + $right;
+    }
+
     public static function fromTicks(int $valueInTicks, Unit $unit): int|float
     {
         return $valueInTicks / self::ticks($unit);

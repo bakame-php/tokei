@@ -79,7 +79,7 @@ final readonly class TemporalSearch
     {
         return $this->circularSearch(
             InputNormalizer::time($around),
-            static fn (Time $at, Time $reference): Duration => Duration::minimumOf(
+            static fn (Time $at, Time $reference): Duration => Duration::minOf(
                 $at->distance($reference),
                 $reference->distance($at),
             )

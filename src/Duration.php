@@ -11,18 +11,22 @@ use DivisionByZeroError;
 use JsonSerializable;
 use Time\Duration as TimeDuration;
 
+use function abs;
 use function array_key_first;
 use function array_key_last;
 use function array_map;
 use function intdiv;
 use function preg_match;
-use function round;
 use function str_pad;
 use function usort;
 
 use const PHP_INT_MAX;
 use const PHP_INT_MIN;
 
+/**
+ * @phpstan-type InputDurationPart ''|numeric-string|int
+ * @phpstan-type InputSign ''|'+'|'-'
+ */
 final class Duration implements JsonSerializable
 {
     private const string REGEXP_TIMER = '@^
@@ -41,8 +45,8 @@ final class Duration implements JsonSerializable
         (?:(?<minutes>\d+)\s*m\s*)?
         (?:(?<seconds>\d+)\s*s\s*)?
         (?:
-            (?<fvalue>\d{1,9})\s*
-            (?<funit>µs|us|ms|ns)\s*
+            (?<fractions>\d{1,9})\s*
+            (?<unit>µs|us|ms|ns)\s*
         )?
     $@x';
 
@@ -64,11 +68,8 @@ final class Duration implements JsonSerializable
     $@x';
 
     private ?DurationParts $parts = null;
-    private readonly int $ticks;
-    public int $microsecond { get => $this->parts()->microsecond; }
-    public int $second { get => $this->parts()->second; }
-    public int $minute { get => $this->parts()->minute; }
-    public int $hour { get => $this->parts()->hour; }
+    public int $seconds { get => $this->parts()->seconds; }
+    public int $microseconds { get => $this->parts()->microsecond; }
     public int $sign { get => $this->parts()->sign; }
 
     /**
@@ -76,11 +77,9 @@ final class Duration implements JsonSerializable
      *
      * @throws TokeiException
      */
-    private function __construct(int $ticks)
+    private function __construct(private readonly int $ticks)
     {
         PHP_INT_MIN !== $ticks || throw InvalidDuration::dueToOverflow();
-
-        $this->ticks = $ticks;
     }
 
     /**
@@ -122,15 +121,15 @@ final class Duration implements JsonSerializable
     ): self {
         (0 <= $weeks && 0 <= $days && 0 <= $hours && 0 <= $minutes && 0 <= $seconds && 0 <= $milliseconds && 0 <= $microseconds) || throw new InvalidDuration('No duration part can be expressed with a negative number.');
 
-        return new self(
-            new DurationParts(
-                hour: (($weeks * 7) + $days) * 24 + $hours,
-                minute: $minutes,
-                second: $seconds,
-                microsecond: UnitTransformer::toTicks($milliseconds, Unit::Millisecond) + $microseconds,
-                sign: 1,
-            )->build()
-        );
+        return self::fromParts([
+            'weeks' => $weeks,
+            'days' => $days,
+            'hours' => $hours,
+            'minutes' => $minutes,
+            'seconds' => $seconds,
+            'microseconds' => UnitTransformer::addTicks(UnitTransformer::toTicks($milliseconds, Unit::Millisecond), $microseconds),
+            'sign' => '+',
+        ]);
     }
 
     /**
@@ -162,7 +161,7 @@ final class Duration implements JsonSerializable
     }
 
     /**
-     * @param TimeDuration $nativeDuration
+     * @param TimeDuration $duration
      *
      * Because Duration does not handle nanoseconds
      * The \Time\Duration nanoseconds is rounded to
@@ -170,12 +169,11 @@ final class Duration implements JsonSerializable
      *
      * @throws TokeiException
      */
-    public static function fromNative(TimeDuration $nativeDuration): self
+    public static function fromNative(TimeDuration $duration): self
     {
-        return self::of(
-            seconds: $nativeDuration->seconds,
-            microseconds: (int) round($nativeDuration->nanoseconds / 1_000),
-        );
+        $instance = self::of(seconds: $duration->seconds, microseconds: intdiv($duration->nanoseconds, 1_000));
+
+        return $duration->negative ? $instance->negate() : $instance;
     }
 
     /**
@@ -199,23 +197,22 @@ final class Duration implements JsonSerializable
     {
         1 === preg_match(self::REGEXP_TIMER, $notation, $parts) || throw new InvalidDuration('Unknown or bad format `'.$notation.'`.');
 
+        $hours = (int) $parts['hours'];
         $minutes = (int) $parts['minutes'];
         $seconds = (int) $parts['seconds'];
-        $microseconds = (int) round((int) (str_pad($parts['fractions'] ?? '0', 9, '0')) / 1000);
+        $microseconds = intdiv((int) (str_pad($parts['fractions'] ?? '0', 9, '0')), 1000);
 
         ($minutes >= 0 && $minutes < 60) || throw InvalidDuration::dueToMalformedTime($minutes, Unit::Minute);
         ($seconds >= 0 && $seconds < 60) || throw InvalidDuration::dueToMalformedTime($seconds, Unit::Second);
         ($microseconds >= 0 && $microseconds < 1_000_000) || throw InvalidDuration::dueToMalformedTime($microseconds, Unit::Microsecond);
 
-        return new self(
-            new DurationParts(
-                hour: (int)$parts['hours'],
-                minute: $minutes,
-                second: $seconds,
-                microsecond: $microseconds,
-                sign: '-' === $parts['sign'] ? -1 : 1,
-            )->build()
-        );
+        return self::fromParts([
+            'hours' => $hours,
+            'minutes' => $minutes,
+            'seconds' => $seconds,
+            'microseconds' => $microseconds,
+            'sign' => '-' === $parts['sign'] ? '-' : '+',
+        ]);
     }
 
     /**
@@ -236,40 +233,9 @@ final class Duration implements JsonSerializable
     {
         ('' !== $notation && 1 === preg_match(self::REGEXP_COMPACT, $notation, $parts)) || throw new InvalidDuration('Unknown or bad format `'.$notation.'`.');
 
-        return new self(
-            new DurationParts(
-                hour: (int) ($parts['hours'] ?? 0) + ((((int)($parts['weeks'] ?? 0) * 7) + (int)($parts['days'] ?? 0)) * 24),
-                minute: (int) ($parts['minutes'] ?? 0),
-                second: (int) ($parts['seconds'] ?? 0),
-                microsecond: self::getMicrosecondPart($parts),
-                sign: '-' === ($parts['sign'] ?? '') ? -1 : 1,
-            )->build()
-        );
-    }
+        $parts['microseconds'] = self::resolveMicroseconds($parts);
 
-    /**
-     * @param array{fvalue?: string, funit?: ?non-empty-string} $parts
-     *
-     * @throws InvalidDuration
-     */
-    private static function getMicrosecondPart(array $parts): int
-    {
-        $fractionValue = (int)($parts['fvalue'] ?? 0);
-        $fractionUnit = $parts['funit'] ?? 'us';
-        if ('ms' === $fractionUnit) {
-            ($fractionValue <= 999) || throw new InvalidDuration('millisecond fraction value cannot be greater than 999.');
-            return $fractionValue * 1000;
-        }
-
-        if ('µs' === $fractionUnit || 'us' === $fractionUnit) {
-            ($fractionValue <= 999_999) || throw new InvalidDuration('microsecond fraction value cannot be greater than 999_999.');
-
-            return $fractionValue;
-        }
-
-        ($fractionValue <= 999_999_999) || throw new InvalidDuration('nanosecond fraction value cannot be greater than 999_999_999.');
-
-        return intdiv($fractionValue, 1000);
+        return self::fromParts($parts);
     }
 
     /**
@@ -289,19 +255,63 @@ final class Duration implements JsonSerializable
      */
     private static function fromIso8601(string $notation): Duration
     {
-        1 === preg_match(self::REGEXP_ISO8601, $notation, $parts) || throw InvalidDuration::dueToMalformedIso8601($notation);
+        ('' !== $notation && 1 === preg_match(self::REGEXP_ISO8601, $notation, $parts)) || throw InvalidDuration::dueToMalformedIso8601($notation);
 
-        $nanoseconds = (int) (str_pad($parts['fractions'] ?? '0', 9, '0'));
+        $parts['fractions'] = intdiv((int) (str_pad($parts['fractions'] ?? '0', 9, '0')), 1000);
+        $parts['microseconds'] = self::resolveMicroseconds($parts);
 
-        return new self(
-            new DurationParts(
-                hour: (int)($parts['hours'] ?? 0) + ((((int)($parts['weeks'] ?? 0) * 7) + (int)($parts['days'] ?? 0)) * 24),
-                minute: (int)($parts['minutes'] ?? 0),
-                second: (int)($parts['seconds'] ?? 0),
-                microsecond: intdiv($nanoseconds, 1_000),
-                sign: '-' === ($parts['sign'] ?? '') ? -1 : 1,
-            )->build(),
-        );
+        return self::fromParts($parts);
+    }
+
+    /**
+     * @param array{fractions?: InputDurationPart, unit?: ?non-empty-string} $parts
+     *
+     * @throws InvalidDuration
+     */
+    private static function resolveMicroseconds(array $parts): int
+    {
+        $value = (int) ($parts['fractions'] ?? 0);
+        $unit = $parts['unit'] ?? 'us';
+        if ('ms' === $unit) {
+            ($value <= 999 && $value >= 0) || throw new InvalidDuration('millisecond fraction value cannot be greater than 999.');
+            return $value * 1000;
+        }
+
+        if ('µs' === $unit || 'us' === $unit) {
+            ($value <= 999_999 && $value >= 0) || throw new InvalidDuration('microsecond fraction value cannot be greater than 999_999.');
+
+            return $value;
+        }
+
+        ($value <= 999_999_999 && $value >= 0) || throw new InvalidDuration('nanosecond fraction value cannot be greater than 999_999_999.');
+
+        return intdiv($value, 1000);
+    }
+
+    /**
+     * @param array{
+     *     weeks? : InputDurationPart,
+     *     days? : InputDurationPart,
+     *     hours? : InputDurationPart,
+     *     minutes? : InputDurationPart,
+     *     seconds? : InputDurationPart,
+     *     microseconds? : InputDurationPart,
+     *     sign? : InputSign,
+     * } $parts
+     *
+     * @throws TokeiException
+     */
+    private static function fromParts(array $parts): Duration
+    {
+        $sum = 0;
+        $sum = UnitTransformer::addTicks($sum, UnitTransformer::toTicks((int) ($parts['weeks'] ?? 0), Unit::Week));
+        $sum = UnitTransformer::addTicks($sum, UnitTransformer::toTicks((int) ($parts['days'] ?? 0), Unit::Day));
+        $sum = UnitTransformer::addTicks($sum, UnitTransformer::toTicks((int) ($parts['hours'] ?? 0), Unit::Hour));
+        $sum = UnitTransformer::addTicks($sum, UnitTransformer::toTicks((int) ($parts['minutes'] ?? 0), Unit::Minute));
+        $sum = UnitTransformer::addTicks($sum, UnitTransformer::toTicks((int) ($parts['seconds'] ?? 0), Unit::Second));
+        $sum = UnitTransformer::addTicks($sum, (int) ($parts['microseconds'] ?? 0));
+
+        return new self('-' === ($parts['sign'] ?? '') ? -$sum : $sum);
     }
 
     /**
@@ -323,7 +333,7 @@ final class Duration implements JsonSerializable
     /**
      * Returns an instance with the highest duration value supported by the package.
      */
-    public static function maximum(): self
+    public static function max(): self
     {
         return new self(PHP_INT_MAX - 1);
     }
@@ -331,7 +341,7 @@ final class Duration implements JsonSerializable
     /**
      * Returns an instance with the lowest duration value supported by the package.
      */
-    public static function minimum(): self
+    public static function min(): self
     {
         return new self(PHP_INT_MIN + 1);
     }
@@ -339,7 +349,7 @@ final class Duration implements JsonSerializable
     /**
      * Returns the shortest instance from a collection of instances.
      */
-    public static function minimumOf(Duration|DateInterval|Interval|Task ...$durations): self
+    public static function minOf(Duration|DateInterval|Interval|Task|TimeDuration ...$durations): self
     {
         [] !== $durations || throw new ArgumentCountError('minOf() expects at least one duration.');
 
@@ -352,7 +362,7 @@ final class Duration implements JsonSerializable
     /**
      * Returns the longest instance from a collection of instances.
      */
-    public static function maximumOf(Duration|DateInterval|Interval|Task ...$durations): self
+    public static function maxOf(Duration|DateInterval|Interval|Task|TimeDuration ...$durations): self
     {
         [] !== $durations || throw new ArgumentCountError('maxOf() expects at least one duration.');
 
@@ -385,7 +395,9 @@ final class Duration implements JsonSerializable
      */
     public function toNative(): TimeDuration
     {
-        return TimeDuration::fromIso8601String($this->format(DurationFormat::Iso8601));
+        $new = TimeDuration::fromSeconds($this->seconds, $this->microseconds * 1_000);
+
+        return -1 === $this->sign ? $new->negate() : $new;
     }
 
     /**
@@ -445,7 +457,7 @@ final class Duration implements JsonSerializable
     /**
      * @throws TokeiException
      */
-    public function add(Duration|DateInterval|Interval|Task ...$other): self
+    public function add(Duration|DateInterval|Interval|Task|TimeDuration ...$other): self
     {
         $ticks = $this->ticks;
         foreach ($other as $item) {
@@ -458,7 +470,7 @@ final class Duration implements JsonSerializable
     /**
      * @throws TokeiException
      */
-    public function sub(Duration|DateInterval|Interval|Task ...$other): self
+    public function sub(Duration|DateInterval|Interval|Task|TimeDuration ...$other): self
     {
         $ticks = $this->ticks;
         foreach ($other as $item) {
@@ -548,24 +560,17 @@ final class Duration implements JsonSerializable
      */
     public function multiplyBy(int $factor): self
     {
-        if (1 === $factor || 0 === $this->ticks) {
-            return $this;
-        }
-
-        if (-1 === $factor) {
-            return $this->negate();
-        }
-
-        if (0 === $factor) {
-            return self::zero();
-        }
-
         $value = $this->ticks;
         $absFactor = abs($factor);
 
-        return ($value <= intdiv(PHP_INT_MAX, $absFactor) && $value >= intdiv(-PHP_INT_MAX, $absFactor))
-            ? new self($value * $factor)
-            : throw InvalidDuration::dueToOverflow();
+        return match (true) {
+            -1 === $factor => $this->negate(),
+            0 === $factor => self::zero(),
+            1 === $factor,
+            0 === $value => $this,
+            ($value <= intdiv(PHP_INT_MAX, $absFactor) && $value >= intdiv(-PHP_INT_MAX, $absFactor)) => new self($value * $factor),
+            default => throw InvalidDuration::dueToOverflow(),
+        };
     }
 
     /**

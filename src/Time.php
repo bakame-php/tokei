@@ -35,8 +35,8 @@ final class Time implements JsonSerializable
         (?<minute>\d{1,2})\s*m\s*
         (?:(?<second>\d{1,2})\s*s\s*)?
         (?:
-            (?<fvalue>\d{1,9})\s*
-            (?<funit>µs|us|ms|ns)\s*
+            (?<fractions>\d{1,9})\s*
+            (?<unit>µs|us|ms|ns)\s*
         )?
     $@x';
 
@@ -145,33 +145,34 @@ final class Time implements JsonSerializable
             hour: (int) $parts['hour'],
             minute: (int) $parts['minute'],
             second: (int) ($parts['second'] ?? 0),
-            microsecond: self::getMicrosecondPart($parts),
+            microsecond: self::resolveMicroseconds($parts),
         );
     }
 
     /**
-     * @param array{fvalue?: string, funit?: ?non-empty-string} $parts
+     * @param array{fractions?: string, unit?: ?non-empty-string} $parts
      *
      * @throws InvalidDuration
      */
-    private static function getMicrosecondPart(array $parts): int
+    private static function resolveMicroseconds(array $parts): int
     {
-        $fractionValue = (int)($parts['fvalue'] ?? 0);
-        $fractionUnit = $parts['funit'] ?? 'us';
-        if ('ms' === $fractionUnit) {
-            ($fractionValue <= 999) || throw new InvalidDuration('millisecond fraction value cannot be greater than 999.');
-            return $fractionValue * 1000;
+        $value = (int)($parts['fractions'] ?? 0);
+        $unit = $parts['unit'] ?? 'us';
+        if ('ms' === $unit) {
+            ($value <= 999 && $value >= 0) || throw new InvalidDuration('millisecond fraction value cannot be greater than 999.');
+
+            return $value * 1000;
         }
 
-        if ('µs' === $fractionUnit || 'us' === $fractionUnit) {
-            ($fractionValue <= 999_999) || throw new InvalidDuration('microsecond fraction value cannot be greater than 999_999.');
+        if ('µs' === $unit || 'us' === $unit) {
+            ($value <= 999_999 && $value >= 0) || throw new InvalidDuration('microsecond fraction value cannot be greater than 999_999.');
 
-            return $fractionValue;
+            return $value;
         }
 
-        ($fractionValue <= 999_999_999) || throw new InvalidDuration('nanosecond fraction value cannot be greater than 999_999_999.');
+        ($value <= 999_999_999 && $value >= 0) || throw new InvalidDuration('nanosecond fraction value cannot be greater than 999_999_999.');
 
-        return intdiv($fractionValue, 1000);
+        return intdiv($value, 1000);
     }
 
     /**
