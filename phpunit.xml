@@ -18,10 +18,10 @@
   </coverage>
   <testsuites>
     <testsuite name="Aide Time Test Suite">
-      <directory suffix="Test.php">tests/Tokei</directory>
+      <directory suffix="Test.php">tests</directory>
     </testsuite>
     <testsuite name="Polyfill Test Suite">
-      <directory suffix="Test.php">tests/Time</directory>
+      <directory suffix="Test.php">polyfill/tests</directory>
     </testsuite>
   </testsuites>
   <logging>

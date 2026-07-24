@@ -3,7 +3,7 @@
 if (PHP_VERSION_ID < 80600 && !enum_exists('SortDirection')) {
     spl_autoload_register(static function (string $class): void {
         if ('SortDirection' === $class) {
-            require __DIR__ . '/lib/SortDirection.php';
+            require __DIR__ . '/polyfill/lib/SortDirection.php';
         }
     });
 }
@@ -11,8 +11,8 @@ if (PHP_VERSION_ID < 80600 && !enum_exists('SortDirection')) {
 if (PHP_VERSION_ID < 80600 && !class_exists('Time\Duration')) {
     spl_autoload_register(static function (string $class): void {
         $path = match ($class) {
-            'Time\\Duration' => __DIR__ . '/lib/Time/Duration.php',
-            'Time\\TimeException' => __DIR__ . '/lib/Time/TimeException.php',
+            'Time\\Duration' => __DIR__ . '/polyfill/lib/Time/Duration.php',
+            'Time\\TimeException' => __DIR__ . '/polyfill/lib/Time/TimeException.php',
             default => null,
         };
 

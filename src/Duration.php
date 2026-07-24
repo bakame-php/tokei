@@ -164,7 +164,7 @@ final class Duration implements JsonSerializable
      * @param TimeDuration $duration
      *
      * Because Duration does not handle nanoseconds
-     * The \Time\Duration nanoseconds is rounded to
+     * The \lib\Time\Duration nanoseconds is rounded to
      * the nearest microseconds
      *
      * @throws TokeiException
@@ -391,7 +391,7 @@ final class Duration implements JsonSerializable
     }
 
     /**
-     * Converts the instance to a \Time\Duration object.
+     * Converts the instance to a \lib\Time\Duration object.
      */
     public function toNative(): TimeDuration
     {

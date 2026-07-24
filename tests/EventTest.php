@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Tokei;
+namespace Tests;
 
 use Bakame\Tokei\Event;
 use Bakame\Tokei\Identifiers;

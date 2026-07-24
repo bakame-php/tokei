@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
+use Throwable;
 use Time\Duration;
 use Time\TimeException;
 use ValueError;
@@ -26,6 +27,9 @@ final class DurationTest extends TestCase
         self::assertFalse($duration->negative);
     }
 
+    /**
+     * @param class-string<Throwable> $exceptionClassname
+     */
     #[TestWith([-1, ValueError::class], 'negative')]
     #[TestWith([9_223_372_036, TimeException::class], 'too large')]
     public function testFromSecondsRejectsInvalidSeconds(int $seconds, string $exceptionClassname): void
@@ -35,6 +39,9 @@ final class DurationTest extends TestCase
         Duration::fromSeconds($seconds);
     }
 
+    /**
+     * @param class-string<Throwable> $exceptionClassname
+     */
     #[TestWith([-1, ValueError::class], 'negative')]
     #[TestWith([1_000_000_000, TimeException::class], 'too large')]
     public function testFromSecondsRejectsInvalidNanoseconds(int $nanoseconds, string $exceptionClassname): void
@@ -299,6 +306,9 @@ final class DurationTest extends TestCase
         Duration::fromIso8601String($specification);
     }
 
+    /**
+     * @return iterable<non-empty-string, array{0: string}>
+     */
     public static function invalidIso8601Durations(): iterable
     {
         yield 'empty string' => [''];

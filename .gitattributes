@@ -12,3 +12,4 @@ phpstan.neon       export-ignore
 phpunit.xml        export-ignore
 README.md          export-ignore
 tests              export-ignore
+polyfill/tests     export-ignore

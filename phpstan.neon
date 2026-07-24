@@ -7,6 +7,6 @@ parameters:
     level: max
     paths:
         - src
-        - lib
+        - polyfill
     ignoreErrors:
         - identifier: smaller.alwaysTrue

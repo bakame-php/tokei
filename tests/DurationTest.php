@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Tokei;
+namespace Tests;
 
 use Bakame\Tokei\Duration;
 use Bakame\Tokei\DurationFormat;
@@ -17,13 +17,12 @@ use DateInterval;
 use DateTime;
 use DateTimeImmutable;
 use DivisionByZeroError;
+use Time\Duration as TimeDuration;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
-use Time\Duration as TimeDuration;
 use ValueError;
-
 use function json_encode;
 use function ltrim;
 use function serialize;
@@ -826,7 +825,7 @@ final class DurationTest extends TestCase
 
     /**
      * @throws InvalidDuration
-     * @return array<non-empty-string, list<Duration>>
+     * @return Duration
      */
     public static function clampProvider(): array
     {

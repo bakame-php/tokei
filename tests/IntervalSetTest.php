@@ -2,8 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Bakame\Tokei;
+namespace Tests;
 
+use Bakame\Tokei\Bound;
+use Bakame\Tokei\Duration;
+use Bakame\Tokei\DurationFormat;
+use Bakame\Tokei\InputNormalizer;
+use Bakame\Tokei\Interval;
+use Bakame\Tokei\IntervalFormat;
+use Bakame\Tokei\IntervalSet;
+use Bakame\Tokei\InvalidDuration;
+use Bakame\Tokei\TemporalSearch;
+use Bakame\Tokei\Time;
+use Bakame\Tokei\TimeException;
+use Bakame\Tokei\TokeiException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use SortDirection;

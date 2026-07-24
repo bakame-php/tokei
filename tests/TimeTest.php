@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Tokei;
+namespace Tests;
 
 use Bakame\Tokei\Duration;
 use Bakame\Tokei\DurationParts;
@@ -627,7 +627,7 @@ final class TimeTest extends TestCase
 
     /**
      * @throws InvalidTime
-     * @return array<non-empty-string, list<Time>>
+     * @return Time
      */
     public static function clampProvider(): array
     {
