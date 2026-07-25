@@ -67,19 +67,28 @@ final class Duration implements JsonSerializable
         )?
     $@x';
 
+    private const int MICRO_TO_SECONDS = 1_000_000;
+
     private ?DurationParts $parts = null;
-    public int $seconds { get => $this->parts()->seconds; }
-    public int $microseconds { get => $this->parts()->microsecond; }
-    public int $sign { get => $this->parts()->sign; }
+    private readonly int $ticks;
+    public readonly int $sign;
+    public readonly int $seconds;
+    public readonly int $microseconds;
 
     /**
      * @param int $ticks expressed in microseconds
      *
      * @throws TokeiException
      */
-    private function __construct(private readonly int $ticks)
+    private function __construct(int $ticks)
     {
         PHP_INT_MIN !== $ticks || throw InvalidDuration::dueToOverflow();
+
+        $this->ticks = $ticks;
+        $this->sign = $ticks <=> 0;
+        $absTicks = -1 === $this->sign ? -$ticks : $ticks;
+        $this->seconds = intdiv($absTicks, self::MICRO_TO_SECONDS);
+        $this->microseconds = $absTicks % self::MICRO_TO_SECONDS;
     }
 
     /**
@@ -98,8 +107,11 @@ final class Duration implements JsonSerializable
     public function __unserialize(array $data): void
     {
         [$properties] = $data;
-
-        $this->ticks = new self($properties['total_microseconds'])->ticks;
+        $new = new self($properties['total_microseconds']);
+        $this->ticks = $new->ticks;
+        $this->sign = $new->sign;
+        $this->seconds = $new->seconds;
+        $this->microseconds = $new->microseconds;
     }
 
     private function parts(): DurationParts

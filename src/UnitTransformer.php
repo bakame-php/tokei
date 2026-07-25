@@ -34,6 +34,11 @@ final readonly class UnitTransformer
         };
     }
 
+    public static function fromTicks(int $valueInTicks, Unit $unit): int|float
+    {
+        return $valueInTicks / self::ticks($unit);
+    }
+
     /**
      * @throws InvalidDuration
      */
@@ -46,6 +51,11 @@ final readonly class UnitTransformer
         return (int) round($ticks * $value);
     }
 
+    public static function convert(int|float $value, Unit $from, Unit $to): int|float
+    {
+        return self::fromTicks(self::toTicks($value, $from), $to);
+    }
+
     /**
      * @throws InvalidDuration
      */
@@ -54,11 +64,6 @@ final readonly class UnitTransformer
         ($right <= PHP_INT_MAX - $left) || throw InvalidDuration::dueToOverflow();
 
         return $left + $right;
-    }
-
-    public static function fromTicks(int $valueInTicks, Unit $unit): int|float
-    {
-        return $valueInTicks / self::ticks($unit);
     }
 
     /**

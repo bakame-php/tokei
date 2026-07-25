@@ -36,7 +36,7 @@ final readonly class DurationParts
 
     public static function parse(int $value): self
     {
-        $sign = $value <=> 0 ;
+        $sign = $value <=> 0;
         $microsecond = -1 === $sign ? -$value : $value;
         [$hour, $microsecond] = UnitTransformer::divmod($microsecond, Unit::Hour);
         [$minute, $microsecond] = UnitTransformer::divmod($microsecond, Unit::Minute);
