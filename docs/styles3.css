@@ -554,6 +554,10 @@ video {
   display: none;
 }
 
+.static {
+  position: static;
+}
+
 .fixed {
   position: fixed;
 }
@@ -1038,6 +1042,10 @@ video {
 
 .font-semibold {
   font-weight: 600;
+}
+
+.lowercase {
+  text-transform: lowercase;
 }
 
 .tracking-tight {
@@ -1912,6 +1920,18 @@ img {
 
 html {
   scroll-behavior: smooth;
+}
+
+.tokei-logo {
+  width: 120px;
+  height: 40px;
+  background-image: url("assets/img/tokei-logo.svg");
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  /* Hide text visually but keep it accessible */
+  text-indent: -9999px;
+  overflow: hidden;
 }
 
 .hover\:bg-csv-dark:hover {

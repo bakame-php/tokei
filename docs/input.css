@@ -600,3 +600,14 @@ img {
 html {
     scroll-behavior: smooth;
 }
+
+.tokei-logo {
+    width: 120px;
+    height: 40px;
+    background-image: url("assets/img/tokei-logo.svg");
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    text-indent: -9999px;
+    overflow: hidden;
+}
