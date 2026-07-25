@@ -6,7 +6,7 @@ description: "A framework-agnostic PHP library to handle duration, time, circula
 package: 'bakame/tokei'
 repository_url: 'https://github.com/bakame-php/tokei'
 release_major: '1.0'
-version: 0.2.0
+version: 0.3.0
 support: 'Once a new major version is released, the previous stable release remains supported for six more months with patches and security fixes.'
 releases:
     current:

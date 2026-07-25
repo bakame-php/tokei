@@ -12,7 +12,7 @@ version:
             Accepted Input: '/1.0/accepted-input-types/'
         Annotated Values:
             Introduction: '/1.0/annotated-operations/'
-            Identifiers: '/1.0/identifiers'
+            Identifiers: '/1.0/identifiers/'
             Event: '/1.0/event/'
             EventSet: '/1.0/eventset/'
             Task: '/1.0/task/'

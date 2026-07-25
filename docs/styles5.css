@@ -625,6 +625,10 @@ video {
   margin-left: -0.125rem;
 }
 
+.mb-10 {
+  margin-bottom: 2.5rem;
+}
+
 .mb-16 {
   margin-bottom: 4rem;
 }
@@ -731,6 +735,10 @@ video {
 
 .max-w-7xl {
   max-width: 80rem;
+}
+
+.max-w-\[350px\] {
+  max-width: 350px;
 }
 
 .flex-auto {
@@ -964,6 +972,10 @@ video {
 
 .pb-6 {
   padding-bottom: 1.5rem;
+}
+
+.pb-8 {
+  padding-bottom: 2rem;
 }
 
 .pl-0\.5 {
@@ -1929,7 +1941,6 @@ html {
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
-  /* Hide text visually but keep it accessible */
   text-indent: -9999px;
   overflow: hidden;
 }
