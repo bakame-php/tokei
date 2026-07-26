@@ -11,9 +11,7 @@ use Time\Duration as TimeDuration;
 
 use function array_map;
 use function filter_var;
-use function is_int;
 use function is_string;
-use function number_format;
 use function preg_match;
 use function trim;
 
@@ -285,17 +283,10 @@ final class Interval implements JsonSerializable
      */
     public function format(IntervalFormat $format, ?Unit $unit = null): string
     {
-        $formatTime = static function (Time $time, ?Unit $unit, IntervalFormat $format): string {
-            if (null === $unit || !$format->supportsUnit()) {
-                return $time->format(TimeFormat::Clock);
-            }
-
-            $value = $time->offset()->in($unit);
-
-            return is_int($value)
-                ? (string) $value
-                : number_format(num: $value, decimals: 6, decimal_separator: '.', thousands_separator: '');
-        };
+        $formatTime = static fn (Time $time, ?Unit $unit, IntervalFormat $format): string =>
+                 (null === $unit || !$format->supportsUnit())
+                    ? $time->format(TimeFormat::Clock)
+                    : $time->offset()->toNumberString($unit, 6);
 
         $start = $formatTime($this->start, $unit, $format);
         $end = $formatTime($this->end, $unit, $format);

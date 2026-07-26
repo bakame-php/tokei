@@ -10,12 +10,15 @@ use DateTimeInterface;
 use DivisionByZeroError;
 use JsonSerializable;
 use Time\Duration as TimeDuration;
+use ValueError;
 
 use function abs;
 use function array_key_first;
 use function array_key_last;
 use function array_map;
 use function intdiv;
+use function is_int;
+use function number_format;
 use function preg_match;
 use function str_pad;
 use function usort;
@@ -114,11 +117,6 @@ final class Duration implements JsonSerializable
         $this->microseconds = $new->microseconds;
     }
 
-    private function parts(): DurationParts
-    {
-        return $this->parts ??= DurationParts::parse($this->ticks);
-    }
-
     /**
      * @throws TokeiException
      */
@@ -161,23 +159,21 @@ final class Duration implements JsonSerializable
 
         $days = false === $interval->days ? $interval->d : $interval->days;
 
-        return new self(
-            new DurationParts(
-                hour: ($days * 24) + $interval->h,
-                minute: $interval->i,
-                second: $interval->s,
-                microsecond: UnitTransformer::toTicks($interval->f, Unit::Second),
-                sign: 1 === $interval->invert ? -1 : 1,
-            )->build()
-        );
+        return self::fromParts([
+            'days' => $days,
+            'hours' => $interval->h,
+            'minutes' => $interval->i,
+            'seconds' => $interval->s,
+            'microseconds' => UnitTransformer::toTicks($interval->f, Unit::Second),
+            'sign' => 1 === $interval->invert ? '-' : '+',
+        ]);
     }
 
     /**
      * @param TimeDuration $duration
      *
      * Because Duration does not handle nanoseconds
-     * The \lib\Time\Duration nanoseconds is rounded to
-     * the nearest microseconds
+     * The \Time\Duration nanoseconds is trucated to the microxeconds
      *
      * @throws TokeiException
      */
@@ -402,6 +398,11 @@ final class Duration implements JsonSerializable
         return $this->parts()->toDateInterval($relativeTo);
     }
 
+    private function parts(): DurationParts
+    {
+        return $this->parts ??= new DurationParts($this);
+    }
+
     /**
      * Converts the instance to a \lib\Time\Duration object.
      */
@@ -418,6 +419,26 @@ final class Duration implements JsonSerializable
     public function in(Unit $unit): int|float
     {
         return UnitTransformer::fromTicks($this->ticks, $unit);
+    }
+
+    /**
+     * Returns the duration expressed in the given unit as a numeric string.
+     *
+     * The precision controls the number of fractional digits in the resulting
+     * string if present. If you need to round or truncate the duration itself,
+     * use {@see Duration::roundTo()} before calling this method.
+     *
+     * @throws ValueError If $precision is negative.
+     */
+    public function toNumberString(Unit $unit, int $precision = 0): string
+    {
+        0 <= $precision || throw new ValueError('The precision cannot be negative.');
+
+        $value = $this->in($unit);
+
+        return is_int($value)
+            ? (string) $value
+            : number_format(num: $value, decimals: $precision, decimal_separator: '.', thousands_separator: '');
     }
 
     /**

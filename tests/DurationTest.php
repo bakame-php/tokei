@@ -1249,7 +1249,7 @@ final class DurationTest extends TestCase
 
     public function test_it_accepts_the_minimum_supported_duration(): void
     {
-        $native = TimeDuration::fromSeconds(9_223_372_035, 999_999_999,)->negate();
+        $native = TimeDuration::fromSeconds(9_223_372_035, 999_999_999)->negate();
         $duration = Duration::fromNative($native);
 
         self::assertSame(9_223_372_035, $duration->seconds);
@@ -1339,5 +1339,15 @@ final class DurationTest extends TestCase
                 Duration::fromFormat('1h280000ns', DurationFormat::Compact)
             )
         );
+    }
+
+    public function test_it_renders_the_duration_as_a_number(): void
+    {
+        $duration = Duration::of(hours: 23, seconds: 3);
+        self::assertSame("1380.05", $duration->toNumberString(Unit::Minute, 2));
+        self::assertSame("1380", $duration->toNumberString(Unit::Minute));
+
+        $this->expectException(ValueError::class);
+        $duration->toNumberString(Unit::Minute, -5);
     }
 }

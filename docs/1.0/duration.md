@@ -69,6 +69,7 @@ $duration->seconds;               // returns 1383
 ```php
 Duration::format(DurationFormat $format): string
 Duration::toDateInterval(): DateInterval
+Duration::toNumberString(Unit $unit, int $precision): string
 ```
 
 Formatting the duration string representation is returned by the `Duration::format` with the help of the `DurationFormat` Enum
@@ -85,9 +86,11 @@ When using the `DurationFormat::Iso8601` formats the instance value is converted
 The returned string may not be compatible with PHP's `DateInterval` constructor but is valid withing the `ISO8601` extended specification.
 
 ```php
-$duration = Duration::of(hours: 25, seconds: 5); 
+$duration = Duration::of(hours: 23, seconds: 3); 
 $duration->format(DurationFormat::Iso8601); // returns 'P1DT1H5S'
 $duration->format(DurationFormat::Timer);   // returns '25:00:05'
+$duration->toNumberString(Unit:Minute);     // returns '1380'
+$duration->toNumberString(Unit:Minute, 2);  // returns '1380.05'
 ```
 
 <div class="message-warning">
@@ -118,16 +121,39 @@ $duration->toDateInterval();
 // returns DateInterval
 ```
 
+You can obtain a duration as a numeric string using the 
+`Duration::toNumberString()` method. It complements `Duration::in()`
+by providing control over the textual representation of
+the converted value.
+
+```php
+$duration = Duration::of(hours: 23, seconds: 3);
+$duration->toNumberString(Unit:Minute);
+// returns '1380'
+$duration->toNumberString(Unit:Minute, precision: 2); 
+// returns '1380.05'
+```
+
+The `precision` argument specifies the number of fractional digits to include
+in the resulting string. If the converted value is an integer, the argument is ignored.
+
+Passing a negative value for `precision` throws a `ValueError`.
+
+`Duration::toNumberString()` is intended solely for formatting the numeric
+representation of a duration. If you need to round or truncate the duration
+before converting it to a string, use `Duration::roundTo()` first.
+This keeps rounding behavior explicit and ensures consistent, reproducible results.
+
 ## Modifying duration
 
 ```php
-Duration::abs(): Duration
-Duration::negated(): Duration
+Duration::absolute(): Duration
+Duration::negate(): Duration
 Duration::add(Duration ...$duration): Duration
 Duration::sub(Duration ...$duration): Duration
-Duration::multipliedBy(int $factor): Duration
-Duration::dividedBy(int $factor): Duration
-Duration::dividedInto(Duration $factor): DivisionResult
+Duration::multiplyBy(int $factor): Duration
+Duration::divideBy(int $factor): Duration
+Duration::divideInto(Duration $factor): DivisionResult
 Duration::modulo(Duration $factor): DUration
 Duration::roundTo(Unit $precision, SnapMode $mode): Duration
 Duration::clamp(Duration $min, Duration $max): Duration
@@ -135,19 +161,19 @@ Duration::clamp(Duration $min, Duration $max): Duration
 
 You can:
 
-- make it unsigned using the `Duration::abs` method
-- invert its signing using the `Duration::negated` method
+- make it unsigned using the `Duration::absolute` method
+- invert its signing using the `Duration::negate` method
 - update the duration using multiple instances with `Duration::add` and `Duration::sub` methods
 - round its value to one of the unit declare on the `Bakame\Tokei\Unit` enum
 - clamp its value against two other `Duration` instances
-- multiply or divide a `Duration` instance using the `Duration::multipliedBy`, `Duration::dividedBy` and  `Duration::dividedInto` methods
+- multiply or divide a `Duration` instance using the `Duration::multiplyBy`, `Duration::divideBy` and  `Duration::divideInto` methods
 
 ```php
 $microseconds = 3_661_500_000;
 $a = Duration::of(microseconds: $microseconds);
 $b = $a->roundTo(Unit::Minute, RoundingStrategy::Ceil);
-$c = $b->negated();
-$d = $c->decrease(minutes: 10);
+$c = $b->negate();
+$d = $c->sub(Duration::of(minutes: 10));
 
 echo $a->format(DurationFormat::Timer);
 // returns "1:01:01.500000"
@@ -155,7 +181,7 @@ echo $b->format(DurationFormat::Timer);
 // returns "1:01:00"
 echo $c->format(DurationFormat::Timer);
 // returns "-1:01:00"
-echo $c->abs()->format(DurationFormat::Timer);
+echo $c->absolute()->format(DurationFormat::Timer);
 // returns "1:01:00"
 echo $a->add($b, $c, $d)->format(DurationFormat::Timer);
 // returns "-0:09:58.500000"
@@ -171,7 +197,7 @@ $a->roundTo(Unit::Minute, SnapMode::Ceil)->format(DurationFormat::Timer);
 
 $duration = Duration::fromFormat('-PT5H30M', DurationFormat::Iso8601);
 $oneHour = Duration::of(hours: 1);
-$result = $duration->dividedInto($oneHour);
+$result = $duration->divideInto($oneHour);
 
 $duration->format(DurationFormat::Iso8601);
 // returns '-PT5H30M'
@@ -180,7 +206,7 @@ $result->quotient;
 $result->remainder->format(DurationFormat::Iso8601);
 // returns '-PT30M'
 $oneHour
-    ->multipliedBy($result->quotient)
+    ->multiplyBy($result->quotient)
     ->add($result->remainder)
     ->equals($duration);
 // returns true
@@ -188,15 +214,15 @@ $oneHour
 
 <p class="message-info">Use <code>Duration::add</code> or <code>Duration::sub</code> to aggregate signed duration objects.</p>
 
-Support for dividing one duration by another is enabled using  the `dividedInto()` or `modulo()` method.
-The `dividedInto()` method returns a DTO, `DivisionResult`, exposing the quotient and remainder,
+Support for dividing one duration by another is enabled using  the `divideInto()` or `modulo()` method.
+The `divideInto()` method returns a DTO, `DivisionResult`, exposing the quotient and remainder,
 giving developers the flexibility to access the result either through its properties
 or by using array destructuring on `DivisionResult`. 
 
 ```php
 $duration = Duration::fromFormat('-PT5H30M', DurationFormat::Iso8601);
 $oneHour = Duration::of(hours: 1);
-$result = $duration->dividedInto($oneHour);
+$result = $duration->divideInto($oneHour);
 $result->quotient;
 // returns '-5'
 $result->remainder->format(DurationFormat::Iso8601);
@@ -208,7 +234,7 @@ $quotient;
 $remainder->format(DurationFormat::Iso8601);
 // returns '-PT30M'
 ```
-The `modulo()` method complements `dividedInto()` by providing an easy way to retrieve
+The `modulo()` method complements `divideInto()` by providing an easy way to retrieve
 the remainder of a duration division. This is especially useful when dealing with
 circular ranges, as the result of `modulo()` is always a non-negative `Duration` instance
 
@@ -222,7 +248,7 @@ echo $duration
 //returns 35s;
 
 echo $duration
-    ->dividedInto($factor)
+    ->divideInto($factor)
     ->remainder
     ->format(DurationFormat::Compact), PHP_EOL;
 //returns 35s;
@@ -235,7 +261,7 @@ echo $duration
 
 echo $duration
     ->negated()
-    ->dividedInto($factor)
+    ->divideInto($factor)
     ->remainder
     ->format(DurationFormat::Compact), PHP_EOL;
 //returns -35s;

@@ -9,6 +9,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 
 use function implode;
+use function intdiv;
 use function rtrim;
 use function str_pad;
 
@@ -23,51 +24,40 @@ final readonly class DurationParts
     private const string COMPACT_TIME = 'compact_time';
 
     public int $seconds;
+    public int $hour;
+    public int $minute;
+    public int $second;
+    public int $microsecond;
+    public int $sign;
 
-    public function __construct(
-        public int $hour,
-        public int $minute,
-        public int $second,
-        public int $microsecond,
-        public int $sign,
-    ) {
-        $this->seconds = ($hour * 3_600) + ($minute * 60) + $second;
+    public function __construct(Duration $duration)
+    {
+        $remaining = $duration->seconds % 3600;
+        $this->hour = intdiv($duration->seconds, 3600);
+        $this->minute = intdiv($remaining, 60);
+        $this->second = $remaining % 60;
+        $this->microsecond = $duration->microseconds;
+        $this->sign = $duration->sign;
+        $this->seconds = $duration->seconds;
     }
 
-    public static function parse(int $value): self
+    /**
+     * @throws InvalidDuration
+     */
+    private function toInt(): int
     {
-        $sign = $value <=> 0;
-        $microsecond = -1 === $sign ? -$value : $value;
-        [$hour, $microsecond] = UnitTransformer::divmod($microsecond, Unit::Hour);
-        [$minute, $microsecond] = UnitTransformer::divmod($microsecond, Unit::Minute);
-        [$second, $microsecond] = UnitTransformer::divmod($microsecond, Unit::Second);
-
-        return new self(
-            hour: $hour,
-            minute: $minute,
-            second: $second,
-            microsecond: $microsecond,
-            sign: $sign,
-        );
-    }
-
-    public function build(): int
-    {
-        return $this->sign * (
-            UnitTransformer::toTicks($this->hour, Unit::Hour)
-            + UnitTransformer::toTicks($this->minute, Unit::Minute)
-            + UnitTransformer::toTicks($this->second, Unit::Second)
-            + $this->microsecond
-        );
+        return $this->sign * (UnitTransformer::toTicks($this->seconds, Unit::Second) + $this->microsecond);
     }
 
     /**
      * Converts the instance to an DateInterval object.
+     *
+     * @throws TokeiException
      */
     public function toDateInterval(?DateTimeInterface $relativeTo = null): DateInterval
     {
         $interval = new DateInterval('PT0S');
-        [$interval->d, $remainder] = UnitTransformer::divmod($this->build(), Unit::Day);
+        [$interval->d, $remainder] = UnitTransformer::divmod($this->toInt(), Unit::Day);
         [$interval->h] = UnitTransformer::divmod($remainder, Unit::Hour);
         $interval->i = $this->minute;
         $interval->s = $this->second;
@@ -87,6 +77,8 @@ final readonly class DurationParts
     }
 
     /**
+     * @throws TokeiException
+     *
      * @return non-empty-string
      */
     public function toDurationString(DurationFormat $format): string
@@ -95,6 +87,8 @@ final readonly class DurationParts
     }
 
     /**
+     * @throws TokeiException
+     *
      * @return non-empty-string
      */
     public function toTimeString(TimeFormat $format): string
@@ -106,6 +100,8 @@ final readonly class DurationParts
     }
 
     /**
+     * @throws TokeiException
+     *
      * @return non-empty-string
      */
     private function toFormattedString(DurationFormat $format, string $compactType): string
@@ -185,12 +181,18 @@ final readonly class DurationParts
      *
      * Format [-]xw xd xh xm xs xµs where x is a number.
      *
+     * @throws TokeiException
+     *
      * @return non-empty-string
      */
     private function toCompactString(string $type): string
     {
         $isClock = self::COMPACT_TIME === $type;
-        [$weeks, $remainder] = UnitTransformer::divmod($this->build() * $this->sign, Unit::Week);
+        $ticks = $this->toInt();
+        if (-1 === $this->sign) {
+            $ticks = -$ticks;
+        }
+        [$weeks, $remainder] = UnitTransformer::divmod($ticks, Unit::Week);
         [$days, $remainder] = UnitTransformer::divmod($remainder, Unit::Day);
         [$hours] = UnitTransformer::divmod($remainder, Unit::Hour);
 

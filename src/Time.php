@@ -41,45 +41,46 @@ final class Time implements JsonSerializable
     $@x';
 
     private ?DurationParts $parts = null;
-    /** @var non-negative-int */
-    private readonly int $ticks;
+    private readonly Duration $offset;
     public int $hour { get => $this->parts()->hour; }
     public int $minute { get => $this->parts()->minute; }
     public int $second { get => $this->parts()->second; }
     public int $microsecond { get => $this->parts()->microsecond; }
 
     /**
-     * @param int $ticks Time since midnight expressed in the library base unit
+     * @throws TokeiException
      */
-    private function __construct(int $ticks)
+    private function __construct(Duration $duration)
     {
-        $this->ticks = UnitTransformer::wrap($ticks, Unit::Day);
+        $this->offset = $duration->modulo(Duration::fullDay());
     }
 
     /**
-     * @return array{0: array{total_microseconds: int}, 1:array{}}
+     * @return array{0: array{offset: Duration}, 1:array{}}
      */
     public function __serialize(): array
     {
-        return [['total_microseconds' => $this->ticks], []];
+        return [['offset' => $this->offset], []];
     }
 
     /**
-     * @param array{0: array{total_microseconds: int}, 1:array{}} $data
+     * @param array{0: array{offset: Duration}, 1:array{}} $data
+     *
+     * @throws TokeiException
      */
     public function __unserialize(array $data): void
     {
         [$properties] = $data;
-        $this->ticks = new self($properties['total_microseconds'])->ticks;
+        $this->offset = $properties['offset']->modulo(Duration::fullDay());
     }
 
     private function parts(): DurationParts
     {
-        return $this->parts ??= DurationParts::parse($this->ticks);
+        return $this->parts ??= new DurationParts($this->offset);
     }
 
     /**
-     * @throws InvalidTime
+     * @throws TokeiException
      */
     public static function at(
         int $hour = 0,
@@ -92,19 +93,18 @@ final class Time implements JsonSerializable
         ($second >= 0 && $second < 60) || throw InvalidTime::dueToMalformedTime($second, Unit::Second);
         ($microsecond >= 0 && $microsecond < 1_000_000) || throw InvalidTime::dueToMalformedTime($microsecond, Unit::Microsecond);
 
-        return new self(new DurationParts(
-            hour: $hour,
-            minute: $minute,
-            second: $second,
-            microsecond: $microsecond,
-            sign: 1,
-        )->build());
+        return self::sinceMidnight(Duration::of(
+            hours: $hour,
+            minutes: $minute,
+            seconds: $second,
+            microseconds: $microsecond,
+        ));
     }
 
     /**
      * Returns a new instance from a DateTimeInterface object.
      *
-     * @throws InvalidTime
+     * @throws TokeiException
      */
     public static function fromDateTime(DateTimeInterface $datetime): self
     {
@@ -117,7 +117,7 @@ final class Time implements JsonSerializable
     }
 
     /**
-     * @throws InvalidTime
+     * @throws TokeiException
      */
     public static function fromFormat(string $value, TimeFormat $format): self
     {
@@ -180,16 +180,12 @@ final class Time implements JsonSerializable
      */
     public static function sinceMidnight(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
-        return new self(
-            (int) InputNormalizer::duration($duration)
-                ->modulo(Duration::fullDay())
-                ->in(Unit::Microsecond)
-        );
+        return new self(InputNormalizer::duration($duration));
     }
 
     public static function midnight(): self
     {
-        return new self(0);
+        return self::sinceMidnight(Duration::zero());
     }
 
     public static function noon(): self
@@ -199,7 +195,7 @@ final class Time implements JsonSerializable
 
     public static function endOfDay(): self
     {
-        return new self(-1);
+        return self::sinceMidnight(Duration::of(microseconds: 1)->negate());
     }
 
     /**
@@ -285,12 +281,10 @@ final class Time implements JsonSerializable
 
     /**
      * Returns the duration offset from midnight.
-     *
-     * @throws TokeiException
      */
     public function offset(): Duration
     {
-        return Duration::of(microseconds: $this->ticks);
+        return $this->offset;
     }
 
     /**
@@ -404,9 +398,10 @@ final class Time implements JsonSerializable
      */
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
-        $rounded = UnitTransformer::round($this->ticks, $unit, $mode);
+        $offset = $this->offset();
+        $duration = $offset->roundTo($unit, $mode);
 
-        return $this->ticks === $rounded ? $this : new self($rounded);
+        return $duration->equals($offset) ? $this : self::sinceMidnight($duration);
     }
 
     /**

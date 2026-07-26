@@ -8,6 +8,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 - Support for PHP8.6 `Time\Duration` using a Polyfill.
 - `Duration::seconds` and `Duration::microseconds`
+- `Duration::toNumberString`
 
 ### Fixed
 
