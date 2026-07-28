@@ -2,7 +2,7 @@
 
 All Notable changes to `bakame/tokei` will be documented in this file.
 
-## [next - title](https://github.com/bakame-php/stackwatch/compare/0.3.0...main) - TBD
+## [next - title](https://github.com/bakame-php/tokei/compare/0.3.0...main) - TBD
 
 ### Added
 
@@ -24,7 +24,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 - **BC Break:**  `Duration` component public properties are removed use `Duration::$seconds` and `Duration::$nanoseconds` instead
 
-## [0.3.0 - Chidorisō](https://github.com/bakame-php/stackwatch/compare/0.2.0...0.3.0) - 2026-07-21
+## [0.3.0 - Chidorisō](https://github.com/bakame-php/tokei/compare/0.2.0...0.3.0) - 2026-07-21
 
 ### Added
 
@@ -48,7 +48,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC BREAK:** `DivisionResult::asTuple` is removed use `ArrayAccess` for direct destructuring
 - **BC BREAK:** `InputNormalizer::duration` no longer accepts `DateTimeInterface` implementing class
 
-## [0.2.0 - botan](https://github.com/bakame-php/stackwatch/compare/0.1.0...0.2.0) - 2026-07-17
+## [0.2.0 - botan](https://github.com/bakame-php/tokei/compare/0.1.0...0.2.0) - 2026-07-17
 
 ### Added
 
