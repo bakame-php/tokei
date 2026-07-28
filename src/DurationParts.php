@@ -42,14 +42,6 @@ final readonly class DurationParts
     }
 
     /**
-     * @throws InvalidDuration
-     */
-    private function toInt(): int
-    {
-        return $this->sign * (UnitTransformer::toTicks($this->seconds, Unit::Second) + $this->microsecond);
-    }
-
-    /**
      * Converts the instance to an DateInterval object.
      *
      * @throws TokeiException
@@ -57,7 +49,7 @@ final readonly class DurationParts
     public function toDateInterval(?DateTimeInterface $relativeTo = null): DateInterval
     {
         $interval = new DateInterval('PT0S');
-        [$interval->d, $remainder] = UnitTransformer::divmod($this->toInt(), Unit::Day);
+        [$interval->d, $remainder] = UnitTransformer::divmod(UnitTransformer::toTicks($this->seconds, Unit::Second), Unit::Day);
         [$interval->h] = UnitTransformer::divmod($remainder, Unit::Hour);
         $interval->i = $this->minute;
         $interval->s = $this->second;
@@ -77,8 +69,6 @@ final readonly class DurationParts
     }
 
     /**
-     * @throws TokeiException
-     *
      * @return non-empty-string
      */
     public function toDurationString(DurationFormat $format): string
@@ -87,8 +77,6 @@ final readonly class DurationParts
     }
 
     /**
-     * @throws TokeiException
-     *
      * @return non-empty-string
      */
     public function toTimeString(TimeFormat $format): string
@@ -100,8 +88,6 @@ final readonly class DurationParts
     }
 
     /**
-     * @throws TokeiException
-     *
      * @return non-empty-string
      */
     private function toFormattedString(DurationFormat $format, string $compactType): string
@@ -181,18 +167,13 @@ final readonly class DurationParts
      *
      * Format [-]xw xd xh xm xs xµs where x is a number.
      *
-     * @throws TokeiException
-     *
      * @return non-empty-string
      */
     private function toCompactString(string $type): string
     {
         $isClock = self::COMPACT_TIME === $type;
-        $ticks = $this->toInt();
-        if (-1 === $this->sign) {
-            $ticks = -$ticks;
-        }
-        [$weeks, $remainder] = UnitTransformer::divmod($ticks, Unit::Week);
+
+        [$weeks, $remainder] = UnitTransformer::divmod(UnitTransformer::toTicks($this->seconds, Unit::Second), Unit::Week);
         [$days, $remainder] = UnitTransformer::divmod($remainder, Unit::Day);
         [$hours] = UnitTransformer::divmod($remainder, Unit::Hour);
 
@@ -223,5 +204,17 @@ final readonly class DurationParts
         }
 
         return [] === $time ? '0s' : (-1 === $this->sign ? '-' : '').implode('', $time);
+    }
+
+    public function toUnit(Unit $unit): int|float
+    {
+        $ticksPerUnit = UnitTransformer::ticks($unit);
+        $ticksPerSecond = UnitTransformer::ticks(Unit::Second);
+
+        return $this->sign * (
+            ($ticksPerUnit >= $ticksPerSecond)
+                ? ($this->seconds / ($ticksPerUnit / $ticksPerSecond) + $this->microsecond / $ticksPerUnit)
+                : ($this->seconds * ($ticksPerSecond / $ticksPerUnit) + $this->microsecond / $ticksPerUnit)
+        );
     }
 }

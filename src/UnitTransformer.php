@@ -21,7 +21,7 @@ final readonly class UnitTransformer
     {
     }
 
-    private static function ticks(Unit $unit): int
+    public static function ticks(Unit $unit): int
     {
         return match ($unit) {
             Unit::Week => 86_400_000_000 * 7,
@@ -59,7 +59,7 @@ final readonly class UnitTransformer
     /**
      * @throws InvalidDuration
      */
-    public static function addTicks(int $left, int $right): int
+    public static function add(int $left, int $right): int
     {
         ($right <= PHP_INT_MAX - $left) || throw InvalidDuration::dueToOverflow();
 

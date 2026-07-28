@@ -1182,9 +1182,10 @@ final class DurationTest extends TestCase
         $other = Duration::of(hours: 2)->negate();
         $result = $duration->divideInto($other);
 
-        self::assertEquals(
-            $duration,
-            $other->multiplyBy($result->quotient)->add($result->remainder)
+        self::assertTrue(
+            $duration->equals(
+                $other->multiplyBy($result->quotient)->add($result->remainder)
+            )
         );
     }
 
