@@ -24,13 +24,14 @@ final readonly class UnitTransformer
     public static function ticks(Unit $unit): int
     {
         return match ($unit) {
-            Unit::Week => 86_400_000_000 * 7,
-            Unit::Day => 86_400_000_000,
-            Unit::Hour => 3_600_000_000,
-            Unit::Minute => 60_000_000,
-            Unit::Second => 1_000_000,
-            Unit::Millisecond => 1_000,
-            Unit::Microsecond => 1,
+            Unit::Week => 604_800_000_000_000,
+            Unit::Day => 86_400_000_000_000,
+            Unit::Hour => 3_600_000_000_000,
+            Unit::Minute => 60_000_000_000,
+            Unit::Second => 1_000_000_000,
+            Unit::Millisecond => 1_000_000,
+            Unit::Microsecond => 1_000,
+            Unit::Nanosecond => 1,
         };
     }
 

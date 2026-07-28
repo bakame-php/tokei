@@ -45,7 +45,7 @@ final class Time implements JsonSerializable
     public int $hour { get => $this->parts()->hour; }
     public int $minute { get => $this->parts()->minute; }
     public int $second { get => $this->parts()->second; }
-    public int $microsecond { get => $this->parts()->microsecond; }
+    public int $nanosecond { get => $this->parts()->nanoseconds; }
 
     /**
      * @throws TokeiException
@@ -86,18 +86,18 @@ final class Time implements JsonSerializable
         int $hour = 0,
         int $minute = 0,
         int $second = 0,
-        int $microsecond = 0,
+        int $nanosecond = 0,
     ): self {
         ($hour >= 0 && $hour < 24) || throw InvalidTime::dueToMalformedTime($hour, Unit::Hour);
         ($minute >= 0 && $minute < 60) || throw InvalidTime::dueToMalformedTime($minute, Unit::Minute);
         ($second >= 0 && $second < 60) || throw InvalidTime::dueToMalformedTime($second, Unit::Second);
-        ($microsecond >= 0 && $microsecond < 1_000_000) || throw InvalidTime::dueToMalformedTime($microsecond, Unit::Microsecond);
+        ($nanosecond >= 0 && $nanosecond < 1_000_000_000) || throw InvalidTime::dueToMalformedTime($nanosecond, Unit::Nanosecond);
 
         return self::sinceMidnight(Duration::of(
             hours: $hour,
             minutes: $minute,
             seconds: $second,
-            microseconds: $microsecond,
+            nanoseconds: $nanosecond,
         ));
     }
 
@@ -112,7 +112,7 @@ final class Time implements JsonSerializable
             (int) $datetime->format('H'),
             (int) $datetime->format('i'),
             (int) $datetime->format('s'),
-            (int) $datetime->format('u'),
+            ((int) $datetime->format('u')) * 1_000,
         );
     }
 
@@ -130,49 +130,43 @@ final class Time implements JsonSerializable
         1 === preg_match($regexp, $notation, $parts) || throw new InvalidTime('Unknown or bad format `'.$value.'`'.'`.');
 
         if (self::REGEXP_ISO8601 === $regexp) {
-
-            $nanoseconds = (int) (str_pad($parts['fractions'] ?? '0', 9, '0'));
-
-            return Time::at(
-                hour: (int) $parts['hour'],
-                minute: (int) $parts['minute'],
-                second: (int) ($parts['second'] ?? 0),
-                microsecond: intdiv($nanoseconds, 1000),
-            );
+            $parts['fractions'] = str_pad($parts['fractions'] ?? '0', 9, '0');
         }
 
         return Time::at(
             hour: (int) $parts['hour'],
             minute: (int) $parts['minute'],
             second: (int) ($parts['second'] ?? 0),
-            microsecond: self::resolveMicroseconds($parts),
+            nanosecond: self::resolveFractions($parts),
         );
     }
 
     /**
      * @param array{fractions?: string, unit?: ?non-empty-string} $parts
      *
-     * @throws InvalidDuration
+     * @throws InvalidTime
      */
-    private static function resolveMicroseconds(array $parts): int
+    private static function resolveFractions(array $parts): int
     {
         $value = (int)($parts['fractions'] ?? 0);
-        $unit = $parts['unit'] ?? 'us';
-        if ('ms' === $unit) {
-            ($value <= 999 && $value >= 0) || throw new InvalidDuration('millisecond fraction value cannot be greater than 999.');
+        $value >= 0 || throw new InvalidTime('fraction value cannot be negative.');
 
-            return $value * 1000;
+        $unit = $parts['unit'] ?? 'ns';
+        if ('ms' === $unit) {
+            $value <= 999 || throw new InvalidTime('millisecond fraction value cannot be greater than 999.');
+
+            return $value * 1_000_000;
         }
 
         if ('µs' === $unit || 'us' === $unit) {
-            ($value <= 999_999 && $value >= 0) || throw new InvalidDuration('microsecond fraction value cannot be greater than 999_999.');
+            $value <= 999_999 || throw new InvalidTime('microsecond fraction value cannot be greater than 999_999.');
 
-            return $value;
+            return $value * 1_000;
         }
 
-        ($value <= 999_999_999 && $value >= 0) || throw new InvalidDuration('nanosecond fraction value cannot be greater than 999_999_999.');
+        $value <= 999_999_999 || throw new InvalidTime('nanosecond fraction value cannot be greater than 999_999_999.');
 
-        return intdiv($value, 1000);
+        return $value;
     }
 
     /**
@@ -195,7 +189,7 @@ final class Time implements JsonSerializable
 
     public static function endOfDay(): self
     {
-        return self::sinceMidnight(Duration::of(microseconds: 1)->negate());
+        return self::sinceMidnight(Duration::of(nanoseconds: 1)->negate());
     }
 
     /**
@@ -379,18 +373,18 @@ final class Time implements JsonSerializable
         ?int $hour = null,
         ?int $minute = null,
         ?int $second = null,
-        ?int $microsecond = null
+        ?int $nanosecond = null
     ): self {
         $hour ??= $this->hour;
         $minute ??= $this->minute;
         $second ??= $this->second;
-        $microsecond ??= $this->microsecond;
+        $nanosecond ??= $this->nanosecond;
 
         return $hour === $this->hour
             && $minute === $this->minute
             && $second === $this->second
-            && $microsecond === $this->microsecond
-            ? $this : self::at($hour, $minute, $second, $microsecond);
+            && $nanosecond === $this->nanosecond
+            ? $this : self::at($hour, $minute, $second, $nanosecond);
     }
 
     /**
@@ -413,7 +407,7 @@ final class Time implements JsonSerializable
             $datetime = DateTimeImmutable::createFromInterface($datetime);
         }
 
-        return $datetime->setTime($this->hour, $this->minute, $this->second, $this->microsecond);
+        return $datetime->setTime($this->hour, $this->minute, $this->second, intdiv($this->nanosecond, 1_000));
     }
 
     /**

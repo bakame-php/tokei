@@ -927,15 +927,15 @@ final class IntervalTest extends TestCase
     public function test_interval_formatting_improved(): void
     {
         $interval = Interval::between(
-            Time::at(10, 0, 0, 500_000),
-            Time::at(12, 0, 0, 250_000),
+            Time::at(10, 0, 0, 500_000_000),
+            Time::at(12, 0, 0, 250_000_000),
         );
 
-        self::assertSame('[10:00:00.500000,12:00:00.250000[', $interval->format(IntervalFormat::Bourbaki));
-        self::assertSame('[10:00:00.500000,12:00:00.250000)', $interval->format(IntervalFormat::Iso80000));
+        self::assertSame('[10:00:00.500,12:00:00.250[', $interval->format(IntervalFormat::Bourbaki));
+        self::assertSame('[10:00:00.500,12:00:00.250)', $interval->format(IntervalFormat::Iso80000));
         self::assertSame('[600.008333,720.004167)', $interval->format(IntervalFormat::Iso80000, Unit::Minute));
         self::assertSame('[600.008333,720.004167[', $interval->format(IntervalFormat::Bourbaki, Unit::Minute));
-        self::assertSame('10:00:00.500000/12:00:00.250000', $interval->format(IntervalFormat::Iso8601StartEnd, Unit::Minute));
+        self::assertSame('10:00:00.500/12:00:00.250', $interval->format(IntervalFormat::Iso8601StartEnd, Unit::Minute));
         self::assertSame(
             $interval->format(IntervalFormat::Iso8601StartEnd),
             $interval->format(IntervalFormat::Iso8601StartEnd, Unit::Minute)

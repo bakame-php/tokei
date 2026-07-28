@@ -48,7 +48,7 @@ final class TimeTest extends TestCase
         self::assertSame(10, $time->hour);
         self::assertSame(15, $time->minute);
         self::assertSame(30, $time->second);
-        self::assertSame(123456, $time->microsecond);
+        self::assertSame(123456, $time->nanosecond);
     }
 
     #[TestWith(['part' => 25], 'the hour component is too high')]
@@ -78,13 +78,13 @@ final class TimeTest extends TestCase
         Time::at(second: $part);
     }
 
-    #[TestWith(['part' => 1_000_001], 'the microsecond component is too high')]
+    #[TestWith(['part' => 1_000_000_001], 'the microsecond component is too high')]
     #[TestWith(['part' => -1], 'the microsecond component is too low')]
     public function testDomainRejectsInvalidMicroseconds(int $part): void
     {
-        $this->expectExceptionObject(InvalidTime::dueToMalformedTime($part, Unit::Microsecond));
+        $this->expectExceptionObject(InvalidTime::dueToMalformedTime($part, Unit::Nanosecond));
 
-        Time::at(microsecond: $part);
+        Time::at(nanosecond: $part);
     }
 
     public function testMidnightAndNoon(): void
@@ -101,10 +101,10 @@ final class TimeTest extends TestCase
     public function testFromMicrosecondsWrapsCorrectly(): void
     {
         $time = Time::sinceMidnight(Duration::of(microseconds: 25 * 3_600_500_000));
-        self::assertSame('01:00:12.500000', $time->format(TimeFormat::Clock));
+        self::assertSame('01:00:12.500', $time->format(TimeFormat::Clock));
 
         $time = Time::sinceMidnight(Duration::of(milliseconds: 25 * 3_600_500));
-        self::assertSame('01:00:12.500000', $time->format(TimeFormat::Clock));
+        self::assertSame('01:00:12.500', $time->format(TimeFormat::Clock));
 
         $time = Time::sinceMidnight(Duration::of(seconds: 25 * 3_600));
         self::assertSame('01:00:00', $time->format(TimeFormat::Clock));
@@ -124,7 +124,7 @@ final class TimeTest extends TestCase
         self::assertSame(12, $time->hour);
         self::assertSame(34, $time->minute);
         self::assertSame(56, $time->second);
-        self::assertSame(123456, $time->microsecond);
+        self::assertSame(123_456_000, $time->nanosecond);
     }
 
     public function testParseWithoutSeconds(): void
@@ -151,7 +151,7 @@ final class TimeTest extends TestCase
         self::assertSame(10, $time->hour);
         self::assertSame(20, $time->minute);
         self::assertSame(30, $time->second);
-        self::assertSame(123456, $time->microsecond);
+        self::assertSame(123_456_000, $time->nanosecond);
     }
 
     /* -------------------------------------------------
@@ -174,7 +174,7 @@ final class TimeTest extends TestCase
 
     public function testFormatWithMicroseconds(): void
     {
-        $time = Time::at(1, 2, 3, 45);
+        $time = Time::at(1, 2, 3, 45_000);
 
         self::assertSame('01:02:03.000045', $time->format(TimeFormat::Clock));
     }
@@ -198,7 +198,7 @@ final class TimeTest extends TestCase
         self::assertSame(12, $time->hour);
         self::assertSame(30, $time->minute);
         self::assertSame(15, $time->second);
-        self::assertSame(500, $time->microsecond);
+        self::assertSame(500_000, $time->nanosecond);
     }
 
     public function testAddTimeWrapsDay(): void
@@ -273,7 +273,7 @@ final class TimeTest extends TestCase
     public function test_apply_to_datetime_immutable(): void
     {
         $date = new DateTimeImmutable('2026-05-11 08:15:30', new DateTimeZone('Africa/Luanda'));
-        $time = Time::at(14, 45, 12, 123456);
+        $time = Time::at(14, 45, 12, 123_456_789);
         $result = $time->applyTo($date);
 
         self::assertSame('2026-05-11 14:45:12.123456', $result->format('Y-m-d H:i:s.u'));
@@ -286,7 +286,7 @@ final class TimeTest extends TestCase
     public function test_apply_to_mutable_datetime_returns_immutable(): void
     {
         $date = new DateTime('2026-05-11 08:15:30', new DateTimeZone('UTC'));
-        $time = Time::at(22, 1, 2, 999999);
+        $time = Time::at(22, 1, 2, 999_999_000);
 
         self::assertSame('2026-05-11 22:01:02.999999', $time->applyTo($date)->format('Y-m-d H:i:s.u'));
 
@@ -333,7 +333,7 @@ final class TimeTest extends TestCase
      */
     public static function withProvider(): iterable
     {
-        $base = Time::at(23, 54, 23, 123456);
+        $base = Time::at(23, 54, 23, 123_456_000);
 
         yield 'replace hour' => [
             $base,
@@ -355,7 +355,7 @@ final class TimeTest extends TestCase
 
         yield 'replace microsecond' => [
             $base,
-            ['microsecond' => 999],
+            ['nanosecond' => 999_000],
             '23:54:23.000999',
         ];
 
@@ -374,7 +374,7 @@ final class TimeTest extends TestCase
                 'hour' => 1,
                 'minute' => 2,
                 'second' => 3,
-                'microsecond' => 4,
+                'nanosecond' => 4_000,
             ],
             '01:02:03.000004',
         ];
@@ -438,7 +438,7 @@ final class TimeTest extends TestCase
 
         $this->expectException(InvalidTime::class);
 
-        $time->with(microsecond: 1_000_000);
+        $time->with(nanosecond: 1_000_000_000);
     }
 
     public function test_add_throws_on_overflow_duration(): void
@@ -733,53 +733,58 @@ final class TimeTest extends TestCase
         yield 'hours and minutes' => [Time::at(1, 30), '1h30m'];
         yield 'with seconds' => [Time::at(1, 30, 45), '1h30m45s'];
         yield 'midnight' => [Time::midnight(), '0h0m'];
-        yield 'microseconds' => [Time::at(1, microsecond: 256), '1h0m0s256µs'];
+        yield 'microseconds' => [Time::at(1, nanosecond: 256_000), '1h0m0s256µs'];
     }
 
     public function test_it_truncates_sub_microsecond_precision(): void
     {
-        self::assertEquals(
-            Time::at(12, 34, 56),
-            Time::fromFormat('12:34:56.000000009', TimeFormat::Clock),
+        self::assertTrue(
+            Time::at(12, 34, 56, nanosecond: 9)->equals(
+                Time::fromFormat('12:34:56.000000009', TimeFormat::Clock),
+            )
         );
     }
 
     public function test_it_truncates_nanoseconds_to_microseconds(): void
     {
-        self::assertEquals(
-            Time::at(12, 34, 56, 123_456),
-            Time::fromFormat('12:34:56.123456789', TimeFormat::Clock),
+        self::assertTrue(
+            Time::at(12, 34, 56, 123_456_789)->equals(
+                Time::fromFormat('12:34:56.123456789', TimeFormat::Clock)
+            )
         );
     }
 
     public function test_it_preserves_exact_microsecond_precision(): void
     {
-        self::assertEquals(
-            Time::at(12, 34, 56, 123_456),
-            Time::fromFormat('12:34:56.123456', TimeFormat::Clock),
+        self::assertTrue(
+            Time::at(12, 34, 56, 123_456_000)->equals(
+                Time::fromFormat('12:34:56.123456', TimeFormat::Clock)
+            ),
         );
     }
 
     public function test_it_preserves_microseconds_when_nanoseconds_are_a_multiple_of_one_thousand(): void
     {
-        self::assertEquals(
-            Time::at(12, 34, 56, 123_456),
-            Time::fromFormat('12:34:56.123456000', TimeFormat::Clock),
+        self::assertTrue(
+            Time::at(12, 34, 56, 123_456_000)->equals(
+                Time::fromFormat('12:34:56.123456000', TimeFormat::Clock)
+            ),
         );
     }
 
     public function test_it_truncates_nanoseconds_at_the_end_of_the_day(): void
     {
-        self::assertEquals(
-            Time::at(23, 59, 59, 999_999),
-            Time::fromFormat('23:59:59.999999999', TimeFormat::Clock),
+        self::assertTrue(
+            Time::at(23, 59, 59, 999_999_999)->equals(
+                Time::fromFormat('23:59:59.999999999', TimeFormat::Clock)
+            )
         );
     }
 
     public function test_it_truncates_sub_microsecond_precision_in_compact_format(): void
     {
         self::assertTrue(
-            Time::at(1, 28)->equals(
+            Time::at(1, 28, nanosecond: 9)->equals(
                 Time::fromFormat('1h28m9ns', TimeFormat::Compact)
             )
         );
@@ -788,7 +793,7 @@ final class TimeTest extends TestCase
     public function test_it_truncates_nanoseconds_to_microseconds_in_compact_format(): void
     {
         self::assertTrue(
-            Time::at(1, 28, 0, 28)->equals(
+            Time::at(1, 28, 0, 28_009)->equals(
                 Time::fromFormat('1h28m28009ns', TimeFormat::Compact)
             )
         );
@@ -797,7 +802,7 @@ final class TimeTest extends TestCase
     public function test_it_preserves_microseconds_in_compact_format(): void
     {
         self::assertTrue(
-            Time::at(1, 28, 0, 28)->equals(
+            Time::at(1, 28, 0, 28_000)->equals(
                 Time::fromFormat('1h28m28us', TimeFormat::Compact)
             )
         );
@@ -806,7 +811,7 @@ final class TimeTest extends TestCase
     public function test_it_preserves_exact_microsecond_precision_in_compact_format(): void
     {
         self::assertTrue(
-            Time::at(1, 28, 0, 280)->equals(
+            Time::at(1, 28, 0, 280_000)->equals(
                 Time::fromFormat('1h28m280000ns', TimeFormat::Compact)
             )
         );

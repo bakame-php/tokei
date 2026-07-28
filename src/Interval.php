@@ -224,10 +224,10 @@ final class Interval implements JsonSerializable
 
         null !== $unit || throw InvalidInterval::dueToMalformedFormat($data, $format);
 
-        /** @var non-negative-int $microseconds */
-        $microseconds = UnitTransformer::toTicks($value, $unit);
+        /** @var non-negative-int $nanoseconds */
+        $nanoseconds = UnitTransformer::toTicks($value, $unit);
 
-        return Time::sinceMidnight(Duration::of(microseconds: $microseconds));
+        return Time::sinceMidnight(Duration::of(nanoseconds: $nanoseconds));
     }
 
     /**

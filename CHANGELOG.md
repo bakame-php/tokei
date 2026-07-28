@@ -6,8 +6,9 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Added
 
+- Support for nanoseconds for `Tokei\Duration`
 - Support for PHP8.6 `Time\Duration` using a Polyfill.
-- `Duration::seconds` and `Duration::microseconds`
+- `Duration::seconds` and `Duration::nanoseconds`
 - `Duration::toNumberString`
 
 ### Fixed
@@ -21,7 +22,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Removed
 
-- **BC Break:**  `Duration` component public properties are removed use `Duration::$seconds` and `Duration::$microseconds` instead
+- **BC Break:**  `Duration` component public properties are removed use `Duration::$seconds` and `Duration::$nanoseconds` instead
 
 ## [0.3.0 - Chidorisō](https://github.com/bakame-php/stackwatch/compare/0.2.0...0.3.0) - 2026-07-21
 

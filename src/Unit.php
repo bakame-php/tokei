@@ -13,4 +13,5 @@ enum Unit
     case Second;
     case Millisecond;
     case Microsecond;
+    case Nanosecond;
 }

@@ -30,7 +30,7 @@ can be used. It will be converted to a `Duration` instance using the <code>Durat
 otherwise and exception will be thrown</p>
 
 ```php
-$duration = Duration::fromFormat('P2025Y3DT25s', DurationFormat::Iso8601);
+$duration = Duration::fromFormat('P2025Y3DT25S', DurationFormat::Iso8601);
 // throws a Bakame\Tokei\InvalidDuration exception 
 // because of the presence of the Y component
 ```
@@ -48,7 +48,7 @@ The object exposes a `sign` property which indicates if the original value was n
 It provides properties to access the duration 
 
 - `seconds` : the number of seconds in this duration
-- `microseconds` : the number of subseconds in this duration
+- `nanoseconds` : the number of fractions in this duration expressed in nanoseconds
 
 And the `in()` method gives access to the total duration in a specific unit
 
@@ -60,7 +60,7 @@ $duration->in(Unit::Microsecond); // returns 1383_000_000
 $duration->in(Unit::Minute);      // returns 23.05
 $duration->sign;                  // returns 1
 $duration->isZero() ;             // returns false
-$duration->microseconds;          // returns 0
+$duration->nanoseconds;          // returns 0
 $duration->seconds;               // returns 1383
 ```
 
@@ -77,9 +77,9 @@ Formatting the duration string representation is returned by the `Duration::form
 When using the `DurationFormat::Timer` the following human-readable format is used:
 
 ```php
-[-]HH:mm:ss[.microseconds]
+[-]HH:mm:ss[.nanoseconds]
 ```
-- microseconds are optional
+- nanoseconds are optional
 - negative values are prefixed with `-`
 
 When using the `DurationFormat::Iso8601` formats the instance value is converted into a ISO8601 compatible string.

@@ -20,7 +20,7 @@ Time::at(
     int $hour = 0,
     int $minute = 0,
     int $second = 0,
-    int $microsecond = 0
+    int $nanosecond = 0
 ): Time;
 
 Time::fromFormat(
@@ -67,7 +67,7 @@ Once the time instance is created, the timezone information is lost.</p>
 
 Once instantiated you can access each time component  directly.
 
-- `microsecond`
+- `nanosecond`
 - `second`
 - `minute`
 - `hour`
@@ -82,8 +82,8 @@ $time->minute;
 // 30
 $time->second;
 // 15
-$time->microsecond;
-// 123456
+$time->nanosecond;
+// 123456000
 $time->offset()->in(Unit::Minute);
 // 630.2520576
 $time->offset()->in(Unit::Second);
@@ -138,7 +138,7 @@ Time::with(
     ?int $hour = null,
     ?int $minute = null,
     ?int $second = null,
-    ?int $microsecond = null
+    ?int $nanosecond = null
 ): Time
 Time::roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): Time
 Time::clamp(Time $min, Time $max): Time
@@ -174,8 +174,8 @@ the unit declare on the `Bakame\Tokei\Unit` enum
 ```php
 $t = Time::sinceMidnight(Duration::of(microseconds: 3_150_000_000));
 $t->format(); // returns "00:52:30"
-$t->roundTo(Unit::Minutes, SnapMode::Floor)->format(); // returns "00:52:00"
-$t->roundTo(Unit::Minutes, SnapMode::Nearest)->format();  // returns "00:53:00"
+$t->roundTo(Unit::Minute, SnapMode::Floor)->format(); // returns "00:52:00"
+$t->roundTo(Unit::Minute, SnapMode::Nearest)->format();  // returns "00:53:00"
 ```
 
 ## Comparing times

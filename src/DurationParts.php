@@ -12,6 +12,7 @@ use function implode;
 use function intdiv;
 use function rtrim;
 use function str_pad;
+use function substr;
 
 use const STR_PAD_LEFT;
 
@@ -27,7 +28,7 @@ final readonly class DurationParts
     public int $hour;
     public int $minute;
     public int $second;
-    public int $microsecond;
+    public int $nanoseconds;
     public int $sign;
 
     public function __construct(Duration $duration)
@@ -36,7 +37,7 @@ final readonly class DurationParts
         $this->hour = intdiv($duration->seconds, 3600);
         $this->minute = intdiv($remaining, 60);
         $this->second = $remaining % 60;
-        $this->microsecond = $duration->microseconds;
+        $this->nanoseconds = $duration->nanoseconds;
         $this->sign = $duration->sign;
         $this->seconds = $duration->seconds;
     }
@@ -53,8 +54,8 @@ final readonly class DurationParts
         [$interval->h] = UnitTransformer::divmod($remainder, Unit::Hour);
         $interval->i = $this->minute;
         $interval->s = $this->second;
-        if (0 !== $this->microsecond) {
-            $interval->f = UnitTransformer::fromTicks($this->microsecond, Unit::Second);
+        if (0 !== $this->nanoseconds) {
+            $interval->f = UnitTransformer::fromTicks($this->nanoseconds, Unit::Second);
         }
         $interval->invert = -1 === $this->sign ? 1 : 0;
         if (null === $relativeTo) {
@@ -69,6 +70,8 @@ final readonly class DurationParts
     }
 
     /**
+     * @throws TokeiException
+     *
      * @return non-empty-string
      */
     public function toDurationString(DurationFormat $format): string
@@ -77,6 +80,8 @@ final readonly class DurationParts
     }
 
     /**
+     * @throws TokeiException
+     *
      * @return non-empty-string
      */
     public function toTimeString(TimeFormat $format): string
@@ -88,6 +93,8 @@ final readonly class DurationParts
     }
 
     /**
+     * @throws TokeiException
+     *
      * @return non-empty-string
      */
     private function toFormattedString(DurationFormat $format, string $compactType): string
@@ -113,8 +120,12 @@ final readonly class DurationParts
     {
         $pad = static fn (int $value, int $length): string => str_pad((string) $value, $length, '0', STR_PAD_LEFT);
         $formatted = $pad($this->hour, 2).':'.$pad($this->minute, 2).':'.$pad($this->second, 2);
-        if (0 !== $this->microsecond) {
-            $formatted .= '.'.$pad($this->microsecond, 6);
+        if (0 !== $this->nanoseconds) {
+            $formatted .= '.'.match (true) {
+                0 === $this->nanoseconds % 1_000_000 => substr($pad($this->nanoseconds, 9), 0, 3),
+                0 === $this->nanoseconds % 1_000 => substr($pad($this->nanoseconds, 9), 0, 6),
+                default => $this->nanoseconds,
+            };
         }
 
         return -1 === $this->sign ? '-'.$formatted : $formatted;
@@ -133,7 +144,7 @@ final readonly class DurationParts
     private function toIso8601DurationString(): string
     {
         $time = '';
-        if (0 < $this->hour || 0 < $this->minute || 0 < $this->second || 0 < $this->microsecond) {
+        if (0 < $this->hour || 0 < $this->minute || 0 < $this->second || 0 < $this->nanoseconds) {
             $time = 'T';
             if (0 < $this->hour) {
                 $time .= $this->hour.'H';
@@ -143,10 +154,10 @@ final readonly class DurationParts
                 $time .= $this->minute.'M';
             }
 
-            if (0 < $this->second || 0 < $this->microsecond) {
+            if (0 < $this->second || 0 < $this->nanoseconds) {
                 $time .= $this->second;
-                if (0 !== $this->microsecond) {
-                    $time .= '.'.rtrim(str_pad((string) $this->microsecond, 6, '0', STR_PAD_LEFT), '0');
+                if (0 !== $this->nanoseconds) {
+                    $time .= '.'.rtrim(str_pad((string) $this->nanoseconds, 9, '0', STR_PAD_LEFT), '0');
                 }
 
                 $time .= 'S';
@@ -166,6 +177,8 @@ final readonly class DurationParts
      * For duration only values different to zero MUST be included.
      *
      * Format [-]xw xd xh xm xs xµs where x is a number.
+     *
+     * @throws TokeiException
      *
      * @return non-empty-string
      */
@@ -194,13 +207,16 @@ final readonly class DurationParts
             $time[] = $this->minute.'m';
         }
 
-        if ($this->second > 0 || ($isClock && $this->microsecond > 0)) {
+        if ($this->second > 0 || ($isClock && $this->nanoseconds > 0)) {
             $time[] = $this->second.'s';
         }
 
-        if ($this->microsecond > 0) {
-            [$milli, $remainder] = UnitTransformer::divmod($this->microsecond, Unit::Millisecond);
-            $time[] = 0 === $remainder ? $milli.'ms' : $this->microsecond.'µs';
+        if ($this->nanoseconds > 0) {
+            $time[] = match (true) {
+                0 === $this->nanoseconds % 1_000_000 => intdiv($this->nanoseconds, 1_000_000).'ms',
+                0 === $this->nanoseconds % 1_000 => intdiv($this->nanoseconds, 1_000).'µs',
+                default => $this->nanoseconds.'ns',
+            };
         }
 
         return [] === $time ? '0s' : (-1 === $this->sign ? '-' : '').implode('', $time);
@@ -213,8 +229,8 @@ final readonly class DurationParts
 
         return $this->sign * (
             ($ticksPerUnit >= $ticksPerSecond)
-                ? ($this->seconds / ($ticksPerUnit / $ticksPerSecond) + $this->microsecond / $ticksPerUnit)
-                : ($this->seconds * ($ticksPerSecond / $ticksPerUnit) + $this->microsecond / $ticksPerUnit)
+                ? ($this->seconds / ($ticksPerUnit / $ticksPerSecond) + $this->nanoseconds / $ticksPerUnit)
+                : ($this->seconds * ($ticksPerSecond / $ticksPerUnit) + $this->nanoseconds / $ticksPerUnit)
         );
     }
 }

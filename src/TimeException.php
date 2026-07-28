@@ -19,7 +19,7 @@ class TimeException extends TokeiException
 
     public static function dueToMalformedTime(int $value, Unit $unit): static
     {
-        $prefix = $unit->name.' must be ';
+        $prefix = $unit->name.' must be';
 
         return new static(match ($unit) {
             Unit::Week,
@@ -27,8 +27,9 @@ class TimeException extends TokeiException
             Unit::Hour => $prefix.' between 0 and 23',
             Unit::Minute,
             Unit::Second => $prefix.' between 0 and 59',
-            Unit::Millisecond => $prefix.' must be between 0 and 999',
-            Unit::Microsecond => $prefix.' must be between 0 and 999999',
+            Unit::Millisecond => $prefix.' between 0 and 999',
+            Unit::Microsecond => $prefix.' between 0 and 999_999',
+            Unit::Nanosecond => $prefix.' between 0 and 999_999_999',
         }.", got $value.");
     }
 }
