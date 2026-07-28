@@ -7,25 +7,23 @@ namespace Tests;
 use Bakame\Tokei\Bound;
 use Bakame\Tokei\Duration;
 use Bakame\Tokei\DurationFormat;
-use Bakame\Tokei\InputNormalizer;
+use Bakame\Tokei\Internal\InputNormalizer;
+use Bakame\Tokei\Internal\TemporalSearch;
 use Bakame\Tokei\Interval;
 use Bakame\Tokei\IntervalFormat;
 use Bakame\Tokei\IntervalSet;
 use Bakame\Tokei\InvalidDuration;
-use Bakame\Tokei\TemporalSearch;
 use Bakame\Tokei\Time;
 use Bakame\Tokei\TimeException;
 use Bakame\Tokei\TokeiException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use SortDirection;
-
 use function array_map;
 use function iterator_to_array;
 use function json_encode;
 use function serialize;
 use function unserialize;
-
 use const JSON_UNESCAPED_SLASHES;
 
 #[CoversClass(DurationFormat::class)]

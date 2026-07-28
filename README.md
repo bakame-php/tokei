@@ -53,6 +53,7 @@ composer require bakame/tokei
 You need:
 
 - **PHP >= 8.4** but the latest stable version of PHP is recommended
+- a **64-bit PHP build**.
 - to be able to get the locale string version of the time you need the `ext-intl` extension or use a polyfill for `IntlDateFormatter`.
 
 ## Documentation

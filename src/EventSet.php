@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
+use Bakame\Tokei\Internal\InputNormalizer;
+use Bakame\Tokei\Internal\TemporalSearch;
 use DateInterval;
 use DateTimeInterface;
 use Time\Duration as TimeDuration;

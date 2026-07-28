@@ -2,14 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Bakame\Tokei;
+namespace Bakame\Tokei\Internal;
 
+use Bakame\Tokei\Duration;
+use Bakame\Tokei\DurationFormat;
+use Bakame\Tokei\Time;
+use Bakame\Tokei\TimeFormat;
+use Bakame\Tokei\TokeiException;
+use Bakame\Tokei\Unit;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
+use ValueError;
 
 use function implode;
 use function intdiv;
+use function is_int;
+use function number_format;
 use function rtrim;
 use function str_pad;
 use function substr;
@@ -31,8 +40,9 @@ final readonly class DurationParts
     public int $nanoseconds;
     public int $sign;
 
-    public function __construct(Duration $duration)
+    public function __construct(Duration|Time $duration)
     {
+        $duration = InputNormalizer::duration($duration);
         $remaining = $duration->seconds % 3600;
         $this->hour = intdiv($duration->seconds, 3600);
         $this->minute = intdiv($remaining, 60);
@@ -223,7 +233,10 @@ final readonly class DurationParts
         return [] === $time ? '0s' : (-1 === $this->sign ? '-' : '').implode('', $time);
     }
 
-    public function toUnit(Unit $unit): int|float
+    /**
+     * Returns the duration expressed in the given unit.
+     */
+    public function toNumber(Unit $unit): int|float
     {
         $ticksPerUnit = UnitTransformer::ticks($unit);
         $ticksPerSecond = UnitTransformer::ticks(Unit::Second);
@@ -233,5 +246,26 @@ final readonly class DurationParts
                 ? ($this->seconds / ($ticksPerUnit / $ticksPerSecond) + $this->nanoseconds / $ticksPerUnit)
                 : ($this->seconds * ($ticksPerSecond / $ticksPerUnit) + $this->nanoseconds / $ticksPerUnit)
         );
+    }
+
+    /**
+     * Returns the duration expressed in the given unit as a numeric string.
+     *
+     * @param non-negative-int $precision
+     *
+     * @throws ValueError If $precision is negative.
+     *
+     * @return numeric-string
+     */
+    public function toNumberString(Unit $unit, int $precision = 0): string
+    {
+        /* @phpstan-ignore-next-line */
+        0 <= $precision || throw new ValueError('The precision cannot be negative.');
+
+        $value = $this->toNumber($unit);
+
+        return is_int($value)
+            ? (string) $value
+            : number_format(num: $value, decimals: $precision, decimal_separator: '.', thousands_separator: '');
     }
 }

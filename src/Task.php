@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
+use Bakame\Tokei\Internal\InputNormalizer;
 use DateInterval;
 use JsonSerializable;
 use Time\Duration as TimeDuration;

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Bakame\Tokei;
 
 use ArgumentCountError;
+use Bakame\Tokei\Internal\DurationParts;
+use Bakame\Tokei\Internal\InputNormalizer;
+use Bakame\Tokei\Internal\Parser;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -16,30 +19,10 @@ use function array_key_first;
 use function array_key_last;
 use function array_map;
 use function intdiv;
-use function preg_match;
-use function str_pad;
-use function trim;
 use function usort;
 
 final class Time implements JsonSerializable
 {
-    private const string REGEXP_ISO8601 = '@^
-        (?<hour>\d{1,2}):
-        (?<minute>\d{1,2})
-        (:(?<second>\d{1,2}))?
-        (?:\.(?<fractions>\d{1,9}))?
-    $@x';
-
-    private const string REGEXP_COMPACT = '@^
-        (?<hour>\d{1,2})\s*h\s*
-        (?<minute>\d{1,2})\s*m\s*
-        (?:(?<second>\d{1,2})\s*s\s*)?
-        (?:
-            (?<fractions>\d{1,9})\s*
-            (?<unit>µs|us|ms|ns)\s*
-        )?
-    $@x';
-
     private ?DurationParts $parts = null;
     private readonly Duration $offset;
     public int $hour { get => $this->parts()->hour; }
@@ -76,7 +59,7 @@ final class Time implements JsonSerializable
 
     private function parts(): DurationParts
     {
-        return $this->parts ??= new DurationParts($this->offset);
+        return $this->parts ??= new DurationParts($this);
     }
 
     /**
@@ -121,52 +104,14 @@ final class Time implements JsonSerializable
      */
     public static function fromFormat(string $value, TimeFormat $format): self
     {
-        $regexp = match ($format) {
-            TimeFormat::Clock => self::REGEXP_ISO8601,
-            TimeFormat::Compact => self::REGEXP_COMPACT,
-        };
+        $components = Parser::parseTime($value, $format);
 
-        $notation = trim($value);
-        1 === preg_match($regexp, $notation, $parts) || throw new InvalidTime('Unknown or bad format `'.$value.'`'.'`.');
-
-        if (self::REGEXP_ISO8601 === $regexp) {
-            $parts['fractions'] = str_pad($parts['fractions'] ?? '0', 9, '0');
-        }
-
-        return Time::at(
-            hour: (int) $parts['hour'],
-            minute: (int) $parts['minute'],
-            second: (int) ($parts['second'] ?? 0),
-            nanosecond: self::resolveFractions($parts),
+        return self::at(
+            $components->hour,
+            $components->minute,
+            $components->second,
+            $components->nanosecond,
         );
-    }
-
-    /**
-     * @param array{fractions?: string, unit?: ?non-empty-string} $parts
-     *
-     * @throws InvalidTime
-     */
-    private static function resolveFractions(array $parts): int
-    {
-        $value = (int)($parts['fractions'] ?? 0);
-        $value >= 0 || throw new InvalidTime('fraction value cannot be negative.');
-
-        $unit = $parts['unit'] ?? 'ns';
-        if ('ms' === $unit) {
-            $value <= 999 || throw new InvalidTime('millisecond fraction value cannot be greater than 999.');
-
-            return $value * 1_000_000;
-        }
-
-        if ('µs' === $unit || 'us' === $unit) {
-            $value <= 999_999 || throw new InvalidTime('microsecond fraction value cannot be greater than 999_999.');
-
-            return $value * 1_000;
-        }
-
-        $value <= 999_999_999 || throw new InvalidTime('nanosecond fraction value cannot be greater than 999_999_999.');
-
-        return $value;
     }
 
     /**
@@ -392,7 +337,7 @@ final class Time implements JsonSerializable
      */
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
-        $offset = $this->offset();
+        $offset = $this->offset;
         $duration = $offset->roundTo($unit, $mode);
 
         return $duration->equals($offset) ? $this : self::sinceMidnight($duration);

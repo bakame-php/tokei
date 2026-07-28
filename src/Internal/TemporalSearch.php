@@ -2,8 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Bakame\Tokei;
+namespace Bakame\Tokei\Internal;
 
+use Bakame\Tokei\Bound;
+use Bakame\Tokei\Duration;
+use Bakame\Tokei\Event;
+use Bakame\Tokei\Interval;
+use Bakame\Tokei\SearchMode;
+use Bakame\Tokei\Task;
+use Bakame\Tokei\TemporalSet;
+use Bakame\Tokei\Time;
 use Closure;
 use DateTimeInterface;
 

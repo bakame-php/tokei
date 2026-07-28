@@ -2,8 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Bakame\Tokei;
+namespace Bakame\Tokei\Internal;
 
+use Bakame\Tokei\Duration;
+use Bakame\Tokei\Event;
+use Bakame\Tokei\HasIdentifiers;
+use Bakame\Tokei\Identifiers;
+use Bakame\Tokei\Interval;
+use Bakame\Tokei\InvalidDuration;
+use Bakame\Tokei\InvalidTime;
+use Bakame\Tokei\Task;
+use Bakame\Tokei\TemporalException;
+use Bakame\Tokei\Time;
+use Bakame\Tokei\TimeException;
 use DateInterval;
 use DateTimeInterface;
 use DateTimeZone;

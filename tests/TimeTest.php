@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Tests;
 
 use Bakame\Tokei\Duration;
-use Bakame\Tokei\DurationParts;
-use Bakame\Tokei\InputNormalizer;
+use Bakame\Tokei\Internal\DurationParts;
+use Bakame\Tokei\Internal\InputNormalizer;
+use Bakame\Tokei\Internal\Parser;
+use Bakame\Tokei\Internal\TimeComponents;
+use Bakame\Tokei\Internal\UnitTransformer;
 use Bakame\Tokei\InvalidDuration;
 use Bakame\Tokei\InvalidTime;
 use Bakame\Tokei\LocaleTimeFormatter;
@@ -33,8 +36,11 @@ use function unserialize;
 #[CoversClass(TimeFormat::class)]
 #[CoversClass(Unit::class)]
 #[CoversClass(DurationParts::class)]
+#[CoversClass(Parser::class)]
+#[CoversClass(TimeComponents::class)]
 #[CoversClass(LocaleTimeFormatter::class)]
 #[CoversClass(InputNormalizer::class)]
+#[CoversClass(UnitTransformer::class)]
 final class TimeTest extends TestCase
 {
     /* -------------------------------------------------

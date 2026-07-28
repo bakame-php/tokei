@@ -6,22 +6,24 @@ namespace Tests;
 
 use Bakame\Tokei\Duration;
 use Bakame\Tokei\DurationFormat;
-use Bakame\Tokei\DurationParts;
-use Bakame\Tokei\InputNormalizer;
+use Bakame\Tokei\Internal\DurationComponents;
+use Bakame\Tokei\Internal\DurationParts;
+use Bakame\Tokei\Internal\InputNormalizer;
+use Bakame\Tokei\Internal\Parser;
+use Bakame\Tokei\Internal\UnitTransformer;
 use Bakame\Tokei\InvalidDuration;
 use Bakame\Tokei\InvalidTime;
 use Bakame\Tokei\SnapMode;
 use Bakame\Tokei\Unit;
-use Bakame\Tokei\UnitTransformer;
 use DateInterval;
 use DateTime;
 use DateTimeImmutable;
 use DivisionByZeroError;
-use Time\Duration as TimeDuration;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
+use Time\Duration as TimeDuration;
 use ValueError;
 use function json_encode;
 use function ltrim;
@@ -33,6 +35,8 @@ use function unserialize;
 #[CoversClass(Duration::class)]
 #[CoversClass(DurationFormat::class)]
 #[CoversClass(DurationParts::class)]
+#[CoversClass(Parser::class)]
+#[CoversClass(DurationComponents::class)]
 #[CoversClass(Unit::class)]
 #[CoversClass(UnitTransformer::class)]
 #[CoversClass(InputNormalizer::class)]
@@ -1207,6 +1211,7 @@ final class DurationTest extends TestCase
 
         self::assertSame(0, $duration->nanoseconds);
         self::assertSame(0, $duration->sign);
+        self::assertSame(0, TimeDuration::compare($duration->toNative(), $native));
     }
 
     public function test_it_creates_a_positive_duration(): void

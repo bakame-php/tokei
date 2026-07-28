@@ -6,13 +6,13 @@ namespace Tests;
 
 use Bakame\Tokei\Duration;
 use Bakame\Tokei\Identifiers;
+use Bakame\Tokei\Internal\TemporalSearch;
 use Bakame\Tokei\Interval;
 use Bakame\Tokei\IntervalFormat;
 use Bakame\Tokei\IntervalSet;
 use Bakame\Tokei\SearchMode;
 use Bakame\Tokei\Task;
 use Bakame\Tokei\TaskSet;
-use Bakame\Tokei\TemporalSearch;
 use Bakame\Tokei\Time;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

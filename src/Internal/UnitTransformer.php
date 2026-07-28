@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bakame\Tokei;
+namespace Bakame\Tokei\Internal;
+
+use Bakame\Tokei\InvalidDuration;
+use Bakame\Tokei\SnapMode;
+use Bakame\Tokei\Unit;
 
 use function ceil;
 use function floor;
@@ -43,9 +47,9 @@ final readonly class UnitTransformer
     /**
      * @throws InvalidDuration
      */
-    public static function toTicks(int|float $value, Unit $unit): int
+    public static function toTicks(int|float $value, Unit $from): int
     {
-        $ticks = self::ticks($unit);
+        $ticks = self::ticks($from);
 
         ($value <= intdiv(PHP_INT_MAX, $ticks) && $value >= intdiv(PHP_INT_MIN, $ticks)) || throw InvalidDuration::dueToOverflow();
 
@@ -62,7 +66,9 @@ final readonly class UnitTransformer
      */
     public static function add(int $left, int $right): int
     {
-        ($right <= PHP_INT_MAX - $left) || throw InvalidDuration::dueToOverflow();
+        if (($right > 0 && $left > PHP_INT_MAX - $right) || ($right < 0 && $left < PHP_INT_MIN - $right)) {
+            throw InvalidDuration::dueToOverflow();
+        }
 
         return $left + $right;
     }
