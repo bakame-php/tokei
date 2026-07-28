@@ -2,22 +2,25 @@
 
 if (PHP_VERSION_ID < 80600 && !enum_exists('SortDirection')) {
     spl_autoload_register(static function (string $class): void {
-        if ('SortDirection' === $class) {
-            require __DIR__ . '/polyfill/lib/SortDirection.php';
+        static $classMap = [
+            'SortDirection' => __DIR__ . '/polyfill/lib/SortDirection.php',
+        ];
+
+        if (is_readable($file = $classMap[$class] ?? '')) {
+            require $file;
         }
     });
 }
 
 if (PHP_VERSION_ID < 80600 && !class_exists('Time\Duration')) {
     spl_autoload_register(static function (string $class): void {
-        $path = match ($class) {
+        static $classMap = [
             'Time\\Duration' => __DIR__ . '/polyfill/lib/Time/Duration.php',
             'Time\\TimeException' => __DIR__ . '/polyfill/lib/Time/TimeException.php',
-            default => null,
-        };
+        ];
 
-        if (null !== $path) {
-            require $path;
+        if (is_readable($file = $classMap[$class] ?? '')) {
+            require $file;
         }
     });
 }
