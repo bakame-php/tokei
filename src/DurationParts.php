@@ -57,6 +57,7 @@ final readonly class DurationParts
         if (0 !== $this->nanoseconds) {
             $interval->f = UnitTransformer::fromTicks($this->nanoseconds, Unit::Second);
         }
+
         $interval->invert = -1 === $this->sign ? 1 : 0;
         if (null === $relativeTo) {
             return $interval;

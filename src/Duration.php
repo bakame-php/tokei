@@ -31,7 +31,7 @@ use const PHP_INT_MIN;
  * @phpstan-type InputSign ''|'+'|'-'
  * @phpstan-type SerializedDuration array{0: array{seconds: non-negative-int, nanoseconds: non-negative-int, sign:-1|0|1}, 1: array{}}
  */
-final class Duration implements JsonSerializable
+final readonly class Duration implements JsonSerializable
 {
     private const string REGEXP_TIMER = '@^
         (?<sign>-)?\s*
@@ -73,32 +73,20 @@ final class Duration implements JsonSerializable
 
     /** @var positive-int */
     private const int TICKS_PER_SECOND = 1_000_000_000;
-    private ?DurationParts $parts = null;
 
     /**
      * @param non-negative-int $seconds
      * @param non-negative-int $nanoseconds
      * @param -1|0|1 $sign
+     *
+     * @throws InvalidDuration
      */
     private function __construct(
-        public readonly int $seconds,
-        public readonly int $nanoseconds,
-        public readonly int $sign
+        public int $seconds,
+        public int $nanoseconds,
+        public int $sign
     ) {
         PHP_INT_MAX >= (($this->seconds * self::TICKS_PER_SECOND) + $this->nanoseconds) || throw InvalidDuration::dueToOverflow();
-    }
-
-    private static function fromTicks(int $ticks): self
-    {
-        PHP_INT_MIN !== $ticks || throw InvalidDuration::dueToOverflow();
-
-        $sign = $ticks <=> 0;
-        $absTicks = abs($ticks);
-        /** @var non-negative-int $seconds */
-        $seconds = intdiv($absTicks, self::TICKS_PER_SECOND);
-        $nanoseconds = $absTicks % self::TICKS_PER_SECOND;
-
-        return new self($seconds, $nanoseconds, $sign);
     }
 
     /**
@@ -339,17 +327,17 @@ final class Duration implements JsonSerializable
 
     private static function fromComponents(int $seconds, int $nanoseconds): self
     {
-        // Normalize carries first.
         if ($nanoseconds >= self::TICKS_PER_SECOND || $nanoseconds <= -self::TICKS_PER_SECOND) {
             $seconds += intdiv($nanoseconds, self::TICKS_PER_SECOND);
             $nanoseconds %= self::TICKS_PER_SECOND;
         }
 
-        // Ensure seconds and nanoseconds have the same sign.
         if ($seconds > 0 && $nanoseconds < 0) {
             --$seconds;
             $nanoseconds += self::TICKS_PER_SECOND;
-        } elseif ($seconds < 0 && $nanoseconds > 0) {
+        }
+
+        if ($seconds < 0 && $nanoseconds > 0) {
             ++$seconds;
             $nanoseconds -= self::TICKS_PER_SECOND;
         }
@@ -380,6 +368,14 @@ final class Duration implements JsonSerializable
     }
 
     /**
+     * Returns an instance with the lowest duration value supported by the package.
+     */
+    public static function min(): self
+    {
+        return self::max()->negate();
+    }
+
+    /**
      * Returns an instance with the highest duration value supported by the package.
      */
     public static function max(): self
@@ -388,11 +384,19 @@ final class Duration implements JsonSerializable
     }
 
     /**
-     * Returns an instance with the lowest duration value supported by the package.
+     * @throws InvalidDuration
      */
-    public static function min(): self
+    private static function fromTicks(int $ticks): self
     {
-        return self::max()->negate();
+        PHP_INT_MIN !== $ticks || throw InvalidDuration::dueToOverflow();
+
+        $sign = $ticks <=> 0;
+        $absTicks = abs($ticks);
+        /** @var non-negative-int $seconds */
+        $seconds = intdiv($absTicks, self::TICKS_PER_SECOND);
+        $nanoseconds = $absTicks % self::TICKS_PER_SECOND;
+
+        return new self($seconds, $nanoseconds, $sign);
     }
 
     /**
@@ -428,7 +432,7 @@ final class Duration implements JsonSerializable
      */
     public function format(DurationFormat $format): string
     {
-        return $this->parts()->toDurationString($format);
+        return new DurationParts($this)->toDurationString($format);
     }
 
     /**
@@ -436,12 +440,7 @@ final class Duration implements JsonSerializable
      */
     public function toDateInterval(?DateTimeInterface $relativeTo = null): DateInterval
     {
-        return $this->parts()->toDateInterval($relativeTo);
-    }
-
-    private function parts(): DurationParts
-    {
-        return $this->parts ??= new DurationParts($this);
+        return new DurationParts($this)->toDateInterval($relativeTo);
     }
 
     private function ticks(): int
@@ -464,7 +463,7 @@ final class Duration implements JsonSerializable
      */
     public function in(Unit $unit): int|float
     {
-        return $this->parts()->toUnit($unit);
+        return new DurationParts($this)->toUnit($unit);
     }
 
     /**
@@ -525,6 +524,8 @@ final class Duration implements JsonSerializable
 
     /**
      * Returns a new instance rounded to the specified unit using a rounding mode.
+     *
+     * @throws TokeiException
      */
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
@@ -723,17 +724,14 @@ final class Duration implements JsonSerializable
             $thisTicks = $duration->ticks();
             $otherTicks = $divisor->ticks();
 
-            return new DivisionResult(
-                quotient: intdiv($thisTicks, $otherTicks),
-                remainder: self::fromTicks($thisTicks % $otherTicks),
-            );
+            return new DivisionResult(intdiv($thisTicks, $otherTicks), self::fromTicks($thisTicks % $otherTicks));
         };
 
         $duration = InputNormalizer::duration($duration);
 
         return match (true) {
             $duration->isZero() => throw new DivisionByZeroError('Cannot divide by zero duration.'),
-            $this->isZero() => new DivisionResult(quotient: 0, remainder: self::zero()),
+            $this->isZero() => new DivisionResult(0, self::zero()),
             default => $div($this, $duration),
         };
     }
