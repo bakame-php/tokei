@@ -10,9 +10,6 @@ use Bakame\Tokei\Time;
 use Bakame\Tokei\TimeFormat;
 use Bakame\Tokei\TokeiException;
 use Bakame\Tokei\Unit;
-use DateInterval;
-use DateTimeImmutable;
-use DateTimeInterface;
 use ValueError;
 
 use function implode;
@@ -50,34 +47,6 @@ final readonly class DurationParts
         $this->nanoseconds = $duration->nanoseconds;
         $this->sign = $duration->sign;
         $this->seconds = $duration->seconds;
-    }
-
-    /**
-     * Converts the instance to an DateInterval object.
-     *
-     * @throws TokeiException
-     */
-    public function toDateInterval(?DateTimeInterface $relativeTo = null): DateInterval
-    {
-        $interval = new DateInterval('PT0S');
-        [$interval->d, $remainder] = UnitTransformer::divmod(UnitTransformer::toTicks($this->seconds, Unit::Second), Unit::Day);
-        [$interval->h] = UnitTransformer::divmod($remainder, Unit::Hour);
-        $interval->i = $this->minute;
-        $interval->s = $this->second;
-        if (0 !== $this->nanoseconds) {
-            $interval->f = UnitTransformer::fromTicks($this->nanoseconds, Unit::Second);
-        }
-
-        $interval->invert = -1 === $this->sign ? 1 : 0;
-        if (null === $relativeTo) {
-            return $interval;
-        }
-
-        if (!$relativeTo instanceof DateTimeImmutable) {
-            $relativeTo = DateTimeImmutable::createFromInterface($relativeTo);
-        }
-
-        return $relativeTo->diff($relativeTo->add($interval));
     }
 
     /**

@@ -50,10 +50,7 @@ To ease instantiation, predefined instances can be obtained with the following m
 ```php 
 Time::midnight(); // 00:00:00
 Time::noon();     // 12:00:00
-Time::endOfDay(); // 23:59:59.999999
-Time::utc();      // the UTC current time
-Time::now('Africa/Nairobi'); // the current time in Nairobi, Kenya
-Time::fromDateTime(new DateTimeImmutable()); // returns the extracted time from any DateTimeInterface instance
+Time::endOfDay(); // 23:59:59.999999999
 ```
 
 <p class="message-notice">
@@ -108,7 +105,7 @@ Example:
 
 ```php
 $time = Time::at(hour: 10, minute: 30, second: 15, microsecond: 123456);
-echo $time->format();
+echo $time->format(TimeFormat::Clock);
 // 10:30:15.123456
 echo $time->format(TimeFormat::Compact);
 // 10h30m15s123456µs
@@ -151,17 +148,17 @@ throws an `InvalidTime` exception instead.
 ```php
 // adding 2 hours
 $time = Time::noon()->add(Duration::of(hours: 2, minutes: 15));
-$time->format();
+$time->format(TimeFormat::Clock);
 // "14:15:00"
 
 // adding 12 hours
 $time = Time::noon()->add(Duration::of(hours: 12, minutes: 15));
-$time->format();
+$time->format(TimeFormat::Clock);
 // "00:15:00"
 
 // setting the hour to
 $time = Time::noon()->with(hour: 2, minute: 15);
-$time->format();
+$time->format(TimeFormat::Clock);
 // "02:15:00"
 
 Time::noon()->with(hour: 25); 
@@ -173,7 +170,7 @@ the unit declare on the `Bakame\Tokei\Unit` enum
 
 ```php
 $t = Time::sinceMidnight(Duration::of(microseconds: 3_150_000_000));
-$t->format(); // returns "00:52:30"
+$t->format(TimeFormat::Clock); // returns "00:52:30"
 $t->roundTo(Unit::Minute, SnapMode::Floor)->format(); // returns "00:52:00"
 $t->roundTo(Unit::Minute, SnapMode::Nearest)->format();  // returns "00:53:00"
 ```
@@ -183,7 +180,7 @@ $t->roundTo(Unit::Minute, SnapMode::Nearest)->format();  // returns "00:53:00"
 It is possible to compare two `Time` instances using the `Duration::compare` method.
 The method will use the result of `Time::offset` to compare both times.
 
-Convenient methods derived from `Duratio::compare` are also available to ease usage:
+Convenient methods derived from `Duration::compare` are also available to ease usage:
 
 ```php
 $time = Time::at(hour: 10);
@@ -224,25 +221,43 @@ $a->distance($b)->format(DurationFormat::Iso8601); // returns "PT2H"
 
 ```php
 Time::fromDateTime(DateTimeInterface $datetime): Time
-Time::toDateTime(DateTimeZone|string $timezone): DateTimeImmutable;
-Time::applyTo(DateTimeInterface $datetime): DateTimeImmutable;
+// Extract the time component from a DateTimeInterface instance
+
+Time::applyTo(DateTimeInterface $datetime): DateTimeImmutable
+// Apply this time component to a DateTimeInterface instance
+
+Time::now(DateTimeZone|string $timezone): Time
+// Extract the current time in the given timezone
+
+Time::today(DateTimeZone|string $timezone): DateTimeImmutable
+// Create a DateTimeImmutable for the current date in the given timezone
+// with this time component applied
+
+Time::utc(): Time
+// Extract the current UTC time
 ```
 
-In one hand, it is possible to extract the time part of any `DateTimeInterface`
-implementing class using the `fromDateTime` method. On the other hand, you
-can apply the time to an `DateTimeInterface` object using the `applyTo` method or get
-the time attached to current day in a specific timezone using the `toDateTime` method.
+`Time` represents only the time-of-day component, therefore it does not contain
+any date or timezone information by itself.
 
-<p class="message-warning">If the <code>DateTimeInterface</code> instance submitted extends the
-<code>DateTimeImmutable</code> class then the return type will be of that same type
-otherwise PHP's <code>DateTimeImmutable</code> is returned.</p>
+You can extract this component from any `DateTimeInterface` implementation using
+`fromDateTime()`. Conversely, `applyTo()` applies a `Time` instance to an
+existing date while preserving the date and timezone information of the supplied
+object. If you need a `DateTimeImmutable` representing this time on the current
+date, use `today()` with the desired timezone.
+
+<p class="message-warning">If the provided <code>DateTimeInterface</code> instance is or extends the
+<code>DateTimeImmutable</code>, the returned object preserves its type. Otherwise, a native PHP
+<code>DateTimeImmutable</code> is returned.</p>
 
 ```php
 use Bakame\Tokei\Time;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 
-$time = Time::fromDateTime(new DateTime('2025-12-27 23:00', new DateTimeZone('Africa/Nairobi'))); // 23:00
+$time = Time::fromDateTime(new DateTime('2025-12-27 23:00', new DateTimeZone('Africa/Nairobi')));
+$time->format(TimeFormat::Clock);
+// '23:00:00'
 
 $newDate = $time->applyTo(CarbonImmutable::parse('2025-02-23'));
 $newDate->format('Y-m-d H:i');
@@ -257,12 +272,7 @@ $altDate->format('Y-m-d H:i');
 // '2025-02-23 23:00'
 $altDate::class;
 // DateTimeImmutable
-$date2 = $time->toDateTime('Asia/Tokyo');
+$date2 = $time->today('Asia/Tokyo');
 // DateTimeImmutable
 // an instance from the current date at 23:00 Tokyo time.
 ```
-
-<p class="message-warning">
-Whenever an API expects a <code>Time</code> instance, a <code>DateTimeInterface</code> instance can be used.
-It will be converted to a <code>Time</code> instance using the <code>Time::fromDateTime</code> method.
-</p>

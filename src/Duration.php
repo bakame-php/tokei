@@ -11,7 +11,6 @@ use Bakame\Tokei\Internal\InputNormalizer;
 use Bakame\Tokei\Internal\Parser;
 use Bakame\Tokei\Internal\UnitTransformer;
 use DateInterval;
-use DateTimeInterface;
 use DivisionByZeroError;
 use JsonSerializable;
 use Time\Duration as TimeDuration;
@@ -77,36 +76,6 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @throws TokeiException
-     */
-    public static function of(
-        int $weeks = 0,
-        int $days = 0,
-        int $hours = 0,
-        int $minutes = 0,
-        int $seconds = 0,
-        int $milliseconds = 0,
-        int $microseconds = 0,
-        int $nanoseconds = 0,
-    ): self {
-        (0 <= $weeks && 0 <= $days && 0 <= $hours && 0 <= $minutes && 0 <= $seconds && 0 <= $milliseconds && 0 <= $microseconds && 0 <= $nanoseconds) || throw new InvalidDuration('No duration part can be expressed with a negative number.');
-
-        $nano = 0;
-        $nano = UnitTransformer::add($nano, UnitTransformer::toTicks($milliseconds, Unit::Millisecond));
-        $nano = UnitTransformer::add($nano, UnitTransformer::toTicks($microseconds, Unit::Microsecond));
-        $nano = UnitTransformer::add($nano, $nanoseconds);
-
-        $sec = 0;
-        $sec = UnitTransformer::add($sec, (int) UnitTransformer::convert($weeks, Unit::Week, Unit::Second));
-        $sec = UnitTransformer::add($sec, (int) UnitTransformer::convert($days, Unit::Day, Unit::Second));
-        $sec = UnitTransformer::add($sec, (int) UnitTransformer::convert($hours, Unit::Hour, Unit::Second));
-        $sec = UnitTransformer::add($sec, (int) UnitTransformer::convert($minutes, Unit::Minute, Unit::Second));
-        $sec = UnitTransformer::add($sec, $seconds);
-
-        return self::fromComponentsValue($sec, $nano);
-    }
-
-    /**
      * Returns a new instance from a DateInterval object.
      *
      * if the DateInterval days property is false
@@ -141,10 +110,52 @@ final readonly class Duration implements JsonSerializable
     {
         return self::fromComponents(Parser::parseDurationNotation($notation, $format));
     }
-
+    /**
+     * @throws InvalidDuration
+     */
     private static function fromComponents(DurationComponents $components): self
     {
         return self::fromComponentsValue($components->seconds, $components->nanoseconds);
+    }
+
+    /**
+     * @throws InvalidDuration
+     */
+    private static function fromTicks(int $ticks): self
+    {
+        PHP_INT_MIN !== $ticks || throw InvalidDuration::dueToOverflow();
+
+        return self::fromComponentsValue(intdiv($ticks, self::TICKS_PER_SECOND), $ticks % self::TICKS_PER_SECOND);
+    }
+
+    /**
+     * @throws TokeiException
+     */
+    public static function of(
+        int $weeks = 0,
+        int $days = 0,
+        int $hours = 0,
+        int $minutes = 0,
+        int $seconds = 0,
+        int $milliseconds = 0,
+        int $microseconds = 0,
+        int $nanoseconds = 0,
+    ): self {
+        (0 <= $weeks && 0 <= $days && 0 <= $hours && 0 <= $minutes && 0 <= $seconds && 0 <= $milliseconds && 0 <= $microseconds && 0 <= $nanoseconds) || throw new InvalidDuration('No duration part can be expressed with a negative number.');
+
+        $nano = 0;
+        $nano = UnitTransformer::add($nano, UnitTransformer::toTicks($milliseconds, Unit::Millisecond));
+        $nano = UnitTransformer::add($nano, UnitTransformer::toTicks($microseconds, Unit::Microsecond));
+        $nano = UnitTransformer::add($nano, $nanoseconds);
+
+        $sec = 0;
+        $sec = UnitTransformer::add($sec, (int) UnitTransformer::convert($weeks, Unit::Week, Unit::Second));
+        $sec = UnitTransformer::add($sec, (int) UnitTransformer::convert($days, Unit::Day, Unit::Second));
+        $sec = UnitTransformer::add($sec, (int) UnitTransformer::convert($hours, Unit::Hour, Unit::Second));
+        $sec = UnitTransformer::add($sec, (int) UnitTransformer::convert($minutes, Unit::Minute, Unit::Second));
+        $sec = UnitTransformer::add($sec, $seconds);
+
+        return self::fromComponentsValue($sec, $nano);
     }
 
     /**
@@ -213,16 +224,6 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * @throws InvalidDuration
-     */
-    private static function fromTicks(int $ticks): self
-    {
-        PHP_INT_MIN !== $ticks || throw InvalidDuration::dueToOverflow();
-
-        return self::fromComponentsValue(intdiv($ticks, self::TICKS_PER_SECOND), $ticks % self::TICKS_PER_SECOND);
-    }
-
-    /**
      * Returns the shortest instance from a collection of instances.
      */
     public static function minOf(Duration|DateInterval|Interval|Task|TimeDuration ...$durations): self
@@ -279,19 +280,13 @@ final readonly class Duration implements JsonSerializable
     /**
      * Encodes a Duration into a specified string notation representation.
      *
+     * @throws TokeiException
+     *
      * @return non-empty-string
      */
     public function format(DurationFormat $format): string
     {
         return new DurationParts($this)->toDurationString($format);
-    }
-
-    /**
-     * Converts the instance to an DateInterval object.
-     */
-    public function toDateInterval(?DateTimeInterface $relativeTo = null): DateInterval
-    {
-        return new DurationParts($this)->toDateInterval($relativeTo);
     }
 
     /**
@@ -303,16 +298,6 @@ final readonly class Duration implements JsonSerializable
     private function ticks(): int
     {
         return $this->sign * (UnitTransformer::toTicks($this->seconds, Unit::Second) + $this->nanoseconds);
-    }
-
-    /**
-     * Converts the instance to a \Time\Duration object.
-     */
-    public function toNative(): TimeDuration
-    {
-        $new = TimeDuration::fromSeconds($this->seconds, $this->nanoseconds);
-
-        return -1 === $this->sign ? $new->negate() : $new;
     }
 
     /**

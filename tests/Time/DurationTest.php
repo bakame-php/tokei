@@ -12,7 +12,6 @@ use Throwable;
 use Time\Duration;
 use Time\TimeException;
 use ValueError;
-
 use const PHP_INT_MAX;
 
 #[Group('time-polyfill')]
@@ -312,33 +311,19 @@ final class DurationTest extends TestCase
     public static function invalidIso8601Durations(): iterable
     {
         yield 'empty string' => [''];
-
         yield 'invalid prefix' => ['1H'];
-
         yield 'missing time designator' => ['P1H'];
-
         yield 'missing value' => ['PT'];
-
         yield 'unsupported years component' => ['P1Y'];
-
         yield 'unsupported months component' => ['P1M'];
-
         yield 'unsupported weeks component' => ['P1W'];
-
         yield 'unsupported days component' => ['P1D'];
-
         yield 'invalid fraction format' => ['PT1.S'];
-
         yield 'invalid unit' => ['PT1X'];
-
         yield 'invalid duplicated seconds' => ['PT1S2S'];
-
         yield 'invalid duplicated fraction' => ['PT1.5.5S'];
-
         yield 'hours overflow integer range' => ['PT2562047789H'];
-
         yield 'combined components overflow integer range' => ['PT2562047788H59M59S'];
-
         yield 'combined components exceeds integer range' => ['PT2562047788015215H59M59S'];
     }
 }

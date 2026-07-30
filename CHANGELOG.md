@@ -6,16 +6,16 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Added
 
-- Support for nanoseconds for `Tokei\Duration`
-- Support for PHP8.6 `Time\Duration` using a Polyfill.
+- Support for nanoseconds to `Tokei\Duration`
+- Support for PHP8.6 `Time\Duration`
 - `Duration::seconds` and `Duration::nanoseconds`
 - `Duration::toNumberString`
-- `symfony/polyfill-php86` requirement to use the package
+- `symfony/polyfill-php86` requirement to use PHP8.6 `SortDirection` Enum
 
 ### Fixed
 
 - **BC Break:**  mathematical operation methods of `Duration` use full names
-- Fix autoloading for the polyfills in the manual autoload script.
+- **BC Break:** `Time::toDateTime` is renamed `Time::today`
 
 ### Deprecated
 
@@ -23,9 +23,11 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Removed
 
-- **BC Break:**  `Duration` component public properties are removed use `Duration::$seconds` and `Duration::$nanoseconds` instead
+- **BC Break:** `Duration` component public properties are removed use `Duration::$seconds` and `Duration::$nanoseconds` instead
+- **BC Break:** `Duration::toDateInterval` with no replacement.
+- **BC Break:** Removed manual autoload script.
 
-## [0.3.0 - Chidorisō](https://github.com/bakame-php/tokei/compare/0.2.0...0.3.0) - 2026-07-21
+## [0.3.0 - chidorisō](https://github.com/bakame-php/tokei/compare/0.2.0...0.3.0) - 2026-07-21
 
 ### Added
 

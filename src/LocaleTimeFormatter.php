@@ -74,7 +74,7 @@ final readonly class LocaleTimeFormatter
     public function format(DateTimeInterface|Time $time, DateTimeZone|DateTimeInterface|string|null $timezone = null): string
     {
         $dateTime = $time instanceof Time
-            ? $time->toDateTime($timezone ?? $this->timezone)
+            ? $time->today($timezone ?? $this->timezone)
             : $time;
 
         $timezone = $dateTime->getTimezone();

@@ -34,7 +34,7 @@ $interval = Interval::between(
     Event::at(Time::noon(), 'lunch'),
     new DateTime('2026-05-23 15:23:16', new DateTimeZone('Europe/Brussels'))
 );
-$interval->end->format();
+$interval->end->format(TimeFormat::Clock);
 // returns '15:23:16'
 ```
 
@@ -43,11 +43,12 @@ $interval->end->format();
 A duration can be expressed using any of the following types:
 
 - `Duration`
-- `DateInterval`
 - `Interval`
 - `Task`
 - `Time`
 - `Event`
+- `DateInterval`
+- `Time\Duration`
 
 Example:
 
@@ -59,7 +60,7 @@ Interval::since(
 
 Interval::since(
     new DateTime('2026-05-23 15:23:16'), 
-    Duration::of(hours: 3),
+    \Time\Duration::fromHours(3),
 );
 ```
 
@@ -111,13 +112,13 @@ Timezone can be expressed using:
 
 ## Argument rules
 
-| Concept     | Accepted representations                                                             |
-|-------------|--------------------------------------------------------------------------------------|
-| Time	       | `Time`, `Event`, `DateTimeInterface`                                                 | 
-| Duration    | `Duration`, `DateInterval`, `Interval`, `Task`, `Time`, `Event`, `DateTimeInterface` |       
-| Interval    | `Interval`, `Task`                                                                   |   
-| Identifiers | `Identifiers`, `HasIdentifiers`, `string`, `iterable`                                |   
-| Timezone    | `DateTimeZone`, `DateTimeInterface`, `string`,                                       |
+| Concept     | Accepted representations                                                         |
+|-------------|----------------------------------------------------------------------------------|
+| Time	        | `Time`, `Event`, `DateTimeInterface`                                             | 
+| Duration    | `Duration`, `DateInterval`, `Interval`, `Task`, `Time`, `Event`, `Tine\Duration` |       
+| Interval    | `Interval`, `Task`                                                               |   
+| Identifiers | `Identifiers`, `HasIdentifiers`, `string`, `iterable`                            |   
+| Timezone    | `DateTimeZone`, `DateTimeInterface`, `string`,                                   |
 
 Unless stated otherwise, any method accepting a temporal
 primitive also accepts any compatible representation of that primitive.

@@ -54,26 +54,26 @@
         "symfony/polyfill-php86": "^v1.35.0"
     },
     "require-dev": {
-        "phpstan/phpstan-phpunit": "^2.0.16",
-        "phpstan/phpstan": "^2.2.2",
-        "phpunit/phpunit": "^13.2.0",
-        "friendsofphp/php-cs-fixer": "^3.95.5",
-        "phpstan/phpstan-deprecation-rules": "^2.0.4",
-        "phpstan/phpstan-strict-rules": "^2.0.11",
-        "symfony/var-dumper": "^7.4 || ^8.1"
+        "phpstan/phpstan-phpunit": "^2.0.18",
+        "phpstan/phpstan": "^2.2.7",
+        "phpunit/phpunit": "^13.2.6",
+        "friendsofphp/php-cs-fixer": "^3.95.17",
+        "phpstan/phpstan-deprecation-rules": "^2.0.5",
+        "phpstan/phpstan-strict-rules": "^2.0.12",
+        "symfony/var-dumper": "^7.4 || ^8.1.2"
     },
     "autoload": {
         "psr-4": {
             "Bakame\\Tokei\\": "src"
-        },
-        "classmap": [
-            "polyfill/lib"
-        ]
+        }
     },
     "autoload-dev" : {
         "psr-4": {
             "Tests\\": "tests"
-        }
+        },
+        "classmap": [
+            "polyfill/lib"
+        ]
     },
     "scripts": {
         "phpcs": "php-cs-fixer fix -vvv --diff --dry-run --allow-risky=yes --ansi",

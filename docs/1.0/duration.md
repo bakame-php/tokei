@@ -13,17 +13,19 @@ The `Duration` class can be instantiated either by providing:
 
 - each duration parts using the complementary`Duration::of` method.
 - a ISO8601 duration expression.
+- a compact duration expression.
+- a PHP8.6 `Time\Duration` instance.
 
 ```php
 use Bakame\Tokei\Duration;
+use Time\Duration as TimeDuration;
 
 $durationA = Duration::of(hours: 2, seconds:59);
-$durationB = Duration::fromFormat(notation: 'P2WT3H', format: DurationFormat::Iso8601); //2 weeks and 3 hours
+$durationB = Duration::fromFormat(notation: 'P2WT3H', format: DurationFormat::Iso8601);
+$durationB = Duration::fromFormat(notation: '1d2m12ms', format: DurationFormat::Compact);
 $durationC = Duration::fromDateInterval(new DateInterval('PT23M3S'));
+$durationD = Duration::fromNative(TimeDuration::fromHours(12));
 ```
-
-<p class="message-info">Whenever an API expects a `Duration` instance, a <code>DateInterval</code> instance
-can be used. It will be converted to a `Duration` instance using the <code>Duration::fromDateInterval</code> method.</p>
 
 <p class="message-warning"><code>Duration::fromFormat</code> only parse ISO8601 notations with deterministic part 
 <strong>(ie: years and months are excluded)</strong>. <code>Duration::of</code> only using non-negative integer
@@ -60,7 +62,7 @@ $duration->in(Unit::Microsecond); // returns 1383_000_000
 $duration->in(Unit::Minute);      // returns 23.05
 $duration->sign;                  // returns 1
 $duration->isZero() ;             // returns false
-$duration->nanoseconds;          // returns 0
+$duration->nanoseconds;           // returns 0
 $duration->seconds;               // returns 1383
 ```
 
@@ -68,7 +70,6 @@ $duration->seconds;               // returns 1383
 
 ```php
 Duration::format(DurationFormat $format): string
-Duration::toDateInterval(): DateInterval
 Duration::toNumberString(Unit $unit, int $precision): string
 ```
 
@@ -109,16 +110,6 @@ Last but not least a compact format more suited for debugging is returns using t
 ```php
 $duration = Duration::fromFormat('-PT25H0.5S', DurationFormat::Iso8601); 
 $duration->format(DurationFormat::Compact); // returns '-1d1h500ms'
-```
-
-The `Duration` class also allows conversion in time units and in `DateInterval` instances.
-The method `Duration::toDateInterval` converts the instance into a PHP `DateInterval`
-instance while preserving its sign (inverted intervals are supported).
-
-```php
-$duration = Duration::of(microseconds: 3_661_234_000);
-$duration->toDateInterval();
-// returns DateInterval
 ```
 
 You can obtain a duration as a numeric string using the 

@@ -62,26 +62,45 @@ final class Time implements JsonSerializable
         return $this->parts ??= new DurationParts($this);
     }
 
-    /**
-     * @throws TokeiException
-     */
-    public static function at(
-        int $hour = 0,
-        int $minute = 0,
-        int $second = 0,
-        int $nanosecond = 0,
-    ): self {
-        ($hour >= 0 && $hour < 24) || throw InvalidTime::dueToMalformedTime($hour, Unit::Hour);
-        ($minute >= 0 && $minute < 60) || throw InvalidTime::dueToMalformedTime($minute, Unit::Minute);
-        ($second >= 0 && $second < 60) || throw InvalidTime::dueToMalformedTime($second, Unit::Second);
-        ($nanosecond >= 0 && $nanosecond < 1_000_000_000) || throw InvalidTime::dueToMalformedTime($nanosecond, Unit::Nanosecond);
+    public static function midnight(): self
+    {
+        return self::sinceMidnight(Duration::zero());
+    }
 
-        return self::sinceMidnight(Duration::of(
-            hours: $hour,
-            minutes: $minute,
-            seconds: $second,
-            nanoseconds: $nanosecond,
-        ));
+    public static function noon(): self
+    {
+        return self::sinceMidnight(Duration::of(hours: 12));
+    }
+
+    public static function endOfDay(): self
+    {
+        return self::sinceMidnight(Duration::of(nanoseconds: 1)->negate());
+    }
+
+    /**
+     * Returns a new instance from a number of unit of time since midnight.
+     */
+    public static function sinceMidnight(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
+    {
+        return new self(InputNormalizer::duration($duration));
+    }
+
+    /**
+     * Returns the current time in UTC.
+     */
+    public static function utc(): self
+    {
+        return self::now('UTC');
+    }
+
+    /**
+     * Returns the current time in the given time-zone.
+     *
+     * @param DateTimeInterface|DateTimeZone|non-empty-string $timezone
+     */
+    public static function now(DateTimeInterface|DateTimeZone|string $timezone): self
+    {
+        return self::fromDateTime(new DateTimeImmutable(timezone: InputNormalizer::timezone($timezone)));
     }
 
     /**
@@ -115,44 +134,25 @@ final class Time implements JsonSerializable
     }
 
     /**
-     * Returns a new instance from a number of unit of time since midnight.
+     * @throws TokeiException
      */
-    public static function sinceMidnight(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
-    {
-        return new self(InputNormalizer::duration($duration));
-    }
+    public static function at(
+        int $hour = 0,
+        int $minute = 0,
+        int $second = 0,
+        int $nanosecond = 0,
+    ): self {
+        ($hour >= 0 && $hour < 24) || throw InvalidTime::dueToMalformedTime($hour, Unit::Hour);
+        ($minute >= 0 && $minute < 60) || throw InvalidTime::dueToMalformedTime($minute, Unit::Minute);
+        ($second >= 0 && $second < 60) || throw InvalidTime::dueToMalformedTime($second, Unit::Second);
+        ($nanosecond >= 0 && $nanosecond < 1_000_000_000) || throw InvalidTime::dueToMalformedTime($nanosecond, Unit::Nanosecond);
 
-    public static function midnight(): self
-    {
-        return self::sinceMidnight(Duration::zero());
-    }
-
-    public static function noon(): self
-    {
-        return self::sinceMidnight(Duration::of(hours: 12));
-    }
-
-    public static function endOfDay(): self
-    {
-        return self::sinceMidnight(Duration::of(nanoseconds: 1)->negate());
-    }
-
-    /**
-     * Returns the current time in UTC.
-     */
-    public static function utc(): self
-    {
-        return self::now('UTC');
-    }
-
-    /**
-     * Returns the current time in the given time-zone.
-     *
-     * @param DateTimeInterface|DateTimeZone|non-empty-string $timezone
-     */
-    public static function now(DateTimeInterface|DateTimeZone|string $timezone): self
-    {
-        return self::fromDateTime(new DateTimeImmutable(timezone: InputNormalizer::timezone($timezone)));
+        return self::sinceMidnight(Duration::of(
+            hours: $hour,
+            minutes: $minute,
+            seconds: $second,
+            nanoseconds: $nanosecond,
+        ));
     }
 
     /**
@@ -213,7 +213,7 @@ final class Time implements JsonSerializable
      *
      * @throws TokeiException
      */
-    public function toDateTime(DateTimeInterface|DateTimeZone|string $timeZone): DateTimeImmutable
+    public function today(DateTimeInterface|DateTimeZone|string $timeZone): DateTimeImmutable
     {
         return $this->applyTo(new DateTimeImmutable(timezone: InputNormalizer::timezone($timeZone)));
     }
@@ -312,7 +312,7 @@ final class Time implements JsonSerializable
     /**
      * Returns a new instance of this Time with their properties altered if specified and different.
      *
-     * @throws InvalidTime
+     * @throws TokeiException
      */
     public function with(
         ?int $hour = null,

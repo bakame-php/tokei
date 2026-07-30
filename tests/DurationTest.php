@@ -78,49 +78,6 @@ final class DurationTest extends TestCase
         self::assertSame('-04:05:06', Duration::of(hours: 4, minutes: 5, seconds: 6)->negate()->format(DurationFormat::Timer));
     }
 
-    public function testMicrosecondsToDateInterval(): void
-    {
-        $interval = Duration::of(hours: 27, minutes: 12, seconds: 5, microseconds: 123_456)->toDateInterval();
-
-        self::assertSame(1, $interval->d);
-        self::assertSame(3, $interval->h);
-        self::assertSame(12, $interval->i);
-        self::assertSame(5, $interval->s);
-        self::assertSame(0, $interval->invert);
-        self::assertFalse($interval->days);
-
-        self::assertEqualsWithDelta(0.123456, $interval->f, 0.000001);
-    }
-
-    public function testMicrosecondsToDateIntervalWithDateReference(): void
-    {
-        $interval = Duration::of(hours: 27, minutes: 12, seconds: 5, microseconds: 123_456)->toDateInterval(new DateTime());
-
-        self::assertSame(1, $interval->d);
-        self::assertSame(3, $interval->h);
-        self::assertSame(12, $interval->i);
-        self::assertSame(5, $interval->s);
-        self::assertSame(0, $interval->invert);
-        self::assertSame(1, $interval->days);
-
-        self::assertEqualsWithDelta(0.123456, $interval->f, 0.000001);
-    }
-
-    public function testNegativeMicrosecondsToDateInterval(): void
-    {
-        $interval = Duration::of(microseconds:5_000_000)->negate()->toDateInterval();
-
-        self::assertSame(1, $interval->invert);
-        self::assertSame(5, $interval->s);
-    }
-
-    public function testToDateIntervalWithRelativeDate(): void
-    {
-        $duration = Duration::of(weeks: 5, minutes: 32, seconds: 23, microseconds: 456)->negate();
-        $pureInterval = $duration->toDateInterval();
-        self::assertFalse($pureInterval->days);
-    }
-
     public function testZeroMicroseconds(): void
     {
         $duration = Duration::of();
@@ -1206,12 +1163,11 @@ final class DurationTest extends TestCase
 
     public function test_it_creates_a_zero_duration(): void
     {
-        $native = TimeDuration::fromSeconds(0, 0);
+        $native = TimeDuration::fromSeconds(0);
         $duration = Duration::fromNative($native);
 
         self::assertSame(0, $duration->nanoseconds);
         self::assertSame(0, $duration->sign);
-        self::assertSame(0, TimeDuration::compare($duration->toNative(), $native));
     }
 
     public function test_it_creates_a_positive_duration(): void
