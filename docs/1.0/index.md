@@ -9,6 +9,7 @@ title: Installation
 
 - **PHP >= 8.4** is required but the latest stable version of PHP is recommended.
 - a **64-bit PHP build**.
+- `symfony/polyfill-php86` to use PHP's `SortDirection` Enum in older PHP version.
 
 ## Installation
 

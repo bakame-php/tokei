@@ -10,6 +10,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - Support for PHP8.6 `Time\Duration` using a Polyfill.
 - `Duration::seconds` and `Duration::nanoseconds`
 - `Duration::toNumberString`
+- `symfony/polyfill-php86` requirement to use the package
 
 ### Fixed
 

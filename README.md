@@ -54,6 +54,7 @@ You need:
 
 - **PHP >= 8.4** but the latest stable version of PHP is recommended
 - a **64-bit PHP build**.
+- `symfony/polyfill-php86` to use PHP's `SortDirection` Enum in older PHP version.
 - to be able to get the locale string version of the time you need the `ext-intl` extension or use a polyfill for `IntlDateFormatter`.
 
 ## Documentation
