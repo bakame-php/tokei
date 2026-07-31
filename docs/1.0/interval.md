@@ -159,10 +159,10 @@ But the package also provide convenients method to ease instance comparison:
 
 ```php
 Interval::sameDurationAs(Interval $other): bool
-Interval::longerThan(Interval $other): bool
-Interval::longerThanOrEqual(Interval $other): bool
-Interval::shorterThan(Interval $other): bool
-Interval::shorterThanOrEqual(Interval $other): bool
+Interval::isLongerThan(Interval $other): bool
+Interval::isLongerThanOrEqual(Interval $other): bool
+Interval::isShorterThan(Interval $other): bool
+Interval::isShorterThanOrEqual(Interval $other): bool
 ```
 
 ## Time based comparison

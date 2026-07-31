@@ -521,7 +521,7 @@ final class IntervalSet implements TemporalSet
             }
 
             $current = IntervalType::Circular !== $item->type
-                ? [[$item->linearStart, $item->linearEnd]]
+                ? [self::intervaToLinear($item)]
                 : [[Duration::zero(), Duration::fullDay()]];
 
             foreach ($otherIntervals as $otherInterval) {
@@ -529,8 +529,7 @@ final class IntervalSet implements TemporalSet
                     continue;
                 }
 
-                $bStart = $otherInterval->linearStart;
-                $bEnd = $otherInterval->linearEnd;
+                [$bStart, $bEnd] = self::intervaToLinear($otherInterval);
                 $next = [];
                 foreach ($current as [$start, $end]) {
                     if ($bEnd <= $start || $bStart >= $end) {
@@ -578,8 +577,10 @@ final class IntervalSet implements TemporalSet
         $bSpans = $other->items;
         foreach ($this->union()->items as $aItem) {
             foreach ($bSpans as $bItem) {
-                $start = Duration::maxOf($aItem->linearStart, $bItem->linearStart);
-                $end = Duration::minOf($aItem->linearEnd, $bItem->linearEnd);
+                [$aItemStart, $aItemEnd] = self::intervaToLinear($aItem);
+                [$bItemStart, $bItemEnd] = self::intervaToLinear($bItem);
+                $start = Duration::maxOf($aItemStart, $bItemStart);
+                $end = Duration::minOf($aItemEnd, $bItemEnd);
                 if ($start < $end) {
                     $intersections[] = Interval::fromLinearSpan($start, $end);
                 }
@@ -611,9 +612,10 @@ final class IntervalSet implements TemporalSet
         foreach ($set->items as $item) {
             if ([] !== $merged) {
                 $lastIndex = array_key_last($merged);
-                $prevSpan = $merged[$lastIndex];
-                if ($item->linearStart->isShorterThanOrEqual($prevSpan->linearEnd)) {
-                    $merged[$lastIndex] = Interval::fromLinearSpan($prevSpan->linearStart, Duration::maxOf($prevSpan->linearEnd, $item->linearEnd));
+                [$itemLinearStart, $itemLinearEnd] = self::intervaToLinear($item);
+                [$prevSpanLinearStart, $prevSpanLinearEnd] = self::intervaToLinear($merged[$lastIndex]);
+                if ($itemLinearStart->isShorterThanOrEqual($prevSpanLinearEnd)) {
+                    $merged[$lastIndex] = Interval::fromLinearSpan($prevSpanLinearStart, Duration::maxOf($prevSpanLinearEnd, $itemLinearEnd));
                     continue;
                 }
             }
@@ -627,8 +629,8 @@ final class IntervalSet implements TemporalSet
             if ($first->overlaps($last)) {
                 array_shift($merged);
                 array_pop($merged);
-
-                $merged[] = Interval::fromLinearSpan($last->linearStart, $first->linearEnd->add(Duration::of(hours:  24)));
+                [, $firstEnd] = self::intervaToLinear($first);
+                $merged[] = Interval::fromLinearSpan($last->start->offset(), $firstEnd->add(Duration::of(hours:  24)));
             }
         }
 
@@ -710,8 +712,8 @@ final class IntervalSet implements TemporalSet
     {
         $directionFactor = SortDirection::Ascending === $direction ? 1 : -1;
         $keyExtractor = match ($bound) {
-            Bound::Start => static fn (Interval $i): Duration => $i->linearStart,
-            Bound::End => static fn (Interval $i): Duration => $i->linearEnd,
+            Bound::Start => static fn (Interval $i): Duration => $i->start->offset(),
+            Bound::End => static fn (Interval $i): Duration => $i->start->offset()->add($i->duration),
         };
 
         return static function (Interval $a, Interval $b) use ($keyExtractor, $directionFactor): int {
@@ -719,5 +721,16 @@ final class IntervalSet implements TemporalSet
 
             return 0 !== $result ? $result : Duration::compare($a, $b);
         };
+    }
+
+    /**
+     *
+     * @return array{0: Duration, 1: Duration}
+     */
+    private static function intervaToLinear(Interval $interval): array
+    {
+        $start = $interval->start->offset();
+
+        return [$start, $start->add($interval->duration)];
     }
 }

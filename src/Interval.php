@@ -23,24 +23,17 @@ use const FILTER_VALIDATE_INT;
 /**
  * Represents a start-inclusive, end-exclusive interval between two times on a 24-hour circular clock.
  */
-final class Interval implements JsonSerializable
+final readonly class Interval implements JsonSerializable
 {
     private const string REGEXP_ISO80000 = '/^\[(?<start>[^,)]*),(?<end>[^,)]*)\)$/';
     private const string REGEXP_BOURBAKI = '/^\[(?<start>[^,\[]*),(?<end>[^,\[]*)\[$/';
     private const string REGEXP_ISO8601 = '/^(?<start>[^\/]+)\/(?<end>[^\/]+)$/';
 
-    public readonly Time $start;
-    public readonly Duration $duration;
-    public readonly Time $end;
-    public readonly IntervalType $type;
+    public Time $end;
+    public IntervalType $type;
 
-    public Duration $linearStart { get => $this->start->offset(); }
-    public Duration $linearEnd  { get => $this->linearStart->add($this->duration); }
-
-    private function __construct(Time $start, Duration $duration)
+    private function __construct(public Time $start, public Duration $duration)
     {
-        $this->start = $start;
-        $this->duration = $duration;
         $this->end = $this->start->add($this->duration);
         $this->type = $this->setType();
     }
@@ -61,7 +54,7 @@ final class Interval implements JsonSerializable
         [$properties] = $data;
         $this->start = $properties['start'];
         $this->duration = $properties['duration'];
-        $this->end = Time::sinceMidnight($this->linearEnd);
+        $this->end = Time::sinceMidnight($this->start->offset()->add($this->duration));
         $this->type = $this->setType();
     }
 
@@ -248,7 +241,8 @@ final class Interval implements JsonSerializable
     }
 
     /**
-     * Returns a new instance from linear start end ending point.
+     * @internal Used internally by IntervalSet to reconstruct an Interval from
+     *           its linear representation. This method is not part of the public API.
      *
      * @throws TokeiException
      */
@@ -569,8 +563,8 @@ final class Interval implements JsonSerializable
         }
 
         $sinceMidnight = InputNormalizer::time($time)->offset();
-        $linearStart = $this->linearStart;
-        $linearEnd = $this->linearEnd;
+        $linearStart = $this->start->offset();
+        $linearEnd = $linearStart->add($this->duration);
         if ($linearEnd->isLongerThan($linearStart) && $sinceMidnight->isShorterThan($linearStart)) {
             $sinceMidnight = $sinceMidnight->add(Duration::fullDay());
         }

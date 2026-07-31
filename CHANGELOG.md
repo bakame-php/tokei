@@ -16,6 +16,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 - **BC Break:**  mathematical operation methods of `Duration` use full names
 - **BC Break:** `Time::toDateTime` is renamed `Time::today`
+  **BC Break:** `Interval::fromLinearSpan*` is marked as internal and removed fron Public APU.
 
 ### Deprecated
 
@@ -24,7 +25,8 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 ### Removed
 
 - **BC Break:** `Duration` component public properties are removed use `Duration::$seconds` and `Duration::$nanoseconds` instead
-- **BC Break:** `Duration::toDateInterval` with no replacement.
+- **BC Break:** `Duration::toDateInterval` removed with no replacement.
+- **BC Break:** `Interval::linear*` public properties are removed with no replacement.
 - **BC Break:** Removed manual autoload script.
 
 ## [0.3.0 - chidorisō](https://github.com/bakame-php/tokei/compare/0.2.0...0.3.0) - 2026-07-21
