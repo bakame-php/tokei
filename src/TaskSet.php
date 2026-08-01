@@ -107,7 +107,7 @@ final class TaskSet implements TemporalSet
         usort(
             $res,
             static fn (Task $a, Task $b): int =>
-            0 !== ($cmp = Duration::compare($a->interval->start, $b->interval->start))
+                0 !== ($cmp = Duration::compare($a->interval->start, $b->interval->start))
                 ? $cmp
                 : Duration::compare($a, $b)
         );
@@ -503,7 +503,7 @@ final class TaskSet implements TemporalSet
         };
 
         /**
-         * @throws InvalidDuration|TemporalException
+         * @throws TokeiException
          */
         $flush = static fn (?Time $from, Time $to, Identifiers $labelsA, Identifiers $labelsB): ?Task =>
             (null === $from || $from->equals($to) || $labelsA->isEmpty() || $labelsB->isEmpty())

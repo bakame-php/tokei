@@ -13,8 +13,6 @@ title: Installation
 
 ## Installation
 
-### Using Composer
-
 **Tokei** is available on [Packagist](https://packagist.org/packages/bakame/tokei) and can be installed using [Composer](https://getcomposer.org/):
 
 ~~~

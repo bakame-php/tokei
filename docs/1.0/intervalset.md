@@ -82,7 +82,7 @@ IntervalSet::complement(): IntervalSet
 IntervalSet::intersect(IntervalSet|Interval ...$others): IntervalSet
 IntervalSet::difference(IntervalSet|Interval ...$others): IntervalSet
 IntervalSet::gaps(): IntervalSet
-IntervalSet::sorted(Bound $by = Bound::Start, Direction $direction = Direction::Ascending): IntervalSet
+IntervalSet::sorted(Bound $by = Bound::Start, SortDirection $direction = SortDirection::Ascending): IntervalSet
 IntervalSet::roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): IntervalSet
 IntervalSet::roundDurationTo(Unit $unit, SnapMode $mode = SnapMode::Nearest, Bound $anchor = Bound::Start): IntervalSet
 IntervalSet::add(Duration $duration): IntervalSet

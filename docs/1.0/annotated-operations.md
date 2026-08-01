@@ -1,14 +1,14 @@
 ---
 layout: default
-title: Annotated Operations
+title: Identified Operations
 ---
 
 # Introduction
 
-Support for annotated Temporal Value Objects means that temporal objects can now carry identifiers
+Support for identified Temporal Value Objects means that temporal objects can now carry identifiers
 and preserve that information through temporal operations.
 
-The following example demonstrates the difference between operating on annotated temporal values
+The following example demonstrates the difference between operating on identified temporal values
 and operating only on their underlying time ranges.
 
 ## Identified Temporal Value Objects
@@ -62,9 +62,9 @@ for each resulting interval:
 - `[01:00,02:00)` → both `early-morning` and `late-evening`
 - `[02:00,03:00)` → only `early-morning`
 
-## Unannotated Temporal Value Objects
+## Unidentified Temporal Value Objects
 
-We can create an unannotated version of the task set by converting it to an IntervalSet:
+We can create an unidentified version of the task set by converting it to an IntervalSet:
 
 ```php
 $intervalSet = new IntervalSet($taskSet);

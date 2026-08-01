@@ -10,7 +10,7 @@ version:
             IntervalSet: '/1.0/intervalset/'
             Available Enums: '/1.0/enums/'
             Accepted Input: '/1.0/accepted-input-types/'
-        Annotated Values:
+        Identified Values:
             Introduction: '/1.0/annotated-operations/'
             Identifiers: '/1.0/identifiers/'
             Event: '/1.0/event/'

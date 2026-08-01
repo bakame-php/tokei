@@ -25,9 +25,9 @@ generally be learned first.
 - [Interval](interval.md)
 - [IntervalSet](intervalset.md)
 
-## Annotated Temporal Values
+## Identified Temporal Values
 
-Annotated temporal values extend the core temporal primitives by associating identifiers
+Identified temporal values extend the core temporal primitives by associating identifiers
 with them while preserving the same temporal semantics. They enrich existing temporal
 models with identification and context without introducing separate temporal behavior.
 
@@ -35,14 +35,14 @@ models with identification and context without introducing separate temporal beh
 
 - [Identifiers](identifiers.md)
 
-**Annotated Temporal Values**
+**Identified Temporal Values**
 
 - [Event](event.md)
 - [Task](task.md)
 - [EventSet](eventset.md)
 - [TaskSet](taskset.md)
 
-| Primitives  | Annotated Values |
+| Primitives  | Identified Values |
 |-------------|------------------|
 | Time        | Event            |
 | Interval    | Task             |
@@ -55,5 +55,5 @@ Keep the following in mind:
 - Learn `Time`, `Duration`, `Interval`, `IntervalSet` first.
 - `Event`, `Task` and `TaskSet` are enrichments rather than separate models.
 - Temporal logic lives in the primitives.
-- Annotated values primarily add identification and contextual information through `Identifiers`.
+- Identified values primarily add identification and contextual information through `Identifiers`.
 - Check the [Accepted Input Types](accepted-input-types.md) documentation to understand how values are converted between temporal representations for easier day-to-day usage.

@@ -32,6 +32,9 @@ final readonly class Interval implements JsonSerializable
     public Time $end;
     public IntervalType $type;
 
+    /**
+     * @throws TokeiException
+     */
     private function __construct(public Time $start, public Duration $duration)
     {
         $this->end = $this->start->add($this->duration);
@@ -48,6 +51,8 @@ final readonly class Interval implements JsonSerializable
 
     /**
      * @param array{0: array{start: Time, duration: Duration}, 1: array{}} $data
+     *
+     * @throws TokeiException
      */
     public function __unserialize(array $data): void
     {
@@ -70,7 +75,7 @@ final readonly class Interval implements JsonSerializable
     /**
      * Returns a new instance from a start time and a duration.
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
     public static function since(
         Time|Event|DateTimeInterface $start,
@@ -86,7 +91,7 @@ final readonly class Interval implements JsonSerializable
      *
      * The end time is not included in the interval
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
     public static function until(
         Time|Event|DateTimeInterface $end,
@@ -101,7 +106,7 @@ final readonly class Interval implements JsonSerializable
     /**
      * Returns a new instance where time represents the interval mid-time and a given duration.
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
     public static function around(
         Time|Event|DateTimeInterface $midRange,
@@ -120,7 +125,7 @@ final readonly class Interval implements JsonSerializable
      *
      * The end time is not included in the interval
      *
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
     public static function between(
         Time|Event|DateTimeInterface $start,
@@ -135,7 +140,7 @@ final readonly class Interval implements JsonSerializable
     /**
      * @see IntervalFormat::decode()
      *
-     * @throws InvalidInterval
+     * @throws TokeiException
      */
     public static function fromFormat(
         string $notation,
@@ -168,7 +173,7 @@ final readonly class Interval implements JsonSerializable
     }
 
     /**
-     * @throws InvalidInterval|InvalidTime|InvalidDuration
+     * @throws TokeiException
      */
     private static function parseMathInterval(string $start, string $end, string $data, ?Unit $unit, IntervalFormat $format): Interval
     {
@@ -209,7 +214,7 @@ final readonly class Interval implements JsonSerializable
     }
 
     /**
-     * @throws InvalidInterval|InvalidTime
+     * @throws TokeiException
      */
     private static function createTime(int|string|float $value, ?Unit $unit, string $data, IntervalFormat $format): Time
     {
