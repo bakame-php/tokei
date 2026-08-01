@@ -8,6 +8,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 - Support for nanoseconds to `Tokei\Duration`
 - Support for PHP8.6 `Time\Duration`
+- `Duration::isNegative()` method to complement `Duration::isZero()`
 - `Duration::seconds` and `Duration::nanoseconds`
 - `Duration::toNumberString`
 - `symfony/polyfill-php86` requirement to use PHP8.6 `SortDirection` Enum
@@ -16,7 +17,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 - **BC Break:**  mathematical operation methods of `Duration` use full names
 - **BC Break:** `Time::toDateTime` is renamed `Time::today`
-  **BC Break:** `Interval::fromLinearSpan*` is marked as internal and removed fron Public APU.
+  **BC Break:** `Interval::fromLinearSpan*` is marked as internal and removed from Public APU.
 
 ### Deprecated
 

@@ -46,7 +46,8 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(weeks:5, days:6, hours: 2, minutes: 15, seconds: 42, microseconds: 123_456);
 
-        self::assertSame(1, $duration->sign);
+        self::assertFalse($duration->isZero());
+        self::assertFalse($duration->isNegative());
         self::assertSame(3_550_542_123_456, $duration->in(Unit::Microsecond));
         self::assertSame('5w6d2h15m42s123456µs', $duration->format(DurationFormat::Compact));
         self::assertSame(123_456_000, $duration->nanoseconds);
@@ -57,7 +58,7 @@ final class DurationTest extends TestCase
     {
         $duration = Duration::of(microseconds: 1_500_000)->negate();
 
-        self::assertSame(-1, $duration->sign);
+        self::assertTrue($duration->isNegative());
         self::assertSame('-1s500ms', $duration->format(DurationFormat::Compact));
         self::assertSame(500_000_000, $duration->nanoseconds);
         self::assertSame(1, $duration->seconds);
@@ -83,10 +84,11 @@ final class DurationTest extends TestCase
         $duration = Duration::of();
 
         self::assertSame('00:00:00', $duration->format(DurationFormat::Timer));
-        self::assertSame(0, $duration->sign);
+        self::assertTrue($duration->isZero());
         self::assertSame(0, $duration->in(Unit::Microsecond));
         self::assertSame('0s', $duration->format(DurationFormat::Compact));
         self::assertTrue($duration->isZero());
+        self::assertFalse($duration->isNegative());
         self::assertTrue($duration->equals(Duration::zero()));
     }
 
@@ -1167,7 +1169,7 @@ final class DurationTest extends TestCase
         $duration = Duration::fromNative($native);
 
         self::assertSame(0, $duration->nanoseconds);
-        self::assertSame(0, $duration->sign);
+        self::assertTrue($duration->isZero());
     }
 
     public function test_it_creates_a_positive_duration(): void
@@ -1177,7 +1179,8 @@ final class DurationTest extends TestCase
 
         self::assertSame(42, $duration->seconds);
         self::assertSame(123_456_000, $duration->nanoseconds);
-        self::assertSame(1, $duration->sign);
+        self::assertFalse($duration->isNegative());
+        self::assertFalse($duration->isZero());
     }
 
     public function test_it_creates_a_negative_duration(): void
@@ -1187,7 +1190,8 @@ final class DurationTest extends TestCase
 
         self::assertSame(42, $duration->seconds);
         self::assertSame(123_456_000, $duration->nanoseconds);
-        self::assertSame(-1, $duration->sign);
+        self::assertTrue($duration->isNegative());
+        self::assertFalse($duration->isZero());
     }
 
     public function test_it_truncates_sub_microsecond_precision(): void
@@ -1206,7 +1210,8 @@ final class DurationTest extends TestCase
 
         self::assertSame(9_223_372_035, $duration->seconds);
         self::assertSame(999_999_999, $duration->nanoseconds);
-        self::assertSame(1, $duration->sign);
+        self::assertFalse($duration->isNegative());
+        self::assertFalse($duration->isZero());
     }
 
     public function test_it_accepts_the_minimum_supported_duration(): void
@@ -1216,7 +1221,7 @@ final class DurationTest extends TestCase
 
         self::assertSame(9_223_372_035, $duration->seconds);
         self::assertSame(999_999_999, $duration->nanoseconds);
-        self::assertSame(-1, $duration->sign);
+        self::assertTrue($duration->isNegative());
     }
 
     public function test_it_truncates_nanoseconds_to_the_nearest_lower_microsecond(): void

@@ -45,7 +45,11 @@ final readonly class DurationParts
         $this->minute = intdiv($remaining, 60);
         $this->second = $remaining % 60;
         $this->nanoseconds = $duration->nanoseconds;
-        $this->sign = $duration->sign;
+        $this->sign = match (true) {
+            $duration->isZero() => 0,
+            $duration->isNegative() => -1,
+            default => 1,
+        };
         $this->seconds = $duration->seconds;
     }
 

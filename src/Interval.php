@@ -68,7 +68,7 @@ final readonly class Interval implements JsonSerializable
         return match (Duration::compare($this->start, $this->end)) {
             1 => IntervalType::Overflow,
             -1 => IntervalType::Linear,
-            0 => 0 === $this->duration->sign ? IntervalType::Collapsed : IntervalType::Circular,
+            0 => $this->duration->isZero() ? IntervalType::Collapsed : IntervalType::Circular,
         };
     }
 
@@ -254,7 +254,7 @@ final readonly class Interval implements JsonSerializable
     public static function fromLinearSpan(Duration $linearStart, Duration $linearEnd): self
     {
         $duration = $linearEnd->sub($linearStart);
-        -1 !== $duration->sign || throw new InvalidInterval('Invalid linear span: the start must be shorter or equal to the end linear span.');
+        !$duration->isNegative() || throw new InvalidInterval('Invalid linear span: the start must be shorter or equal to the end linear span.');
 
         return new self(Time::sinceMidnight($linearStart->absolute()), $duration);
     }

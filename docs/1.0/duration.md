@@ -61,7 +61,8 @@ $duration = Duration::fromDateInterval(new DateInterval('PT23M3S'));
 $duration->in(Unit::Microsecond); // returns 1383_000_000
 $duration->in(Unit::Minute);      // returns 23.05
 $duration->sign;                  // returns 1
-$duration->isZero() ;             // returns false
+$duration->isZero();              // returns false
+$duration->isNegative();          // returns false
 $duration->nanoseconds;           // returns 0
 $duration->seconds;               // returns 1383
 ```

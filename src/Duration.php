@@ -345,6 +345,14 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
+     * Returns true when the duration is zero, false otherwise.
+     */
+    public function isNegative(): bool
+    {
+        return -1 === $this->sign;
+    }
+
+    /**
      * Invert the duration sign.
      *
      * @throws TokeiException
