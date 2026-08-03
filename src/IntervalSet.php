@@ -28,7 +28,7 @@ final class IntervalSet implements TemporalSet
 {
     /** @var list<Interval> */
     private readonly array $items;
-    private readonly Duration $duration;
+    private readonly Duration $totalDuration;
     /** @var array<non-empty-string, TemporalSearch<Interval>> */
     private array $engine;
 
@@ -38,7 +38,7 @@ final class IntervalSet implements TemporalSet
     public function __construct(Interval|IntervalSet|Task|TaskSet ...$items)
     {
         $this->items = self::flatten(...$items);
-        $this->duration = Duration::zero()->add(...$this->items);
+        $this->totalDuration = Duration::zero()->add(...$this->items);
     }
 
     /**
@@ -59,7 +59,7 @@ final class IntervalSet implements TemporalSet
         [$properties] = $data;
         $new = new self(...$properties['intervals']);
         $this->items = $new->items;
-        $this->duration = $new->duration;
+        $this->totalDuration = $new->totalDuration;
     }
 
     /**
@@ -113,9 +113,9 @@ final class IntervalSet implements TemporalSet
         return $this->items;
     }
 
-    public function duration(): Duration
+    public function totalDuration(): Duration
     {
-        return $this->duration;
+        return $this->totalDuration;
     }
 
     /**
@@ -200,21 +200,11 @@ final class IntervalSet implements TemporalSet
     /**
      * @throws InvalidDuration
      */
-    public function push(Interval|IntervalSet|Task|TaskSet ...$items): self
+    public function append(Interval|IntervalSet|Task|TaskSet ...$items): self
     {
         $items = self::flatten(...$items);
 
         return [] === $items ? $this : new self(...$this->items, ...$items);
-    }
-
-    /**
-     * @throws InvalidDuration
-     */
-    public function unshift(Interval|IntervalSet|Task|TaskSet ...$items): self
-    {
-        $set = new self(...$items);
-
-        return $set->isEmpty() ? $this : $set->push($this);
     }
 
     /**
@@ -335,11 +325,6 @@ final class IntervalSet implements TemporalSet
         return $this->filter(fn (Interval $interval): bool => $interval->includes($time));
     }
 
-    public function outsideOf(Time|Event|DateTimeInterface $time): self
-    {
-        return $this->filter(fn (Interval $interval): bool => !$interval->includes($time));
-    }
-
     public function abuts(Interval|Task $interval): self
     {
         return $this->filter(fn (Interval $item): bool => $item->abuts($interval));
@@ -355,32 +340,27 @@ final class IntervalSet implements TemporalSet
         return $this->filter(fn (Interval $item): bool => $item->contains($interval));
     }
 
-    public function add(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
+    public function shift(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
         return $duration->isZero()
             ? $this
-            : $this->transform(fn (Interval $interval): Interval => $interval->add($duration));
+            : $this->transform(fn (Interval $interval): Interval => $interval->shift($duration));
     }
 
-    public function sub(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
+    public function expand(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
         return $duration->isZero()
             ? $this
-            : $this->transform(fn (Interval $interval): Interval => $interval->sub($duration));
+            : $this->transform(fn (Interval $interval): Interval => $interval->expand($duration));
     }
 
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
         return $this->transform(static fn (Interval $interval): Interval => $interval->roundTo($unit, $mode));
-    }
-
-    public function roundDurationTo(Unit $unit, SnapMode $mode = SnapMode::Nearest, Bound $anchor = Bound::Start): self
-    {
-        return $this->transform(static fn (Interval $interval): Interval => $interval->roundDurationTo($unit, $mode, $anchor));
     }
 
     /**
@@ -603,7 +583,7 @@ final class IntervalSet implements TemporalSet
      */
     public function union(Interval|IntervalSet|Task|TaskSet ...$others): self
     {
-        $set = $this->push(...$others)->sorted();
+        $set = $this->append(...$others)->sorted();
         if (1 >= count($set)) {
             return $set;
         }

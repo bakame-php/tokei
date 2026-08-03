@@ -104,7 +104,7 @@ final class EventSetTest extends TestCase
     public function test_push_is_immutable(): void
     {
         $set = new EventSet($this->event(10));
-        $new = $set->push($this->event(20));
+        $new = $set->append($this->event(20));
 
         self::assertCount(1, $set);
         self::assertCount(2, $new);
@@ -175,9 +175,8 @@ final class EventSetTest extends TestCase
         $interval = Interval::between(Time::at(23), Time::at(2));
 
         self::assertCount(3, $set->inside($interval));
-        self::assertCount(1, $set->outside($interval));
-        self::assertCount(3, $set->before(Time::at(23)));
-        self::assertCount(1, $set->after(Time::at(10)));
+        self::assertCount(3, $set->isBefore(Time::at(23)));
+        self::assertCount(1, $set->isAfter(Time::at(10)));
     }
 
     /* =========================================================
@@ -249,7 +248,7 @@ final class EventSetTest extends TestCase
     {
         $set = new EventSet($this->event(10));
 
-        $set = $set->push($this->event(5));
+        $set = $set->append($this->event(5));
         self::assertInstanceOf(Event::class, $set->first());
         self::assertSame(5, $set->first()->at->hour);
         self::assertInstanceOf(Event::class, $set->last());
@@ -596,7 +595,7 @@ final class EventSetTest extends TestCase
             Event::at(Time::at(9), 'A'),
             Event::at(Time::at(10), 'B'),
             Event::at(Time::at(11), 'C')
-        )->add(Duration::of(hours: 2));
+        )->shift(Duration::of(hours: 2));
 
         self::assertFalse($shifts->isEmpty());
         self::assertCount(3, $shifts);

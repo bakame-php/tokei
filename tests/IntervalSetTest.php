@@ -43,7 +43,7 @@ final class IntervalSetTest extends TestCase
         self::assertCount(0, $set);
         self::assertNull($set->first());
         self::assertNull($set->last());
-        self::assertTrue(Duration::zero()->equals($set->duration()));
+        self::assertTrue(Duration::zero()->equals($set->totalDuration()));
     }
 
     public function test_it_preserves_order(): void
@@ -55,7 +55,7 @@ final class IntervalSetTest extends TestCase
 
         self::assertSame($a, $set->first());
         self::assertSame($b, $set->last());
-        self::assertFalse(Duration::zero()->equals($set->duration()));
+        self::assertFalse(Duration::zero()->equals($set->totalDuration()));
         self::assertTrue($set->has($a));
         self::assertTrue($set->has($a, $b));
         self::assertFalse($set->has($a, $b, $notFound));
@@ -82,8 +82,7 @@ final class IntervalSetTest extends TestCase
     {
         $set = new IntervalSet();
 
-        self::assertSame($set, $set->push());
-        self::assertSame($set, $set->unshift());
+        self::assertSame($set, $set->append());
     }
 
     public function test_push_appends_intervals(): void
@@ -91,16 +90,11 @@ final class IntervalSetTest extends TestCase
         $a = Interval::between(Time::at(10), Time::at(11));
         $b = Interval::between(Time::at(12), Time::at(13));
 
-        $setP = new IntervalSet($a)->push($b);
+        $setP = new IntervalSet($a)->append($b);
 
         self::assertCount(2, $setP);
         self::assertSame($a, $setP->first());
         self::assertSame($b, $setP->last());
-
-        $setU = new IntervalSet($a)->unshift($b);
-        self::assertCount(2, $setU);
-        self::assertSame($a, $setU->last());
-        self::assertSame($b, $setU->first());
     }
 
     public function test_matching_methods(): void
@@ -842,6 +836,22 @@ final class IntervalSetTest extends TestCase
         $intervals = new IntervalSet();
 
         self::assertSame($intervals, $intervals->gaps());
+    }
+
+    public function test_shift_by(): void
+    {
+        $a = Interval::between(Time::at(10), Time::at(11));
+        $b = Interval::between(Time::at(12), Time::at(13));
+        $set = new IntervalSet($a, $b);
+
+        $new = $set->shift(Duration::zero());
+        self::assertSame($set, $new);
+
+        $newAdd = $set->shift(Duration::of(hours: 1));
+        self::assertTrue(
+            $set->get(0)->start->distance(
+                $newAdd->get(0)->start
+            )->equals(Duration::of(hours: 1)));
     }
 }
 

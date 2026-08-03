@@ -29,10 +29,7 @@ TaskSet::fromIntervals(IntervalSet $intervals, Identifiers $identifiers): self
 ## Accessors
 
 ```php
-TaskSet::duration(): Duration
-TaskSet::count(): int
-TaskSet::getIterator(): Traversable
-TaskSet::jsonSerialize(): array
+TaskSet::totalDuration(): Duration
 TaskSet::all(): array
 TaskSet::isEmpty(): bool
 TaskSet::indexOf(Task $task): ?int
@@ -49,53 +46,108 @@ TaskSet::last(): ?Task
 ```php
 TaskSet::formatAll(IntervalFormat $format, ?Unit $unit = null): array
 ```
-
-## Temporal selection methods
+Supports the same formatting arguments as the `IntervalSet::formatAll()` method but enhances
+the result by including the tasks identifiers using `Identifiers::toCommaSeparated` method results.
 
 ```php
-TaskSet::next(Time $atOrAfter, SearchMode $mode, Bound $using = Bound::Start): self
-TaskSet::previous(Time $before, SearchMode $mode, Bound $using = Bound::Start): self
-TaskSet::nearest(Time $around, Bound $using = Bound::Start): self
-TaskSet::abuts(Interval $interval): self
-TaskSet::overlaps(Interval $interval): self
-TaskSet::contains(Interval $interval): self
-TaskSet::includes(Time $time): self
-TaskSet::outsideOf(Time $time): self
+$taskSet = new TaskSet(
+    Task::for(Interval::since(Time::at(hour: 1), Duration::of(hours: 2)), 'early-morning'),
+    Task::for(Interval::between(Time::at(hour: 9), Time::at(hour:12, minute: 30)), 'morning'),
+    Task::for(Interval::between(Time::at(hour:19), Time::at(hour:23, minute: 30)), 'evening'),
+);
+$taskSet->formatAll(IntervalFormat::Iso80000, Unit::Hour)
+// returns
+// [
+//     "[1,3);early-morning",
+//     "[9,12.500000);morning",
+//     "1[19,23.500000);evening"
+// ]
+```
+
+## PHP Integration
+
+The class implements PHP's `Countable`, `IteratorAggregate` and `Serializable` interfaces.
+For JSON serialization, the class uses the same serialization as the `IntervalSet` class.
+The method returns a list of serialized `Task` in their JSON representation.
+
+```php
+TaskSet::count(): int
+TaskSet::getIterator(): iterable<Task>
+TaskSet::jsonSerialize(): list<Task>
+```
+
+_`(TaskSet::jsonSerialize()` returns the same output as `TaskSet::all()` method._
+
+```php
+
+$taskSet = new TaskSet(
+    Task::for(Interval::since(Time::at(hour: 1), Duration::of(hours: 2)), 'early-morning'),
+    Task::for(Interval::between(Time::at(hour: 9), Time::at(hour:12, minute: 30)), 'morning'),
+    Task::for(Interval::between(Time::at(hour:19), Time::at(hour:23, minute: 30)), 'evening'),
+);
+echo json_encode($taskSet, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);
+// returns
+// [
+//     "01:00:00/PT2H;early-morning",
+//     "09:00:00/PT3H30M;morning",
+//     "19:00:00/PT4H30M;evening"
+// ]
+```
+
+## Temporal queries methods
+
+```php
+TaskSet::next(Time $atOrAfter, SearchMode $mode, Bound $using = Bound::Start): TaskSet
+TaskSet::previous(Time $before, SearchMode $mode, Bound $using = Bound::Start): TaskSet
+TaskSet::nearest(Time $around, Bound $using = Bound::Start): TaskSet
+TaskSet::includes(Time $time): TaskSet
+TaskSet::contains(Interval $interval): TaskSet
+TaskSet::overlaps(Interval $interval): TaskSet
+TaskSet::abuts(Interval $interval): TaskSet
 ```
 
 ## Temporal algebra methods
 
 ```php
-TaskSet::roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
-TaskSet::roundDurationTo(Unit $unit, SnapMode $mode = SnapMode::Nearest, Bound $anchor = Bound::Start): self
-TaskSet::gaps(): self
-TaskSet::intersect(iterable $sets): self
-TaskSet::union(iterable $sets = []): self
-TaskSet::difference(iterable $sets): self
-TaskSet::complement(): self
-TaskSet::add(Duration $duration): self
-TaskSet::sub(Duration $duration): self
+TaskSet::union(Task|TaskSet ...$others): TaskSet 
+TaskSet::complement(): TaskSet
+TaskSet::intersect(Task|TaskSet ...$others): TaskSet
+TaskSet::difference(Task|TaskSet ...$others): TaskSet
+TaskSet::gaps(): TaskSet
 ```
 
-## Collection methods
+## Temporal transformation methods
 
 ```php
-TaskSet::getIterator(): Traversable
-TaskSet::jsonSerialize(): array
-TaskSet::all(): array
-TaskSet::isEmpty(): bool
-TaskSet::firstMatching(callable $predicate): ?Task
-TaskSet::lastMatching(callable $predicate): ?Task
-TaskSet::any(callable $predicate): bool
-TaskSet::every(callable $predicate): bool
-TaskSet::map(callable $callback): iterable
-TaskSet::transform(callable $callback): self
-TaskSet::filter(callable $callback): self
-TaskSet::reduce(callable $callback, mixed $initial = null): mixed
-TaskSet::roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
-TaskSet::roundDurationTo(Unit $unit, SnapMode $mode = SnapMode::Nearest, Bound $anchor = Bound::Start): self
+TaskSet::sorted(Bound $by = Bound::Start, SortDirection $direction = SortDirection::Ascending): TaskSet
+TaskSet::roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): TaskSet
+TaskSet::shift(Duration $duration): TaskSet
+TaskSet::expand(Duration $duration): TaskSet
+```
+
+## Collection queries methods
+
+```php
+TaskSet::any(callable $callback): bool
+TaskSet::every(callable $callback): bool
 TaskSet::each(callable $callback): bool
-TaskSet::push(Task ...$tasks): self
-TaskSet::remove(int ...$offsets): self
-TaskSet::replace(int $offset, Task $item): self
+TaskSet::reduce(callable $callback, mixed $initial = null): mixed
+TaskSet::firstMatching(callable $callback): ?Task
+TaskSet::lastMatching(callable $callback): ?Task
+```
+
+## Collection transformations methods
+
+```php
+TaskSet::map(callable $callback): iterable
+TaskSet::transform(callable $callback): TaskSet
+TaskSet::filter(callable $callback): TaskSet
+```
+
+## Collection builders methods
+
+```php
+TaskSet::append(Task|TaskSet ...$items): TaskSet
+TaskSet::remove(int ...$offset): TaskSet
+TaskSet::replace(int $offset, Interval $newInterval): TaskSet
 ```

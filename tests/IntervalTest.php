@@ -472,7 +472,7 @@ final class IntervalTest extends TestCase
 
         self::assertSame(
             $range,
-            $range->add(Duration::zero())
+            $range->shift(Duration::zero())
         );
     }
 
@@ -480,7 +480,7 @@ final class IntervalTest extends TestCase
     {
         $range = Interval::between(Time::at(10), Time::at(12));
 
-        $shifted = $range->add(Duration::of(hours: 2));
+        $shifted = $range->shift(Duration::of(hours: 2));
 
         self::assertSame('[12:00:00,14:00:00)', $shifted->format(IntervalFormat::Iso80000));
     }
@@ -489,7 +489,7 @@ final class IntervalTest extends TestCase
     {
         $range = Interval::between(Time::at(22), Time::at(2));
 
-        $shifted = $range->add(Duration::of(hours: 3));
+        $shifted = $range->shift(Duration::of(hours: 3));
 
         self::assertSame('[01:00:00,05:00:00)', $shifted->format(IntervalFormat::Iso80000));
     }

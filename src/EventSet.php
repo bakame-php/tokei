@@ -15,6 +15,7 @@ use function array_diff_key;
 use function array_key_exists;
 use function array_map;
 use function count;
+use function in_array;
 use function usort;
 
 /**
@@ -301,24 +302,6 @@ final class EventSet implements TemporalSet
         return true;
     }
 
-    public function push(Event|EventSet ...$items): self
-    {
-        if ([] === $items) {
-            return $this;
-        }
-
-        $itemList = [];
-        foreach ($items as $item) {
-            if ($item instanceof EventSet) {
-                $itemList = [...$itemList, ...$item];
-                continue;
-            }
-            $itemList[] = $item;
-        }
-
-        return new self(...$this->items, ...$itemList);
-    }
-
     public function gaps(): IntervalSet
     {
         $nbItems = count($this->items);
@@ -415,24 +398,17 @@ final class EventSet implements TemporalSet
         return $this->filter(fn (Event $event): bool => $interval->includes($event));
     }
 
-    public function outside(Interval|Task $interval): self
-    {
-        $interval = InputNormalizer::interval($interval);
-
-        return $this->filter(fn (Event $event): bool => !$interval->includes($event));
-    }
-
     public function at(Time|Event|DateTimeInterface $time): self
     {
         return $this->filter(fn (Event $event): bool => $event->at->equals($time));
     }
 
-    public function before(Time|Event|DateTimeInterface $time): self
+    public function isBefore(Time|Event|DateTimeInterface $time): self
     {
         return $this->filter(fn (Event $event): bool => $event->at->isBefore($time));
     }
 
-    public function after(Time|Event|DateTimeInterface  $time): self
+    public function isAfter(Time|Event|DateTimeInterface  $time): self
     {
         return $this->filter(fn (Event $event): bool => $event->at->isAfter($time));
     }
@@ -452,7 +428,7 @@ final class EventSet implements TemporalSet
         return new self(...$this->engine()->nearest($around));
     }
 
-    public function add(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
+    public function shift(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
@@ -461,17 +437,72 @@ final class EventSet implements TemporalSet
             : $this->transform(fn (Event $event): Event => $event->occursOn($event->at->add($duration)));
     }
 
-    public function sub(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
-    {
-        $duration = InputNormalizer::duration($duration);
-
-        return $duration->isZero()
-            ? $this
-            : $this->transform(fn (Event $event): Event => $event->occursOn($event->at->sub($duration)));
-    }
-
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
         return $this->transform(static fn (Event $event): Event => $event->occursOn($event->at->roundTo($unit, $mode)));
+    }
+
+    public function append(Event|EventSet ...$items): self
+    {
+        if ([] === $items) {
+            return $this;
+        }
+
+        $itemList = [];
+        foreach ($items as $item) {
+            if ($item instanceof EventSet) {
+                $itemList = [...$itemList, ...$item];
+                continue;
+            }
+            $itemList[] = $item;
+        }
+
+        return new self(...$this->items, ...$itemList);
+    }
+
+    /**
+     * @throws InvalidDuration
+     */
+    public function remove(int ...$offsets): self
+    {
+        if ([] === $offsets) {
+            return $this;
+        }
+
+        $nbIntervals = count($this->items);
+        $normalized = [];
+        foreach ($offsets as $offset) {
+            if ($offset < 0) {
+                $offset += $nbIntervals;
+            }
+
+            if (0 > $offset || $nbIntervals <= $offset) {
+                continue;
+            }
+
+            $normalized[] = $offset;
+        }
+
+        return [] === $normalized
+            ? $this
+            : $this->filter(static fn (Event $item, int $index): bool => !in_array($index, $normalized, true));
+    }
+
+    /**
+     * @throws InvalidDuration
+     * @throws TimeException
+     */
+    public function replace(int $offset, Event|EventSet $item): self
+    {
+        if ($offset < 0) {
+            $offset += count($this->items);
+        }
+
+        isset($this->items[$offset]) || throw TimeException::dueToInvalidOffset($offset, self::class);
+
+        $intervals = $this->items;
+        $intervals[$offset] = $item;
+
+        return new self(...$intervals);
     }
 }

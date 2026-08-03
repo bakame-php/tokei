@@ -45,26 +45,31 @@ Four specific named constructors are added to represent special semantic values.
 
 ## Accessors
 
-Once instantiated you can access the duration properties directly.
-The object exposes a `sign` property which indicates if the original value was negative, `0` or positive.
-It provides properties to access the duration 
+Once instantiated, you can access the duration properties directly.
+The object exposes a `sign` property, which indicates whether the
+original value is negative, zero, or positive. For convenience,
+it also provides the `isNegative()` and `isZero()` methods to
+test the sign without comparing the sign property directly.
 
-- `seconds` : the number of seconds in this duration
-- `nanoseconds` : the number of fractions in this duration expressed in nanoseconds
+The duration is represented by the following properties:
 
-And the `in()` method gives access to the total duration in a specific unit
+- `seconds`: the whole number of seconds in the duration.
+- `nanoseconds`: the fractional part of the duration, expressed in nanoseconds.
 
-Depending on the duration, the returned value can be an integer or a float.
+The `in()` method returns the total duration expressed in a specific unit.
+
+Depending on the requested unit and the duration itself, the returned
+value may be either an integer or a floating-point number.
 
 ```php
 $duration = Duration::fromDateInterval(new DateInterval('PT23M3S'));
 $duration->in(Unit::Microsecond); // returns 1383_000_000
 $duration->in(Unit::Minute);      // returns 23.05
-$duration->sign;                  // returns 1
 $duration->isZero();              // returns false
 $duration->isNegative();          // returns false
 $duration->nanoseconds;           // returns 0
 $duration->seconds;               // returns 1383
+$duration->sign;                  // returns 1
 ```
 
 ## Formatting
@@ -106,7 +111,8 @@ $duration->toNumberString(Unit:Minute, 2);  // returns '1380.05'
 $duration = Duration::fromFormat('-P2W', DurationFormat::Iso8601); 
 $duration->format(DurationFormat::Iso8601); // returns '-PT336H'
 ```
-Last but not least a compact format more suited for debugging is returns using the `DurationFormat::Compact` case.
+
+A compact format more suited for debugging is returns using the `DurationFormat::Compact` case.
 
 ```php
 $duration = Duration::fromFormat('-PT25H0.5S', DurationFormat::Iso8601); 

@@ -301,10 +301,10 @@ final class TaskSetTest extends TestCase
     {
         self::assertTrue(
             $this->basicTaskSet()
-                ->duration()
+                ->totalDuration()
                 ->equals(
                     IntervalSet::chronological($this->basicTaskSet())
-                        ->duration()
+                        ->totalDuration()
                 )
         );
     }

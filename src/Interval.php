@@ -342,23 +342,11 @@ final readonly class Interval implements JsonSerializable
      *
      * @throws TokeiException
      */
-    public function add(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
+    public function shift(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
         return $duration->isZero() ? $this : self::between($this->start->add($duration), $this->end->add($duration));
-    }
-
-    /**
-     * Returns a new instance with both endpoints shifted by duration.
-     *
-     * @throws TokeiException
-     */
-    public function sub(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
-    {
-        $duration = InputNormalizer::duration($duration);
-
-        return $duration->isZero() ? $this : self::between($this->start->sub($duration), $this->end->sub($duration));
     }
 
     /**

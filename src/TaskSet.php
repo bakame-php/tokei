@@ -125,9 +125,9 @@ final class TaskSet implements TemporalSet
         return array_map(static fn (Task $item): string => $item->format($format, $unit), $this->items);
     }
 
-    public function duration(): Duration
+    public function totalDuration(): Duration
     {
-        return IntervalSet::chronological($this)->duration();
+        return IntervalSet::chronological($this)->totalDuration();
     }
 
     public function count(): int
@@ -324,32 +324,27 @@ final class TaskSet implements TemporalSet
         return $result;
     }
 
-    public function add(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
+    public function shift(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
         return $duration->isZero()
             ? $this
-            : $this->transform(static fn (Task $task): Task => $task->during($task->interval->add($duration)));
+            : $this->transform(static fn (Task $task): Task => $task->during($task->interval->shift($duration)));
     }
 
-    public function sub(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
+    public function expand(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
         $duration = InputNormalizer::duration($duration);
 
         return $duration->isZero()
             ? $this
-            : $this->transform(static fn (Task $task): Task => $task->during($task->interval->sub($duration)));
+            : $this->transform(static fn (Task $task): Task => $task->during($task->interval->expand($duration)));
     }
 
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
         return $this->transform(static fn (Task $task): Task => $task->during($task->interval->roundTo($unit, $mode)));
-    }
-
-    public function roundDurationTo(Unit $unit, SnapMode $mode = SnapMode::Nearest, Bound $anchor = Bound::Start): self
-    {
-        return $this->transform(static fn (Task $task): Task => $task->during($task->interval->roundDurationTo($unit, $mode, $anchor)));
     }
 
     /**
@@ -373,7 +368,7 @@ final class TaskSet implements TemporalSet
         return true;
     }
 
-    public function push(Task|TaskSet|Interval|IntervalSet ...$tasks): self
+    public function append(Task|TaskSet|Interval|IntervalSet ...$tasks): self
     {
         return [] === $tasks ? $this : new self(...$this->items, ...self::filterTasks(...$tasks));
     }
@@ -444,11 +439,6 @@ final class TaskSet implements TemporalSet
     public function includes(Time|Event|DateTimeInterface $time): self
     {
         return $this->filter(fn (Task $task): bool => $task->interval->includes($time));
-    }
-
-    public function outsideOf(Time|Event|DateTimeInterface $time): self
-    {
-        return $this->filter(fn (Task $task): bool => !$task->interval->includes($time));
     }
 
     public function gaps(): self
@@ -553,7 +543,7 @@ final class TaskSet implements TemporalSet
      */
     public function union(Task|TaskSet|Interval|IntervalSet ...$sets): self
     {
-        $set = $this->push(...$sets);
+        $set = $this->append(...$sets);
 
         return new self(
             ...IntervalSet::chronological(...$set)

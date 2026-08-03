@@ -12,12 +12,16 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Duration::seconds` and `Duration::nanoseconds`
 - `Duration::toNumberString`
 - `symfony/polyfill-php86` requirement to use PHP8.6 `SortDirection` Enum
+- `Interval::shift` 
+- `IntervalSet::append`, `IntervalSet::totalDuration`
+- `TaskSet::shift`, `TaskSet::expand`, `TaskSet::roundTo`, `TaskSet::append`, `TaskSet::totalDuration`
+- `EventSet::shift`, `EventSet::append`, `EventSet::replace`, `EventSet::remove`
 
 ### Fixed
 
-- **BC Break:**  mathematical operation methods of `Duration` use full names
+- **BC Break:**  mathematical operation methods of `Duration` use full names in present tense
 - **BC Break:** `Time::toDateTime` is renamed `Time::today`
-  **BC Break:** `Interval::fromLinearSpan*` is marked as internal and removed from Public APU.
+- **BC Break:** `Interval::fromLinearSpan*` is marked as internal and removed from Public APU.
 
 ### Deprecated
 
@@ -26,9 +30,23 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 ### Removed
 
 - **BC Break:** `Duration` component public properties are removed use `Duration::$seconds` and `Duration::$nanoseconds` instead
-- **BC Break:** `Duration::toDateInterval` removed with no replacement.
-- **BC Break:** `Interval::linear*` public properties are removed with no replacement.
-- **BC Break:** Removed manual autoload script.
+- **BC Break:** `Duration::toDateInterval` removed with no replacement
+- **BC Break:** `Interval::linear*` public properties are removed with no replacement
+- **BC Break:** Removed manual autoload script
+- **BC Break:** `Interval::add()` and `Interval::sub()` replaced by `Interval::shift()`
+- **BC Break:** `IntervalSet::unshift()` used `IntervalSet::append()` instead
+- **BC Break:** `IntervalSet::sub()` and `IntervalSet::sub()` used `IntervalSet::shift()` instead
+- **BC Break:** `IntervalSet::roundDurationTo()` with no replacement
+- **BC Break:** `IntervalSet::push()` use `IntervalSet::append()` instead
+- **BC Break:** `IntervalSet::duration()` use `IntervalSet::totalDuration()` instead
+- **BC Break:** `IntervalSet::outsideOf()` with no replacement
+- **BC Break:** `TaskSet::add()` and `TaskSet::sub()` used `TaskSet::shift()` instead
+- **BC Break:** `TaskSet::push()` use `TaskSet::append()` instead
+- **BC Break:** `TaskSet::duration()` use `TaskSet::totalDuration()` instead
+- **BC Break:** `TaskSet::outsideOf()` with no replacement
+- **BC Break:** `EventSet::outside()` with no replacement
+- **BC Break:** `EventSet::add()` and `EventSet::sub()` used `EventSet::shift()` instead
+- **BC Break:** `EventSet::push()` use `EventSet::append()` instead
 
 ## [0.3.0 - chidorisō](https://github.com/bakame-php/tokei/compare/0.2.0...0.3.0) - 2026-07-21
 

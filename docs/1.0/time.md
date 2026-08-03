@@ -5,7 +5,7 @@ title: Time
 
 # Time
 
-The `Bakame\Tokei\Time` object is designed to be, cyclic (24h wrap-around) and precision-aware (microseconds supported)
+The `Bakame\Tokei\Time` object is designed to be, cyclic (24h wrap-around) and precision-aware (nanooseconds supported)
 
 ## Instantiation
 
@@ -13,7 +13,7 @@ You can create a `Time` instance:
 
 - using its time components via the `Time::at` method;
 - by parsing a time string using the `Time::fromFormat` method;
-- using `Time::sinceMidnight`; The value will represent respectively a quantity in a specified base Unit from midnight.
+- using `Time::sinceMidnight`; The value will be represented as a [Duration](/1.0/duration/) from midnight.
 
 ```php
 Time::at(
@@ -52,13 +52,6 @@ Time::midnight(); // 00:00:00
 Time::noon();     // 12:00:00
 Time::endOfDay(); // 23:59:59.999999999
 ```
-
-<p class="message-notice">
-The timezone is required when using <code>Time::now()</code> to
-return the current time in a specific timezone. The method
-accepts a <code>DateTimeZone</code> instance or a timezone string identifier.
-Once the time instance is created, the timezone information is lost.</p>
-
 
 ## Accessors
 
@@ -236,6 +229,14 @@ Time::today(DateTimeZone|string $timezone): DateTimeImmutable
 Time::utc(): Time
 // Extract the current UTC time
 ```
+
+<p class="message-notice">
+The timezone is required when using <code>Time::now()</code> to
+return the current time in a specific timezone. The method
+accepts a <code>DateTimeZone</code> instance or a timezone string identifier.
+Once the time instance is created, the timezone information is lost.
+Conversely, it is required when using <code>Time::today()</code>
+to return the current date and time according to a specific timezone.</p>
 
 `Time` represents only the time-of-day component, therefore it does not contain
 any date or timezone information by itself.

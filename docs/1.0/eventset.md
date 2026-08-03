@@ -17,10 +17,6 @@ EventSet::fromTasks(TaskSet $tasks, Bound $anchor = Bound::Start): self
 ## Accessors
 
 ```php
-EventSet::formatAll(TimeFormat $format = TimeFormat::Clock): array
-EventSet::count(): int
-EventSet::getIterator(): Traversable
-EventSet::jsonSerialize(): array
 EventSet::all(): array
 EventSet::isEmpty(): bool
 EventSet::get(int $offset): Event
@@ -45,11 +41,16 @@ Supports the same formatting arguments as the `Time::format` method.
 EventSet::formatAll(TimeFormat $format = TimeFormat::Clock): array
 ````
 
-## Temporal selection methods
+## Serialization
+
+```php
+EventSet::jsonSerialize(): list<Event>
+````
+
+## Temporal queries methods
 
 ```php
 EventSet::inside(Interval $interval): self
-EventSet::outside(Interval $interval): self
 EventSet::at(Time $time): self
 EventSet::before(Time $time): self
 EventSet::after(Time $time): self
@@ -65,22 +66,38 @@ EventSet::gaps(): IntervalSet
 EventSet::union(Event ...$items): self
 EventSet::intersect(Event ...$items): self
 EventSet::difference(Event ...$items): self
-EventSet::add(Duration $duration): self
-EventSet::sub(Duration $duration): self
+```
+
+## Temporal transformation methods
+
+```php
+EventSet::shift(Duration $duration): self
 EventSet::roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
 ```
 
-## Collection methods
+## Collection queries methods
 
 ```php
-EventSet::firstMatching(callable $predicate): ?Event
-EventSet::lastMatching(callable $predicate): ?Event
 EventSet::any(callable $predicate): bool
 EventSet::every(callable $predicate): bool
+EventSet::reduce(callable $callback, mixed $initial = null): mixed
+EventSet::each(callable $callback): bool
+EventSet::firstMatching(callable $predicate): ?Event
+EventSet::lastMatching(callable $predicate): ?Event
+```
+
+## Collection transformations methods
+
+```php
 EventSet::map(callable $callback): iterable
 EventSet::transform(callable $callback): self
 EventSet::filter(callable $callback): self
-EventSet::reduce(callable $callback, mixed $initial = null): mixed
-EventSet::each(callable $callback): bool
-EventSet::push(Event ...$items): self
+```
+
+## Collection builders methods
+
+```php
+EventSet::append(Event ...$items): self
+EventSet::remove(int ...$offset): self
+EventSet::replace(int $offset, Event $item): self
 ```
