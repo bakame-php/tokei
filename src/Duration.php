@@ -319,11 +319,11 @@ final readonly class Duration implements JsonSerializable
      *
      * @throws ValueError If $precision is negative.
      *
-     * @return numeric-string
+     * @return non-empty-string
      */
-    public function toNumberString(Unit $unit, int $precision = 0): string
+    public function toNumberString(Unit $unit, int $precision = 0, DisplaySign $displaySign = DisplaySign::Auto): string
     {
-        return new DurationParts($this)->toNumberString($unit, $precision);
+        return new DurationParts($this)->toNumberString($unit, $precision, $displaySign);
     }
 
     /**

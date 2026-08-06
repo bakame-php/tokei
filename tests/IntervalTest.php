@@ -942,11 +942,14 @@ final class IntervalTest extends TestCase
             $interval->format(IntervalFormat::Iso8601StartEnd),
             $interval->format(IntervalFormat::Iso8601StartEnd, Unit::Minute)
         );
-        self::assertSame('[600.016667,720[', Interval::fromFormat(
-            '[600.016667,720[',
-            IntervalFormat::Bourbaki,
-            Unit::Minute
-        )->format(IntervalFormat::Bourbaki, Unit::Minute));
+        self::assertSame(
+            '[600.016667,720.000000[',
+            Interval::fromFormat(
+                '[600.016667,720[',
+                IntervalFormat::Bourbaki,
+                Unit::Minute
+            )->format(IntervalFormat::Bourbaki, Unit::Minute)
+        );
     }
 
     public function test_fixing_split_at_overflow(): void

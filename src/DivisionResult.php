@@ -19,7 +19,6 @@ final readonly class DivisionResult implements ArrayAccess
     ) {
     }
 
-    #[Override]
     public function offsetExists(mixed $offset): bool
     {
         return 1 === $offset || 0 === $offset;

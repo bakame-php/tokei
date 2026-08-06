@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei\Internal;
 
+use Bakame\Tokei\DisplaySign;
 use Bakame\Tokei\Duration;
 use Bakame\Tokei\DurationFormat;
 use Bakame\Tokei\Time;
@@ -14,7 +15,6 @@ use ValueError;
 
 use function implode;
 use function intdiv;
-use function is_int;
 use function number_format;
 use function rtrim;
 use function str_pad;
@@ -224,21 +224,17 @@ final readonly class DurationParts
     /**
      * Returns the duration expressed in the given unit as a numeric string.
      *
-     * @param non-negative-int $precision
-     *
-     * @throws ValueError If $precision is negative.
-     *
-     * @return numeric-string
+     * @return non-empty-string
      */
-    public function toNumberString(Unit $unit, int $precision = 0): string
+    public function toNumberString(Unit $unit, int $precision, DisplaySign $displaySign = DisplaySign::Auto): string
     {
-        /* @phpstan-ignore-next-line */
         0 <= $precision || throw new ValueError('The precision cannot be negative.');
 
         $value = $this->toNumber($unit);
+        $number = number_format(num: $value, decimals: $precision, thousands_separator: '');
 
-        return is_int($value)
-            ? (string) $value
-            : number_format(num: $value, decimals: $precision, decimal_separator: '.', thousands_separator: '');
+        return (0 <= $value && DisplaySign::Always === $displaySign)
+            ? '+'.$number
+            : $number;
     }
 }

@@ -166,3 +166,19 @@ enum LocaleVerbosity
     case Full;
 }
 ```
+
+## Display Signe
+
+The `DisplaySign` enum specifies how the duration sign should be represented when the `Duration::toNumberString` method
+is used.
+
+```php
+enum DisplaySign
+{
+    case Auto;
+    case Always;
+}
+```
+
+- `Auto` : the sign is only shown when the Duration is negative.
+- `Always` : the sign is always shown. For a Duration of 0 second, the sign is `+`.

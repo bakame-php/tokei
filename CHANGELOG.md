@@ -16,6 +16,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `IntervalSet::append`, `IntervalSet::totalDuration`
 - `TaskSet::shift`, `TaskSet::expand`, `TaskSet::roundTo`, `TaskSet::append`, `TaskSet::totalDuration`
 - `EventSet::shift`, `EventSet::append`, `EventSet::replace`, `EventSet::remove`
+- `DisplaySign` enum
 
 ### Fixed
 

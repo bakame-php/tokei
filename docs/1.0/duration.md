@@ -76,7 +76,7 @@ $duration->sign;                  // returns 1
 
 ```php
 Duration::format(DurationFormat $format): string
-Duration::toNumberString(Unit $unit, int $precision): string
+Duration::toNumberString(Unit $unit, int $precision = 0, DisplaySign $DisplaySign = DisplaySign::Auto): string
 ```
 
 Formatting the duration string representation is returned by the `Duration::format` with the help of the `DurationFormat` Enum
@@ -94,10 +94,17 @@ The returned string may not be compatible with PHP's `DateInterval` constructor 
 
 ```php
 $duration = Duration::of(hours: 23, seconds: 3); 
-$duration->format(DurationFormat::Iso8601); // returns 'P1DT1H5S'
-$duration->format(DurationFormat::Timer);   // returns '25:00:05'
-$duration->toNumberString(Unit:Minute);     // returns '1380'
-$duration->toNumberString(Unit:Minute, 2);  // returns '1380.05'
+$duration->format(DurationFormat::Iso8601);
+// returns 'P1DT1H5S'
+
+$duration->format(DurationFormat::Timer);
+// returns '25:00:05'
+
+$duration->toNumberString(Unit:Minute);
+// returns '1380'
+
+$duration->toNumberString(Unit:Minute, 2, DisplaySign::Always);
+// returns '+1380.05'
 ```
 
 <div class="message-warning">
@@ -128,8 +135,8 @@ the converted value.
 $duration = Duration::of(hours: 23, seconds: 3);
 $duration->toNumberString(Unit:Minute);
 // returns '1380'
-$duration->toNumberString(Unit:Minute, precision: 2); 
-// returns '1380.05'
+$duration->toNumberString(Unit:Minute, precision: 2, displaySign: DisplaySign::Always); 
+// returns '+1380.05'
 ```
 
 The `precision` argument specifies the number of fractional digits to include
