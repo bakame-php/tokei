@@ -142,6 +142,16 @@ final class TimeTest extends TestCase
         self::assertSame(0, $time->second);
     }
 
+    public function testParseWithSpaces(): void
+    {
+        $time = Time::fromFormat('12 : 00 :   23.234 ', TimeFormat::Clock);
+
+        self::assertSame(12, $time->hour);
+        self::assertSame(0, $time->minute);
+        self::assertSame(23, $time->second);
+        self::assertSame(234_000_000, $time->nanosecond);
+    }
+
     public function testParseInvalidThrows(): void
     {
         $this->expectException(InvalidTime::class);

@@ -29,10 +29,10 @@ final readonly class Parser
 {
     private const string REGEXP_DURATION_TIMER = '@^
         (?<sign>-)?\s*
-        (?<hours>\d+):
-        (?<minutes>\d{1,2}):
+        (?<hours>\d+)\s*:\s*
+        (?<minutes>\d{1,2})\s*:\s*
         (?<seconds>\d{1,2})
-        ((\.|")(?<fractions>\d{1,9}))?
+        ((\.|")(?<fractions>\d{1,9}))?\s*
     $@x';
 
     private const string REGEXP_DURATION_COMPACT = '@^
@@ -66,10 +66,12 @@ final readonly class Parser
     $@x';
 
     private const string REGEXP_TIMER_ISO8601 = '@^
-        (?<hour>\d{1,2}):
+        (?<hour>\d{1,2})\s*:\s*
         (?<minute>\d{1,2})
-        (:(?<second>\d{1,2}))?
-        (?:\.(?<fractions>\d{1,9}))?
+        (\s*:\s*
+            (?<second>\d{1,2}))?
+            (?:\.(?<fractions>\d{1,9})
+        \s*)?
     $@x';
 
     private const string REGEXP_TIMER_COMPACT = '@^

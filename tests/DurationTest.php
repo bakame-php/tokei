@@ -44,7 +44,7 @@ final class DurationTest extends TestCase
 {
     public function testParseMicroseconds(): void
     {
-        $duration = Duration::of(weeks:5, days:6, hours: 2, minutes: 15, seconds: 42, microseconds: 123_456);
+        $duration = Duration::of(weeks: 5, days: 6, hours: 2, minutes: 15, seconds: 42, microseconds: 123_456);
 
         self::assertFalse($duration->isZero());
         self::assertFalse($duration->isNegative());
@@ -958,6 +958,7 @@ final class DurationTest extends TestCase
         return [
             'zero' => ['00:00:00', 0],
             'simple' => ['01:02:03', 3723],
+            'simple with spaces' => ['01 : 02   : 03   ', 3723],
             'midnight edge' => ['00:00:01', 1],
             'large hours' => ['100:00:00', 360000],
             'microseconds with dot' => ['01:02:03.500000', 3723, 500],

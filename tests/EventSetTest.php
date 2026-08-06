@@ -17,6 +17,7 @@ use Bakame\Tokei\TimeFormat;
 use Bakame\Tokei\TokeiException;
 use Bakame\Tokei\Unit;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use function serialize;
 use function unserialize;
@@ -253,6 +254,105 @@ final class EventSetTest extends TestCase
         self::assertSame(5, $set->first()->at->hour);
         self::assertInstanceOf(Event::class, $set->last());
         self::assertSame(10, $set->last()->at->hour);
+    }
+
+    public function testRemoveWithoutOffsetsReturnsSameInstance(): void
+    {
+        $set = $this->createEventSet();
+
+        self::assertSame($set, $set->remove());
+    }
+
+    #[DataProvider('removeProvider')]
+    public function testRemove(array $offsets, array $expectedIndexes): void
+    {
+        $set = $this->createEventSet();
+
+        $expected = [];
+        foreach ($expectedIndexes as $index) {
+            $expected[] = $set->get($index);
+        }
+
+        self::assertEquals(
+            new EventSet(...$expected)->formatAll(TimeFormat::Clock),
+            $set->remove(...$offsets)->formatAll(TimeFormat::Clock),
+        );
+    }
+
+    public static function removeProvider(): iterable
+    {
+        yield 'remove first' => [
+            [0],
+            [1, 2, 3, 4],
+        ];
+
+        yield 'remove last' => [
+            [4],
+            [0, 1, 2, 3],
+        ];
+
+        yield 'remove using negative offset' => [
+            [-1],
+            [0, 1, 2, 3],
+        ];
+
+        yield 'remove first and last' => [
+            [0, -1],
+            [1, 2, 3],
+        ];
+
+        yield 'remove multiple' => [
+            [1, 3],
+            [0, 2, 4],
+        ];
+
+        yield 'duplicate offsets' => [
+            [2, 2, 2],
+            [0, 1, 3, 4],
+        ];
+
+        yield 'invalid positive offset ignored' => [
+            [99],
+            [0, 1, 2, 3, 4],
+        ];
+
+        yield 'invalid negative offset ignored' => [
+            [-6],
+            [0, 1, 2, 3, 4],
+        ];
+
+        yield 'mixed valid and invalid offsets' => [
+            [-1, 1, 42, -10],
+            [0, 2, 3],
+        ];
+
+        yield 'remove everything' => [
+            [0, 1, 2, 3, 4],
+            [],
+        ];
+    }
+
+    private function createEventSet(): EventSet
+    {
+        return new EventSet(
+            Event::at(Time::fromFormat('00:00:00', TimeFormat::Clock), 'A'),
+            Event::at(Time::fromFormat('01:00:00', TimeFormat::Clock), 'B'),
+            Event::at(Time::fromFormat('02:00:00', TimeFormat::Clock), 'C'),
+            Event::at(Time::fromFormat('03:00:00', TimeFormat::Clock), 'D'),
+            Event::at(Time::fromFormat('04:00:00', TimeFormat::Clock), 'E'),
+        );
+    }
+
+    public function testRemoveFromEmptySetReturnsSameInstance(): void
+    {
+        $set = new EventSet();
+
+        self::assertSame($set, $set->remove(0, -1));
+    }
+
+    public function testRemoveAll(): void
+    {
+        self::assertCount(0, $this->createEventSet()->remove(0, 1, 2, 3, 4));
     }
 
     /* =========================================================
