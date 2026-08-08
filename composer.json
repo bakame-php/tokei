@@ -51,7 +51,8 @@
     ],
     "require": {
         "php": "^8.4.0",
-        "symfony/polyfill-php86": "^v1.35.0"
+        "symfony/polyfill-php86": "^v1.35.0",
+        "symfony/polyfill-intl-icu": "^1.38"
     },
     "require-dev": {
         "phpstan/phpstan-phpunit": "^2.0.18",

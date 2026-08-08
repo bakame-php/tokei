@@ -1,0 +1,138 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Bakame\Tokei;
+
+use Bakame\Tokei\Internal\DurationParts;
+use IntlException;
+use IntlListFormatter;
+use MessageFormatter;
+use Throwable;
+use ValueError;
+
+use function class_exists;
+use function count;
+
+final readonly class DurationFormatter
+{
+    private readonly IntlListFormatter $listFormatter;
+
+    public function __construct(
+        public string $locale = 'en',
+    ) {
+        self::supportsIntlListFormatter();
+        try {
+            $this->listFormatter = new IntlListFormatter($this->locale, IntlListFormatter::TYPE_AND, IntlListFormatter::WIDTH_WIDE);
+        } catch (Throwable $exception) {
+            throw new ValueError('Unable to instantiate '.self::class.' for locale "'.$this->locale.'".', previous: $exception);
+        }
+    }
+
+    /**
+     * Locale aware formatting of the duration absolute form.
+     *
+     * @throws TokeiException
+     *
+     * @return non-empty-string
+     */
+    public function format(Duration $duration): string
+    {
+        $parts = [];
+        foreach (new DurationParts($duration)->decompose() as $unit => $value) {
+            if (0 !== $value) {
+                $parts[] = $this->formatUnit($value, $unit);
+            }
+        }
+
+        return $this->formatList($parts);
+    }
+
+    /**
+     * @param non-empty-string $unit
+     *
+     * @throws TokeiException
+     * @return non-empty-string
+     */
+    private function formatUnit(int $value, string $unit): string
+    {
+        $formatter = $this->getMessageFormatter($unit);
+        /** @var non-empty-string|false $result */
+        $result = $formatter->format(['value' => $value]);
+        if (false === $result) {
+            throw new TokeiException('Unable to format duration '.$value.$unit.' for '.$this->locale.'; '.$formatter->getErrorMessage());
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param non-empty-string $unit
+     *
+     * @throws TokeiException
+     */
+    private function getMessageFormatter(string $unit): MessageFormatter
+    {
+        try {
+            return new MessageFormatter($this->locale, self::icuPattern($unit));
+        } catch (IntlException $exception) {
+            throw new TokeiException('Unable to format the duration for '.$this->locale, previous: $exception);
+        }
+    }
+
+    /**
+     * @param list<non-empty-string> $parts
+     *
+     * @throws TokeiException
+     *
+     * @return non-empty-string
+     */
+    private function formatList(array $parts): string
+    {
+        $nbParts = count($parts);
+
+        /** @var non-empty-string|false $result */
+        $result = match ($nbParts) { /* @phpstan-ignore-line */
+            0 => $this->formatUnit(0, 'seconds'),
+            1 => $parts[0],
+            default => $this->listFormatter->format($parts),
+        };
+
+        if (false === $result) {
+            throw new TokeiException('Unable to format the duration; '.$this->listFormatter->getErrorMessage());
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param non-empty-string $unit
+     *
+     * @throws TokeiException
+     *
+     * @return non-empty-string
+     */
+    private static function icuPattern(string $unit): string
+    {
+        $icuUnit = match ($unit) {
+            'weeks' => 'week',
+            'days' => 'day',
+            'hours' => 'hour',
+            'minutes' => 'minute',
+            'seconds' => 'second',
+            'milliseconds' => 'millisecond',
+            'microseconds' => 'microsecond',
+            'nanoseconds' => 'nanosecond',
+            default => throw new TokeiException('Unknown unit "'.$unit.'"'),
+        };
+
+        return '{value, number, ::unit/'.$icuUnit.' unit-width-full-name}';
+    }
+
+    private static function supportsIntlListFormatter(): void
+    {
+        static $isSupported = null;
+        $isSupported ??= class_exists(IntlListFormatter::class);
+        $isSupported || throw new TimeException('Support for duration locale formatting requires the `intl` extension for best performance or run "composer require symfony/polyfill-intl-icu" to install a polyfill.');
+    }
+}
