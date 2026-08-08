@@ -25,6 +25,7 @@ use function usort;
 
 use const PHP_INT_MAX;
 use const PHP_INT_MIN;
+use const PHP_INT_SIZE;
 
 /**
  * @phpstan-type SerializedDuration array{0: array{seconds: int, nanoseconds: int, sign: int}, 1: array{}}
@@ -33,6 +34,8 @@ final readonly class Duration implements JsonSerializable
 {
     /** @var positive-int */
     private const int TICKS_PER_SECOND = 1_000_000_000;
+
+    private const int MAX_SECOND = PHP_INT_SIZE >= 8 ? 9_223_372_035 : PHP_INT_MAX;
 
     /**
      * @throws InvalidDuration
@@ -50,7 +53,7 @@ final readonly class Duration implements JsonSerializable
 
         !$isZero || 0 === $sign || throw new InvalidDuration('A zero duration must have a sign of 0.');
         $isZero || 0 !== $sign || throw new InvalidDuration('A non-zero duration cannot have a sign of 0.');
-        $seconds <= intdiv(PHP_INT_MAX - $nanoseconds, self::TICKS_PER_SECOND) || throw InvalidDuration::dueToOverflow();
+        $seconds <= self::MAX_SECOND || throw InvalidDuration::dueToOverflow();
     }
 
     /**
@@ -217,8 +220,8 @@ final readonly class Duration implements JsonSerializable
     public static function max(): self
     {
         return new self(
-            intdiv(PHP_INT_MAX, self::TICKS_PER_SECOND),
-            PHP_INT_MAX % self::TICKS_PER_SECOND,
+            self::MAX_SECOND,
+            self::TICKS_PER_SECOND - 1,
             1,
         );
     }
@@ -324,6 +327,20 @@ final readonly class Duration implements JsonSerializable
     public function toNumberString(Unit $unit, int $precision = 0, DisplaySign $displaySign = DisplaySign::Auto): string
     {
         return new DurationParts($this)->toNumberString($unit, $precision, $displaySign);
+    }
+
+    /**
+     * Returns the duration in its absolute form expressed localized.
+     *
+     * @param non-empty-string $locale
+     *
+     * @throws TimeException
+     *
+     * @see DurationFormatter::format()
+     */
+    public function toLocaleString(string $locale): string
+    {
+        return new DurationFormatter(locale: $locale)->format($this);
     }
 
     /**
@@ -483,7 +500,7 @@ final readonly class Duration implements JsonSerializable
                 return 0;
             }
 
-            abs($factor) <= intdiv(PHP_INT_MAX, abs($value)) || throw InvalidDuration::dueToOverflow();
+            abs($factor) <= intdiv(self::MAX_SECOND, abs($value)) || throw InvalidDuration::dueToOverflow();
 
             return $value * $factor;
         };

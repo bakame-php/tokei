@@ -7,6 +7,7 @@ namespace Bakame\Tokei\Internal;
 use Bakame\Tokei\DisplaySign;
 use Bakame\Tokei\Duration;
 use Bakame\Tokei\DurationFormat;
+use Bakame\Tokei\InvalidDuration;
 use Bakame\Tokei\Time;
 use Bakame\Tokei\TimeFormat;
 use Bakame\Tokei\TokeiException;
@@ -169,41 +170,86 @@ final readonly class DurationParts
     private function toCompactString(string $type): string
     {
         $isClock = self::COMPACT_TIME === $type;
+        $parts = $this->decompose();
 
+        $time = [];
+        if ($parts['weeks'] > 0 && !$isClock) {
+            $time[] = $parts['weeks'].'w';
+        }
+
+        if ($parts['days'] > 0 && !$isClock) {
+            $time[] = $parts['days'].'d';
+        }
+
+        if ($parts['hours'] > 0 || $isClock) {
+            $time[] = $parts['hours'].'h';
+        }
+
+        if ($parts['minutes'] > 0 || $isClock) {
+            $time[] = $parts['minutes'].'m';
+        }
+
+        if ($parts['seconds'] > 0 || ($isClock && $this->nanoseconds > 0)) {
+            $time[] = $parts['seconds'].'s';
+        }
+
+        if ($parts['milliseconds'] > 0) {
+            $time[] = $parts['milliseconds'].'ms';
+        }
+
+        if ($parts['microseconds'] > 0) {
+            $time[] = $parts['microseconds'].'µs';
+        }
+
+        if ($parts['nanoseconds'] > 0) {
+            $time[] = $parts['nanoseconds'].'ns';
+        }
+
+        return [] === $time ? '0s' : (-1 === $this->sign ? '-' : '').implode('', $time);
+    }
+
+    /**
+     * Decomposes the duration into its constituent units.
+     *
+     * The returned values represent the duration as a combination of weeks,
+     * days, hours, minutes, seconds, and the smallest applicable sub-second
+     * unit. A fractional second is represented as milliseconds when it is
+     * exactly divisible by a millisecond, as microseconds when it is exactly
+     * divisible by a microsecond, and as nanoseconds otherwise.
+     * Only one of milliseconds, microseconds, or nanoseconds is non-zero.
+     *
+     * @throws InvalidDuration
+     *
+     * @return array{
+     *     weeks: int,
+     *     days: int,
+     *     hours: int,
+     *     minutes: int,
+     *     seconds: int,
+     *     milliseconds: int,
+     *     microseconds: int,
+     *     nanoseconds: int,
+     * }
+     */
+    public function decompose(): array
+    {
         [$weeks, $remainder] = UnitTransformer::divmod(UnitTransformer::toTicks($this->seconds, Unit::Second), Unit::Week);
         [$days, $remainder] = UnitTransformer::divmod($remainder, Unit::Day);
         [$hours] = UnitTransformer::divmod($remainder, Unit::Hour);
 
-        $time = [];
-        if ($weeks > 0 && !$isClock) {
-            $time[] = $weeks.'w';
-        }
+        $isMilli = 0 === $this->nanoseconds % 1_000_000;
+        $isMicro = !$isMilli && (0 === $this->nanoseconds % 1_000);
 
-        if ($days > 0 && !$isClock) {
-            $time[] = $days.'d';
-        }
-
-        if ($hours > 0 || $isClock) {
-            $time[] = $hours.'h';
-        }
-
-        if ($this->minute > 0 || $isClock) {
-            $time[] = $this->minute.'m';
-        }
-
-        if ($this->second > 0 || ($isClock && $this->nanoseconds > 0)) {
-            $time[] = $this->second.'s';
-        }
-
-        if ($this->nanoseconds > 0) {
-            $time[] = match (true) {
-                0 === $this->nanoseconds % 1_000_000 => intdiv($this->nanoseconds, 1_000_000).'ms',
-                0 === $this->nanoseconds % 1_000 => intdiv($this->nanoseconds, 1_000).'µs',
-                default => $this->nanoseconds.'ns',
-            };
-        }
-
-        return [] === $time ? '0s' : (-1 === $this->sign ? '-' : '').implode('', $time);
+        return [
+            'weeks' => $weeks,
+            'days' => $days,
+            'hours' => $hours,
+            'minutes' => $this->minute,
+            'seconds' => $this->second,
+            'milliseconds' => $isMilli ? intdiv($this->nanoseconds, 1_000_000) : 0,
+            'microseconds' => $isMicro ? intdiv($this->nanoseconds, 1_000) : 0,
+            'nanoseconds' => !$isMilli && !$isMicro ? $this->nanoseconds : 0,
+        ];
     }
 
     /**

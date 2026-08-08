@@ -8,7 +8,6 @@ title: Installation
 ## System Requirements
 
 - **PHP >= 8.4** is required but the latest stable version of PHP is recommended.
-- a **64-bit PHP build**.
 - `symfony/polyfill-php86` to use PHP's `SortDirection` Enum in older PHP version.
 
 ## Installation
@@ -19,6 +18,8 @@ title: Installation
 composer require bakame/tokei
 ~~~
 
-You **MAY** need:
+You **MAY** need the `ext-intl` extension or use `symfony/polyfill-intl-icu` **>= v1.34**
+to use localized string representations of `Time` and/or the `Duration`.
 
-- The `ext-intl` extension or use a polyfill for `IntlDateFormatter` to be able to get the locale string version of the time.
+**On PHP 8.4**, `symfony/polyfill-intl-icu` **>= v1.34** is required, even when `ext-intl` is available.
+**On PHP 8.5 and later**, `ext-intl` is sufficient and the polyfill is no longer required.

@@ -11,6 +11,8 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Duration::isNegative()` method to complement `Duration::isZero()`
 - `Duration::seconds` and `Duration::nanoseconds`
 - `Duration::toNumberString`
+-  `Duration::toLocaleString`
+-  `DurationFormatter`
 - `symfony/polyfill-php86` requirement to use PHP8.6 `SortDirection` Enum
 - `Interval::shift` 
 - `IntervalSet::append`, `IntervalSet::totalDuration`
