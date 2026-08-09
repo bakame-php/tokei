@@ -48,7 +48,7 @@ final readonly class DurationParts
         $this->nanoseconds = $duration->nanoseconds;
         $this->sign = match (true) {
             $duration->isZero() => 0,
-            $duration->isNegative() => -1,
+            $duration->negative => -1,
             default => 1,
         };
         $this->seconds = $duration->seconds;

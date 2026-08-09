@@ -8,17 +8,18 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 - Support for nanoseconds to `Tokei\Duration`
 - Support for PHP8.6 `Time\Duration`
-- `Duration::isNegative()` method to complement `Duration::isZero()`
+- `Duration::negative` method to complement `Duration::isZero()`
 - `Duration::seconds` and `Duration::nanoseconds`
 - `Duration::toNumberString`
--  `Duration::toLocaleString`
--  `DurationFormatter`
-- `symfony/polyfill-php86` requirement to use PHP8.6 `SortDirection` Enum
+- `Duration::toLocaleString`
+- `Duration::fromHours`, `Duration::fromMinutes`, `Duration::fromSeconds`, `Duration::fromMilliseconds`, `Duration::fromMicroseconds`, `Duration::fromNanoseconds` named constructors to mimic PHP's native `Time\Duration` class constructors. 
+- `DurationFormatter`
 - `Interval::shift` 
 - `IntervalSet::append`, `IntervalSet::totalDuration`
 - `TaskSet::shift`, `TaskSet::expand`, `TaskSet::roundTo`, `TaskSet::append`, `TaskSet::totalDuration`
 - `EventSet::shift`, `EventSet::append`, `EventSet::replace`, `EventSet::remove`
 - `DisplaySign` enum
+- the package now uses and requires `symfony/polyfill-php86` to use PHP8.6 `SortDirection` Enum
 
 ### Fixed
 
@@ -32,7 +33,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Removed
 
-- **BC Break:** `Duration` component public properties are removed use `Duration::$seconds` and `Duration::$nanoseconds` instead
+- **BC Break:** `Duration` component public properties are removed use `Duration::$seconds`, `Duration::$nanoseconds` and `Duration::$negative` must be use instead
 - **BC Break:** `Duration::toDateInterval` removed with no replacement
 - **BC Break:** `Interval::linear*` public properties are removed with no replacement
 - **BC Break:** Removed manual autoload script
@@ -50,6 +51,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC Break:** `EventSet::outside()` with no replacement
 - **BC Break:** `EventSet::add()` and `EventSet::sub()` used `EventSet::shift()` instead
 - **BC Break:** `EventSet::push()` use `EventSet::append()` instead
+- **BC Break:** removed the package `SortDirection` polyfill it requires the `symfony/polyfill-php86` package instead
 
 ## [0.3.0 - chidorisō](https://github.com/bakame-php/tokei/compare/0.2.0...0.3.0) - 2026-07-21
 

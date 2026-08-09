@@ -254,7 +254,7 @@ final readonly class Interval implements JsonSerializable
     public static function fromLinearSpan(Duration $linearStart, Duration $linearEnd): self
     {
         $duration = $linearEnd->sub($linearStart);
-        !$duration->isNegative() || throw new InvalidInterval('Invalid linear span: the start must be shorter or equal to the end linear span.');
+        !$duration->negative || throw new InvalidInterval('Invalid linear span: the start must be shorter or equal to the end linear span.');
 
         return new self(Time::sinceMidnight($linearStart->absolute()), $duration);
     }
@@ -464,7 +464,7 @@ final readonly class Interval implements JsonSerializable
         Bound $from = Bound::Start
     ): IntervalSet {
         $duration = InputNormalizer::duration($duration);
-        1 === $duration->sign || throw new InvalidDuration('The duration can not be negative or equal to 0.');
+        (!$duration->negative && !$duration->isZero()) || throw new InvalidDuration('The duration can not be negative or equal to 0.');
         if (IntervalType::Collapsed === $this->type) {
             return new IntervalSet();
         }

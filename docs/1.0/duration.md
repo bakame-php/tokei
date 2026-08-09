@@ -55,6 +55,7 @@ The duration is represented by the following properties:
 
 - `seconds`: the whole number of seconds in the duration.
 - `nanoseconds`: the fractional part of the duration, expressed in nanoseconds.
+- `negative`: tells whether the duration is negative or not.
 
 The `in()` method returns the total duration expressed in a specific unit.
 
@@ -66,10 +67,9 @@ $duration = Duration::fromDateInterval(new DateInterval('PT23M3S'));
 $duration->in(Unit::Microsecond); // returns 1383_000_000
 $duration->in(Unit::Minute);      // returns 23.05
 $duration->isZero();              // returns false
-$duration->isNegative();          // returns false
 $duration->nanoseconds;           // returns 0
 $duration->seconds;               // returns 1383
-$duration->sign;                  // returns 1
+$duration->negative;              // returns false
 ```
 
 ## Formatting

@@ -61,7 +61,8 @@
         "friendsofphp/php-cs-fixer": "^3.95.18",
         "phpstan/phpstan-deprecation-rules": "^2.0.5",
         "phpstan/phpstan-strict-rules": "^2.0.12",
-        "symfony/var-dumper": "^8.1.2"
+        "symfony/var-dumper": "^8.1.2",
+        "symfony/polyfill-time": "@dev"
     },
     "autoload": {
         "psr-4": {
@@ -71,10 +72,7 @@
     "autoload-dev" : {
         "psr-4": {
             "Tests\\": "tests"
-        },
-        "classmap": [
-            "polyfill/lib"
-        ]
+        }
     },
     "scripts": {
         "phpcs": "php-cs-fixer fix -vvv --diff --dry-run --allow-risky=yes --ansi",

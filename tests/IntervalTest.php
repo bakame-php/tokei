@@ -887,7 +887,7 @@ final class IntervalTest extends TestCase
     {
         $interval = Interval::until(Time::at(hour: 10), Duration::fromFormat('-PT3H', DurationFormat::Iso8601));
         self::assertFalse($interval->duration->isZero());
-        self::assertFalse($interval->duration->isNegative());
+        self::assertFalse($interval->duration->negative);
         self::assertTrue($interval->duration->equals(Duration::of(hours: 21)));
     }
 
@@ -895,7 +895,7 @@ final class IntervalTest extends TestCase
     {
         $interval = Interval::around(Time::at(hour: 10, minute: 30), Duration::fromFormat('-PT1H', DurationFormat::Iso8601));
         self::assertFalse($interval->duration->isZero());
-        self::assertFalse($interval->duration->isNegative());
+        self::assertFalse($interval->duration->negative);
         self::assertTrue($interval->duration->equals(Duration::of(hours: 23)));
         self::assertEquals($interval->start, Time::at(hour: 11));
         self::assertEquals($interval->end, Time::at(hour: 10, minute: 00));

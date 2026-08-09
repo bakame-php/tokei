@@ -7,6 +7,4 @@ parameters:
     level: max
     paths:
         - src
-        - polyfill
     ignoreErrors:
-        - identifier: smaller.alwaysTrue

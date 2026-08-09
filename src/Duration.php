@@ -34,8 +34,8 @@ final readonly class Duration implements JsonSerializable
 {
     /** @var positive-int */
     private const int TICKS_PER_SECOND = 1_000_000_000;
-
     private const int MAX_SECOND = PHP_INT_SIZE >= 8 ? 9_223_372_035 : PHP_INT_MAX;
+    public bool $negative;
 
     /**
      * @throws InvalidDuration
@@ -43,7 +43,7 @@ final readonly class Duration implements JsonSerializable
     private function __construct(
         public int $seconds,
         public int $nanoseconds,
-        public int $sign
+        private int $sign
     ) {
         $seconds >= 0 || throw new InvalidDuration('$seconds must be a non negative integer.');
         ($nanoseconds >= 0 && $nanoseconds < self::TICKS_PER_SECOND) || throw new InvalidDuration('$nanoseconds must be between 0 and '.(self::TICKS_PER_SECOND - 1).'.');
@@ -54,6 +54,7 @@ final readonly class Duration implements JsonSerializable
         !$isZero || 0 === $sign || throw new InvalidDuration('A zero duration must have a sign of 0.');
         $isZero || 0 !== $sign || throw new InvalidDuration('A non-zero duration cannot have a sign of 0.');
         $seconds <= self::MAX_SECOND || throw InvalidDuration::dueToOverflow();
+        $this->negative = -1 === $this->sign;
     }
 
     /**
@@ -76,6 +77,7 @@ final readonly class Duration implements JsonSerializable
         $this->seconds = $new->seconds;
         $this->nanoseconds = $new->nanoseconds;
         $this->sign = $new->sign;
+        $this->negative = $new->negative;
     }
 
     /**
@@ -113,6 +115,7 @@ final readonly class Duration implements JsonSerializable
     {
         return self::fromComponents(Parser::parseDurationNotation($notation, $format));
     }
+
     /**
      * @throws InvalidDuration
      */
@@ -129,6 +132,36 @@ final readonly class Duration implements JsonSerializable
         PHP_INT_MIN !== $ticks || throw InvalidDuration::dueToOverflow();
 
         return self::fromComponentsValue(intdiv($ticks, self::TICKS_PER_SECOND), $ticks % self::TICKS_PER_SECOND);
+    }
+
+    public static function fromHours(int $hours): self
+    {
+        return self::of(hours: $hours);
+    }
+
+    public static function fromMinutes(int $minutes): self
+    {
+        return self::of(minutes: $minutes);
+    }
+
+    public static function fromSeconds(int $seconds, int $nanoseconds = 0): self
+    {
+        return self::of(seconds: $seconds, nanoseconds: $nanoseconds);
+    }
+
+    public static function fromMilliseconds(int $milliseconds): self
+    {
+        return self::of(milliseconds: $milliseconds);
+    }
+
+    public static function fromMicroseconds(int $microseconds): self
+    {
+        return self::of(microseconds: $microseconds);
+    }
+
+    public static function fromNanoseconds(int $nanoseconds): self
+    {
+        return self::of(nanoseconds: $nanoseconds);
     }
 
     /**
@@ -219,11 +252,7 @@ final readonly class Duration implements JsonSerializable
      */
     public static function max(): self
     {
-        return new self(
-            self::MAX_SECOND,
-            self::TICKS_PER_SECOND - 1,
-            1,
-        );
+        return new self(seconds: self::MAX_SECOND, nanoseconds: self::TICKS_PER_SECOND - 1, sign: 1);
     }
 
     /**
@@ -359,14 +388,6 @@ final readonly class Duration implements JsonSerializable
     public function isZero(): bool
     {
         return 0 === $this->sign;
-    }
-
-    /**
-     * Returns true when the duration is zero, false otherwise.
-     */
-    public function isNegative(): bool
-    {
-        return -1 === $this->sign;
     }
 
     /**
