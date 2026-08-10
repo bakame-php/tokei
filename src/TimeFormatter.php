@@ -15,12 +15,15 @@ use function array_key_first;
 use function class_exists;
 use function count;
 
-final readonly class LocaleTimeFormatter
+final readonly class TimeFormatter
 {
     private const int MAXIMUM_FORMATTER_CACHED = 50;
 
-    private IntlDateFormatter $formatter;
+    /** @var non-empty-string */
+    public string $locale;
     public DateTimeZone $timezone;
+    public LocaleVerbosity $verbosity;
+    private IntlDateFormatter $formatter;
 
     /**
      * @param non-empty-string $locale
@@ -29,11 +32,11 @@ final readonly class LocaleTimeFormatter
      * @throws TimeException
      */
     public function __construct(
-        public string $locale,
+        string $locale,
         DateTimeInterface|DateTimeZone|string $timezone = 'UTC',
-        public LocaleVerbosity $verbosity = LocaleVerbosity::Medium,
+        LocaleVerbosity $verbosity = LocaleVerbosity::Medium,
     ) {
-        self::supportsIntl();
+        self::supportsIntlDateFormatter();
         $timezone = InputNormalizer::timezone($timezone);
 
         try {
@@ -52,12 +55,14 @@ final readonly class LocaleTimeFormatter
             throw new ValueError('Unable to instantiate '.self::class.'; verify the locale.', previous: $exception);
         }
 
+        $this->locale = $locale;
         $this->timezone = $timezone;
         $this->formatter = $formatter;
+        $this->verbosity = $verbosity;
     }
 
     /**
-     * Formats a Time or a DateTime instance according to the formatter's locale.
+     * Formats a Time or a DateTimeInterface instance according to the formatter's locale.
      *
      * The timezone used for formatting is determined as follows:
      * - If a DateTimeInterface is provided its timezone information is used
@@ -71,18 +76,19 @@ final readonly class LocaleTimeFormatter
      *
      * @throws TimeException
      */
-    public function format(DateTimeInterface|Time $time, DateTimeZone|DateTimeInterface|string|null $timezone = null): string
+    public function format(Time|Event|DateTimeInterface $time, DateTimeZone|DateTimeInterface|string|null $timezone = null): string
     {
-        $dateTime = $time instanceof Time
-            ? $time->today($timezone ?? $this->timezone)
-            : $time;
+        $dateTime = !$time instanceof DateTimeInterface
+             ? InputNormalizer::time($time)->today($timezone ?? $this->timezone)
+             : $time;
 
-        $timezone = $dateTime->getTimezone();
-        $formatted = $this->formatterFor($timezone)->format($dateTime);
+        $dateTimezone = $dateTime->getTimezone();
+        $formatter = $this->formatterFor($dateTimezone);
+        $formatted = $formatter->format($dateTime);
 
         return false !== $formatted
             ? $formatted
-            : throw new TimeException('Unable to format the time for locale "'.$this->locale.'" and timezone: "'.$timezone->getName().'".');
+            : throw new TimeException('Unable to format the time for locale "'.$this->locale.'" and timezone: "'.$dateTimezone->getName().'"; '.$formatter->getErrorMessage());
     }
 
     private function formatterFor(DateTimeZone $timezone): IntlDateFormatter
@@ -109,7 +115,7 @@ final readonly class LocaleTimeFormatter
         return $inMemoryCache[$key] = $formatter;
     }
 
-    private static function supportsIntl(): void
+    private static function supportsIntlDateFormatter(): void
     {
         static $isSupported = null;
         $isSupported = $isSupported ?? class_exists(IntlDateFormatter::class);

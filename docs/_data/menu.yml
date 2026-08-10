@@ -8,6 +8,7 @@ version:
             Time: '/1.0/time/'
             Interval: '/1.0/interval/'
             IntervalSet: '/1.0/intervalset/'
+            Localization: '/1.0/localization/'
             Available Enums: '/1.0/enums/'
             Accepted Input: '/1.0/accepted-input-types/'
         Identified Values:

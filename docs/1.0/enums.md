@@ -7,7 +7,9 @@ title: Enums
 
 The following Enums are used throughout the package.
 
-## Unit
+## Temporal Concept
+
+### Unit
 
 The `Unit` enum defines all time units supported by the package and is used whenever a unit of time must be specified.
 
@@ -25,7 +27,7 @@ enum Unit
 }
 ```
 
-## Bound
+### Bound
 
 This `Bound` enum identifies which interval boundary is being referenced.
 
@@ -37,7 +39,7 @@ enum Bound
 }
 ```
 
-## Interval Type
+### Interval Type
 
 The `IntervalType` enum defines the four possible interval types based on the relative positions of their boundaries and their duration.
 
@@ -58,7 +60,9 @@ The interval types have the following meanings:
 - `Circular`: the interval spans an entire day.
 - `Collapsed`: the interval has no duration.
 
-## Snap Mode
+## Behavior Modes
+
+### Snap Mode
 
 The `SnapMode` enum determines how values should be rounded when snapping.
 
@@ -76,7 +80,7 @@ Available modes:
 - `Nearest`: rounds to the nearest value.
 - `Ceil`: rounds up to the nearest value.
 
-## Search Mode
+### Search Mode
  
 The `SearchMode` enum specifies the search strategy to use.
 
@@ -93,8 +97,9 @@ Search modes behave as follows:
 - `Linear`: searches within a fixed range starting at midnight and ending at the end of the day.
 - `Circular`: searches without boundaries and wraps beyond the end of the day.
 
+## Formatting Settings
 
-## Duration format
+### Duration format
 
 The `DurationFormat` enum defines the supported string representations for a `Duration`.
 
@@ -115,7 +120,7 @@ Available formats:
 
 This enum is primarily used by formatting methods operating on `Duration` objects.
 
-## Time Format
+### Time Format
 
 The `TimeFormat` enum defines the supported string representations for a `Time`.
 
@@ -130,7 +135,7 @@ enum TimeFormat
 - `Iso8601Extended` : formats a time according to ISO-8601 Extended Time format (`HH:MM:SS.FFFFFF`);
 - `Compact` : formats a time using a compact representation (`3h25m3s250µs`);
 
-## Interval format
+### Interval format
 
 The `IntervalFormat` enum defines the supported string representations for an interval.
 
@@ -153,21 +158,7 @@ Available formats to represent an interval in a string format:
 - `Iso80000` : uses the start and end boundaries together with boundary notation according to ISO-80000.
 - `Bourbaki` : uses the start and end boundaries together with boundary notation according to Bourbaki notation.
 
-## Locale Verbosity
-
-The `LocaleVerbosity` enum specifies the verbosity level used when generating localized Time string representations with the `LocalTimeFormatter`.
-
-```php
-enum LocaleVerbosity
-{
-    case Short;
-    case Medium;
-    case Long;
-    case Full;
-}
-```
-
-## Display Signe
+### Display Sign
 
 The `DisplaySign` enum specifies how the duration sign should be represented when the `Duration::toNumberString` method
 is used.
@@ -182,3 +173,30 @@ enum DisplaySign
 
 - `Auto` : the sign is only shown when the Duration is negative.
 - `Always` : the sign is always shown. For a Duration of 0 second, the sign is `+`.
+
+### Locale Verbosity
+
+The `LocaleVerbosity` enum specifies the verbosity level used when generating localized Time string representations with the `TimeFormatter`.
+
+```php
+enum LocaleVerbosity
+{
+    case Short;
+    case Medium;
+    case Long;
+    case Full;
+}
+```
+
+### List Width
+
+The `ListWidth` enum specifies the width type used when generating localized Duration string representations with the `DuratiomFormatter`.
+
+```php
+enum ListWidth
+{
+    case Narrow
+    case Short;;
+    case Wide;
+}
+```

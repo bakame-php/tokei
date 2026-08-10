@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace Bakame\Tokei;
 
 use Bakame\Tokei\Internal\DurationParts;
+use Bakame\Tokei\Internal\InputNormalizer;
+use DateInterval;
 use IntlException;
 use IntlListFormatter;
 use MessageFormatter;
 use Throwable;
+use Time\Duration as TimeDuration;
 use ValueError;
 
 use function class_exists;
 use function count;
+use function max;
 
 final readonly class DurationFormatter
 {
@@ -30,11 +34,20 @@ final readonly class DurationFormatter
     private IntlListFormatter $listFormatter;
 
     public function __construct(
-        public string $locale = 'en',
+        public string $locale,
+        public ListWidth $listWidth = ListWidth::Wide,
     ) {
         self::supportsIntlListFormatter();
         try {
-            $this->listFormatter = new IntlListFormatter($this->locale, IntlListFormatter::TYPE_AND, IntlListFormatter::WIDTH_WIDE);
+            $this->listFormatter = new IntlListFormatter(
+                $this->locale,
+                IntlListFormatter::TYPE_AND,
+                match ($this->listWidth) {
+                    ListWidth::Narrow => IntlListFormatter::WIDTH_NARROW,
+                    ListWidth::Short => IntlListFormatter::WIDTH_SHORT,
+                    ListWidth::Wide => IntlListFormatter::WIDTH_WIDE,
+                }
+            );
         } catch (Throwable $exception) {
             throw new ValueError('Unable to instantiate '.self::class.' for locale "'.$this->locale.'".', previous: $exception);
         }
@@ -47,10 +60,10 @@ final readonly class DurationFormatter
      *
      * @return non-empty-string
      */
-    public function format(Duration $duration): string
+    public function format(Duration|DateInterval|Interval|Task|TimeDuration $duration): string
     {
         $parts = [];
-        foreach (new DurationParts($duration)->decompose() as $unit => $value) {
+        foreach (new DurationParts(InputNormalizer::duration($duration))->decompose() as $unit => $value) {
             if (0 !== $value) {
                 $parts[] = $this->formatUnit($value, $unit);
             }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Bakame\Tokei\LocaleTimeFormatter;
+use Bakame\Tokei\TimeFormatter;
 use Bakame\Tokei\LocaleVerbosity;
 use Bakame\Tokei\Time;
 use Bakame\Tokei\TimeException;
@@ -13,13 +13,13 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ValueError;
 
-#[CoversClass(LocaleTimeFormatter::class)]
+#[CoversClass(TimeFormatter::class)]
 #[CoversClass(TimeException::class)]
-final class LocaleTimeFormatterTest extends TestCase
+final class TimeFormatterTest extends TestCase
 {
     public function testCanBeInstantiatedWithDefaults(): void
     {
-        $formatter = new LocaleTimeFormatter('en_US');
+        $formatter = new TimeFormatter('en_US');
 
         self::assertSame('en_US', $formatter->locale);
         self::assertSame('UTC', $formatter->timezone->getName());
@@ -28,7 +28,7 @@ final class LocaleTimeFormatterTest extends TestCase
 
     public function testCanBeInstantiatedWithTimezoneString(): void
     {
-        $formatter = new LocaleTimeFormatter(locale: 'en_US', timezone: 'Europe/Brussels');
+        $formatter = new TimeFormatter(locale: 'en_US', timezone: 'Europe/Brussels');
 
         self::assertSame('Europe/Brussels', $formatter->timezone->getName());
     }
@@ -36,7 +36,7 @@ final class LocaleTimeFormatterTest extends TestCase
     public function testCanBeInstantiatedWithTimezoneObject(): void
     {
         $timezone = new DateTimeZone('Europe/Brussels');
-        $formatter = new LocaleTimeFormatter(locale: 'en_US', timezone: $timezone);
+        $formatter = new TimeFormatter(locale: 'en_US', timezone: $timezone);
 
         self::assertSame('Europe/Brussels', $formatter->timezone->getName());
     }
@@ -45,19 +45,19 @@ final class LocaleTimeFormatterTest extends TestCase
     {
         $this->expectException(TimeException::class);
 
-        new LocaleTimeFormatter(locale: 'en_US', timezone: 'Mars/Phobos');
+        new TimeFormatter(locale: 'en_US', timezone: 'Mars/Phobos');
     }
 
     public function testRejectsInvalidLocale(): void
     {
         $this->expectException(ValueError::class);
 
-        new LocaleTimeFormatter('this-is-not-a-locale');
+        new TimeFormatter('this-is-not-a-locale');
     }
 
     public function testFormatsTime(): void
     {
-        $formatter = new LocaleTimeFormatter('en_US');
+        $formatter = new TimeFormatter('en_US');
         $formatted = $formatter->format(Time::at(hour: 14, minute: 30));
 
         self::assertStringContainsString('PM', $formatted);
@@ -65,7 +65,7 @@ final class LocaleTimeFormatterTest extends TestCase
 
     public function testFormatsUsingFormatterTimezone(): void
     {
-        $formatter = new LocaleTimeFormatter(locale: 'en_US', timezone: 'Europe/Brussels');
+        $formatter = new TimeFormatter(locale: 'en_US', timezone: 'Europe/Brussels');
         $result = $formatter->format(Time::at(hour: 10));
 
         self::assertStringContainsString('AM', $result);
@@ -73,7 +73,7 @@ final class LocaleTimeFormatterTest extends TestCase
 
     public function testCanOverrideTimezone(): void
     {
-        $formatter = new LocaleTimeFormatter(locale: 'en_US', timezone: 'UTC', verbosity: LocaleVerbosity::Full);
+        $formatter = new TimeFormatter(locale: 'en_US', timezone: 'UTC', verbosity: LocaleVerbosity::Full);
         $noon = Time::at(hour: 14, minute: 30, second: 13);
 
         self::assertNotSame(
@@ -84,7 +84,7 @@ final class LocaleTimeFormatterTest extends TestCase
 
     public function testTimezoneOverrideDoesNotMutateFormatter(): void
     {
-        $formatter = new LocaleTimeFormatter(locale: 'tr_CY', timezone: 'UTC', verbosity: LocaleVerbosity::Full);
+        $formatter = new TimeFormatter(locale: 'tr_CY', timezone: 'UTC', verbosity: LocaleVerbosity::Full);
         $noon = Time::noon();
         $first = $formatter->format($noon);
         $changedTimezone = $formatter->format($noon, 'Asia/Tokyo');
@@ -92,5 +92,16 @@ final class LocaleTimeFormatterTest extends TestCase
 
         self::assertSame($first, $second);
         self::assertNotSame($first, $changedTimezone);
+    }
+
+    public function test_with_preserves_original_instance(): void
+    {
+        $original = Time::at(23, 54, 23);
+        $updated = $original->with(hour: 8);
+
+        $formatterShort = new TimeFormatter(locale: 'tr_CY', timezone: 'UTC', verbosity: LocaleVerbosity::Short);
+        $formatterLong = new TimeFormatter(locale: 'tr_CY', timezone: 'UTC', verbosity: LocaleVerbosity::Long);
+
+        self::assertNotSame($formatterShort->format($updated), $formatterLong->format($updated));
     }
 }

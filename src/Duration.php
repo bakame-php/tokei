@@ -359,20 +359,6 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * Returns the duration in its absolute form expressed localized.
-     *
-     * @param non-empty-string $locale
-     *
-     * @throws TimeException
-     *
-     * @see DurationFormatter::format()
-     */
-    public function toLocaleString(string $locale): string
-    {
-        return new DurationFormatter(locale: $locale)->format($this);
-    }
-
-    /**
      * @see self::format()
      *
      * @return non-empty-string

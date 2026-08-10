@@ -12,7 +12,7 @@ use Bakame\Tokei\Internal\TimeComponents;
 use Bakame\Tokei\Internal\UnitTransformer;
 use Bakame\Tokei\InvalidDuration;
 use Bakame\Tokei\InvalidTime;
-use Bakame\Tokei\LocaleTimeFormatter;
+use Bakame\Tokei\TimeFormatter;
 use Bakame\Tokei\LocaleVerbosity;
 use Bakame\Tokei\SnapMode;
 use Bakame\Tokei\Time;
@@ -38,7 +38,7 @@ use function unserialize;
 #[CoversClass(DurationParts::class)]
 #[CoversClass(Parser::class)]
 #[CoversClass(TimeComponents::class)]
-#[CoversClass(LocaleTimeFormatter::class)]
+#[CoversClass(TimeFormatter::class)]
 #[CoversClass(InputNormalizer::class)]
 #[CoversClass(UnitTransformer::class)]
 final class TimeTest extends TestCase
@@ -394,24 +394,6 @@ final class TimeTest extends TestCase
             ],
             '01:02:03.000004',
         ];
-    }
-
-    public function test_with_preserves_original_instance(): void
-    {
-        $original = Time::at(23, 54, 23);
-
-        $updated = $original->with(hour: 8);
-
-        self::assertSame('23:54:23', $original->format(TimeFormat::Clock));
-        self::assertSame('08:54:23', $updated->format(TimeFormat::Clock));
-        self::assertNotSame(
-            $updated->toLocaleString(locale: 'tr-CY', verbosity: LocaleVerbosity::Short),
-            $updated->toLocaleString(locale: 'tr-CY', verbosity: LocaleVerbosity::Long)
-        );
-        self::assertSame($updated->toLocaleString('en_US', 'Africa/Nairobi'), $updated->toLocaleString('en_US'));
-
-        $this->expectException(ValueError::class);
-        $updated->toLocaleString('foo-bar');
     }
 
     public function test_with_returns_same_instance_when_no_change(): void

@@ -77,7 +77,6 @@ $duration->negative;              // returns false
 ```php
 Duration::format(DurationFormat $format): string
 Duration::toNumberString(Unit $unit, int $precision = 0, DisplaySign $DisplaySign = DisplaySign::Auto): string
-Duration::toLocaleString(string $locale,): string
 ```
 
 Formatting the duration string representation is returned by the `Duration::format` with the help of the `DurationFormat` Enum
@@ -149,22 +148,6 @@ Passing a negative value for `precision` throws a `ValueError`.
 representation of a duration. If you need to round or truncate the duration
 before converting it to a string, use `Duration::roundTo()` first.
 This keeps rounding behavior explicit and ensures consistent, reproducible results.
-
-
-You may use the `toLocaleString` to get a string representation of the duration
-accoriding to your licale setting. The method returns the absolute value.
-so in english it won't be preceded by the `in` word nor will it be sudffixed
-vu `ago` depending on the instant sign.
-
-```php
-echo Duration::of(hours: 3, seconds: 25, microseconds: 134)
-    ->toLocaleString('tr');
-    
-// returns 3 saat, 25 saniye ve 134 mikrosaniye
-```
-
-<p class="message-notice">To work as expected the <code>Duration::toLocaleString</code> requires the presence
-of the `Intl` extension or of its polyfill otherwise a <code>TimeException</code> will be thrown.</p>
 
 ## Modifying duration
 

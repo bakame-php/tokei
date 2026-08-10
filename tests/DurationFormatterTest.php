@@ -49,7 +49,7 @@ final class DurationFormatterTest extends TestCase
 
     public function testNegativeDurationIsFormattedAsAbsoluteValue(): void
     {
-        $formatter = new DurationFormatter();
+        $formatter = new DurationFormatter('en');
 
         self::assertSame(
             '5 days, 3 seconds, and 30 milliseconds',
@@ -64,7 +64,7 @@ final class DurationFormatterTest extends TestCase
     public function testUnits(string $expected, Duration $duration,): void
     {
 
-        self::assertSame($expected, new DurationFormatter()->format($duration));
+        self::assertSame($expected, new DurationFormatter('en')->format($duration));
     }
 
     /**

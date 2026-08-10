@@ -69,12 +69,12 @@ final class Time implements JsonSerializable
 
     public static function noon(): self
     {
-        return self::sinceMidnight(Duration::of(hours: 12));
+        return self::sinceMidnight(Duration::fromHours(12));
     }
 
     public static function endOfDay(): self
     {
-        return self::sinceMidnight(Duration::of(nanoseconds: 1)->negate());
+        return self::sinceMidnight(Duration::fromNanoseconds(1)->negate());
     }
 
     /**
@@ -192,30 +192,15 @@ final class Time implements JsonSerializable
     }
 
     /**
-     * @param non-empty-string $locale
-     * @param DateTimeInterface|DateTimeZone|non-empty-string $timezone
-     *
-     * @throws TimeException
-     * @see LocaleTimeFormatter::format()
-     */
-    public function toLocaleString(
-        string $locale,
-        DateTimeInterface|DateTimeZone|string $timezone = 'UTC',
-        LocaleVerbosity $verbosity = LocaleVerbosity::Medium
-    ): string {
-        return new LocaleTimeFormatter(locale: $locale, timezone: $timezone, verbosity: $verbosity)->format($this);
-    }
-
-    /**
      * Returns the DateTimeImmutable instance for the current time in a given timezone.
      *
      * @param DateTimeInterface|DateTimeZone|non-empty-string $timeZone
      *
      * @throws TokeiException
      */
-    public function today(DateTimeInterface|DateTimeZone|string $timeZone): DateTimeImmutable
+    public function today(DateTimeInterface|DateTimeZone|string $timezone): DateTimeImmutable
     {
-        return $this->applyTo(new DateTimeImmutable(timezone: InputNormalizer::timezone($timeZone)));
+        return $this->applyTo(new DateTimeImmutable(timezone: InputNormalizer::timezone($timezone)));
     }
 
     /**

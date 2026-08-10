@@ -8,24 +8,23 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 - Support for nanoseconds to `Tokei\Duration`
 - Support for PHP8.6 `Time\Duration`
-- `Duration::negative` method to complement `Duration::isZero()`
-- `Duration::seconds` and `Duration::nanoseconds`
+- `Tokei\Duration` and `Time\Duration` shares the same API (public properties and public methods)
 - `Duration::toNumberString`
-- `Duration::toLocaleString`
-- `Duration::fromHours`, `Duration::fromMinutes`, `Duration::fromSeconds`, `Duration::fromMilliseconds`, `Duration::fromMicroseconds`, `Duration::fromNanoseconds` named constructors to mimic PHP's native `Time\Duration` class constructors. 
 - `DurationFormatter`
 - `Interval::shift` 
 - `IntervalSet::append`, `IntervalSet::totalDuration`
 - `TaskSet::shift`, `TaskSet::expand`, `TaskSet::roundTo`, `TaskSet::append`, `TaskSet::totalDuration`
 - `EventSet::shift`, `EventSet::append`, `EventSet::replace`, `EventSet::remove`
 - `DisplaySign` enum
-- the package now uses and requires `symfony/polyfill-php86` to use PHP8.6 `SortDirection` Enum
+- `ListWidth` enum
+- the package now requires `symfony/polyfill-php86` to use PHP8.6 `SortDirection` Enum
 
 ### Fixed
 
-- **BC Break:**  mathematical operation methods of `Duration` use full names in present tense
+- **BC Break:**  mathematical operation methods of `Duration` use full names in present tense to match `Time\Duration` API
 - **BC Break:** `Time::toDateTime` is renamed `Time::today`
 - **BC Break:** `Interval::fromLinearSpan*` is marked as internal and removed from Public APU.
+- **BC Break:** The `LocaleTimeFormatter` class is renamed `TimeFormatter`.
 
 ### Deprecated
 
@@ -33,7 +32,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Removed
 
-- **BC Break:** `Duration` component public properties are removed use `Duration::$seconds`, `Duration::$nanoseconds` and `Duration::$negative` must be use instead
+- **BC Break:** `Duration` public properties are removed use `Duration::$seconds`, `Duration::$nanoseconds` and `Duration::$negative` must be use instead
 - **BC Break:** `Duration::toDateInterval` removed with no replacement
 - **BC Break:** `Interval::linear*` public properties are removed with no replacement
 - **BC Break:** Removed manual autoload script
@@ -51,7 +50,8 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC Break:** `EventSet::outside()` with no replacement
 - **BC Break:** `EventSet::add()` and `EventSet::sub()` used `EventSet::shift()` instead
 - **BC Break:** `EventSet::push()` use `EventSet::append()` instead
-- **BC Break:** removed the package `SortDirection` polyfill it requires the `symfony/polyfill-php86` package instead
+- **BC Break:** removed the package `SortDirection` polyfill, the `symfony/polyfill-php86` package is use instead
+- **BC Break:** `Time::toLocaleString` use the `TimeFormatter` class directly instead.
 
 ## [0.3.0 - chidorisō](https://github.com/bakame-php/tokei/compare/0.2.0...0.3.0) - 2026-07-21
 
@@ -116,10 +116,10 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Time::sub`
 - `Time::utc`
 - `Time::roundTo`
-- `LocaleTimeFormatter`to improve time string localization using `ext-intl`
+- `TimeFormatter`to improve time string localization using `ext-intl`
 - `SnapMode` to unify rounding
 - `SearchMode` to unify search type (linear or circular)
-- `LocaleVerbosity` to allow fine-grained locale string representation using by `LocaleTimeFormatter`
+- `LocaleVerbosity` to allow fine-grained locale string representation using by `TimeFormatter`
 
 ### Fixed
 
