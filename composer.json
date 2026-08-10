@@ -51,7 +51,7 @@
     ],
     "require": {
         "php": "^8.4.0",
-        "symfony/polyfill-php86": "^v1.34.0"
+        "symfony/polyfill-php86": "^v1.41.0"
     },
     "require-dev": {
         "phpstan/phpstan-phpunit": "^2.0.18",
@@ -61,6 +61,7 @@
         "phpstan/phpstan-deprecation-rules": "^2.0.5",
         "phpstan/phpstan-strict-rules": "^2.0.12",
         "symfony/var-dumper": "^8.1.2",
+        "symfony/polyfill-intl-icu": "^v1.38.0",
         "symfony/polyfill-time": "1.x-dev"
     },
     "autoload": {

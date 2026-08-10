@@ -194,7 +194,7 @@ final class Time implements JsonSerializable
     /**
      * Returns the DateTimeImmutable instance for the current time in a given timezone.
      *
-     * @param DateTimeInterface|DateTimeZone|non-empty-string $timeZone
+     * @param DateTimeInterface|DateTimeZone|non-empty-string $timezone
      *
      * @throws TokeiException
      */
