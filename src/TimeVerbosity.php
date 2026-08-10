@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
-enum LocaleVerbosity
+/**
+ * Verbosity level of the time representation.
+ */
+enum TimeVerbosity
 {
     case Short;
     case Medium;

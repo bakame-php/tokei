@@ -174,12 +174,14 @@ enum DisplaySign
 - `Auto` : the sign is only shown when the Duration is negative.
 - `Always` : the sign is always shown. For a Duration of 0 second, the sign is `+`.
 
-### Locale Verbosity
+## Localization settings
 
-The `LocaleVerbosity` enum specifies the verbosity level used when generating localized Time string representations with the `TimeFormatter`.
+### Time Verbosity
+
+The `TimeVerbosity` enum specifies the verbosity level used when generating localized Time string representations with the `Localize`.
 
 ```php
-enum LocaleVerbosity
+enum TimeVerbosity
 {
     case Short;
     case Medium;
@@ -188,15 +190,28 @@ enum LocaleVerbosity
 }
 ```
 
+### Unit Width
+
+The `UnitWidth` enum specifies the width used to represent the unit in the Duration string representations with the `Localize`.
+
+```php
+enum UnitWidth
+{
+    case Narrow; // the shortest version
+    case Short;  // a short version
+    case Wide;   // the unit full name
+}
+```
+
 ### List Width
 
-The `ListWidth` enum specifies the width type used when generating localized Duration string representations with the `DuratiomFormatter`.
+The `ListWidth` enum specifies the width type used when generating localized Duration string representations with the `Localize`.
 
 ```php
 enum ListWidth
 {
-    case Narrow
-    case Short;;
+    case Narrow;
+    case Short;
     case Wide;
 }
 ```

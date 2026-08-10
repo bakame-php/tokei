@@ -126,6 +126,8 @@ $duration = Duration::fromFormat('-PT25H0.5S', DurationFormat::Iso8601);
 $duration->format(DurationFormat::Compact); // returns '-1d1h500ms'
 ```
 
+<p class="message-info">The compact format exposes weeks as 7 days and days as 24 hours.</p>
+
 You can obtain a duration as a numeric string using the 
 `Duration::toNumberString()` method. It complements `Duration::in()`
 by providing control over the textual representation of

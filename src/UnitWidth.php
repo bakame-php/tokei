@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Bakame\Tokei;
 
 /**
- * Verbosity level of the list patterns.
+ * An enum declaring how to render units name.
  */
-enum ListWidth
+enum UnitWidth
 {
     case Narrow;
     case Short;

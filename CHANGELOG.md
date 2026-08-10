@@ -10,13 +10,14 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - Support for PHP8.6 `Time\Duration`
 - `Tokei\Duration` and `Time\Duration` shares the same API (public properties and public methods)
 - `Duration::toNumberString`
-- `DurationFormatter`
+- `DisplaySign` enum
 - `Interval::shift` 
 - `IntervalSet::append`, `IntervalSet::totalDuration`
 - `TaskSet::shift`, `TaskSet::expand`, `TaskSet::roundTo`, `TaskSet::append`, `TaskSet::totalDuration`
 - `EventSet::shift`, `EventSet::append`, `EventSet::replace`, `EventSet::remove`
-- `DisplaySign` enum
+- `Localize`
 - `ListWidth` enum
+- `UnitWidth` enum
 - the package now requires `symfony/polyfill-php86` to use PHP8.6 `SortDirection` Enum
 
 ### Fixed
@@ -24,7 +25,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC Break:**  mathematical operation methods of `Duration` use full names in present tense to match `Time\Duration` API
 - **BC Break:** `Time::toDateTime` is renamed `Time::today`
 - **BC Break:** `Interval::fromLinearSpan*` is marked as internal and removed from Public APU.
-- **BC Break:** The `LocaleTimeFormatter` class is renamed `TimeFormatter`.
+- **BC Break:** The `LocaleVerbosity` class is moved and renamed `TimeVerbosity`.
 
 ### Deprecated
 
@@ -52,6 +53,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC Break:** `EventSet::push()` use `EventSet::append()` instead
 - **BC Break:** removed the package `SortDirection` polyfill, the `symfony/polyfill-php86` package is use instead
 - **BC Break:** `Time::toLocaleString` use the `TimeFormatter` class directly instead.
+- **BC Break:** The `LocaleTimeFormatter` class is removed use `Localize` instead.
 
 ## [0.3.0 - chidorisō](https://github.com/bakame-php/tokei/compare/0.2.0...0.3.0) - 2026-07-21
 
@@ -119,7 +121,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `TimeFormatter`to improve time string localization using `ext-intl`
 - `SnapMode` to unify rounding
 - `SearchMode` to unify search type (linear or circular)
-- `LocaleVerbosity` to allow fine-grained locale string representation using by `TimeFormatter`
+- `TimeVerbosity` to allow fine-grained locale string representation using by `TimeFormatter`
 
 ### Fixed
 

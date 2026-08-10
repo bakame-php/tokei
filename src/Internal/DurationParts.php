@@ -7,11 +7,16 @@ namespace Bakame\Tokei\Internal;
 use Bakame\Tokei\DisplaySign;
 use Bakame\Tokei\Duration;
 use Bakame\Tokei\DurationFormat;
+use Bakame\Tokei\Event;
+use Bakame\Tokei\Interval;
 use Bakame\Tokei\InvalidDuration;
+use Bakame\Tokei\Task;
 use Bakame\Tokei\Time;
 use Bakame\Tokei\TimeFormat;
 use Bakame\Tokei\TokeiException;
 use Bakame\Tokei\Unit;
+use DateInterval;
+use Time\Duration as TimeDuration;
 use ValueError;
 
 use function implode;
@@ -32,13 +37,14 @@ final readonly class DurationParts
     private const string COMPACT_TIME = 'compact_time';
 
     public int $seconds;
+    public int $nanoseconds;
+
     public int $hour;
     public int $minute;
     public int $second;
-    public int $nanoseconds;
     public int $sign;
 
-    public function __construct(Duration|Time $duration)
+    public function __construct(Duration|DateInterval|Interval|Task|Time|Event|TimeDuration $duration)
     {
         $duration = InputNormalizer::duration($duration);
         $remaining = $duration->seconds % 3600;

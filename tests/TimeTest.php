@@ -12,8 +12,6 @@ use Bakame\Tokei\Internal\TimeComponents;
 use Bakame\Tokei\Internal\UnitTransformer;
 use Bakame\Tokei\InvalidDuration;
 use Bakame\Tokei\InvalidTime;
-use Bakame\Tokei\TimeFormatter;
-use Bakame\Tokei\LocaleVerbosity;
 use Bakame\Tokei\SnapMode;
 use Bakame\Tokei\Time;
 use Bakame\Tokei\TimeException;
@@ -26,7 +24,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
-use ValueError;
 use function json_encode;
 use function serialize;
 use function unserialize;
@@ -38,7 +35,6 @@ use function unserialize;
 #[CoversClass(DurationParts::class)]
 #[CoversClass(Parser::class)]
 #[CoversClass(TimeComponents::class)]
-#[CoversClass(TimeFormatter::class)]
 #[CoversClass(InputNormalizer::class)]
 #[CoversClass(UnitTransformer::class)]
 final class TimeTest extends TestCase
