@@ -45,8 +45,6 @@ A duration can be expressed using any of the following types:
 - `Duration`
 - `Interval`
 - `Task`
-- `Time`
-- `Event`
 - `DateInterval`
 - `Time\Duration`
 
@@ -65,7 +63,6 @@ Interval::since(
 ```
 
 - For Interval types, the interval `duration` property will be used.
-- For Time types, the Tine `offset()` resutl will be used.
 
 <p class="message-warning"><code>DateInterval</code> instances which do not 
 use deterministic component will  be rejected and throw an <code>InvalidDuration</code>
@@ -110,18 +107,20 @@ Timezone can be expressed using:
 - `DateTimeInterface` object, its `getTimezone` method will be called
 - `non-empty-string` representing a timezone identifier
 
-## Argument rules
+## Input rules
 
-| Concept     | Accepted representations                                                         |
-|-------------|----------------------------------------------------------------------------------|
-| Time	        | `Time`, `Event`, `DateTimeInterface`                                             | 
-| Duration    | `Duration`, `DateInterval`, `Interval`, `Task`, `Time`, `Event`, `Tine\Duration` |       
-| Interval    | `Interval`, `Task`                                                               |   
-| Identifiers | `Identifiers`, `HasIdentifiers`, `string`, `iterable`                            |   
-| Timezone    | `DateTimeZone`, `DateTimeInterface`, `string`,                                   |
+| Concept     | Accepted representations                                        |
+|-------------|-----------------------------------------------------------------|
+| Time        | `Time`, `Event`, `DateTimeInterface`                            | 
+| Duration    | `Duration`, `DateInterval`, `Interval`, `Task`, `Time\Duration` |       
+| Interval    | `Interval`, `Task`                                              |   
+| Identifiers | `Identifiers`, `HasIdentifiers`, `string`, `iterable`           |   
+| Timezone    | `DateTimeZone`, `DateTimeInterface`, `string`,                  |
 
-Unless stated otherwise, any method accepting a temporal
-primitive also accepts any compatible representation of that primitive.
+Unless stated otherwise, parameters documented as `Time`, `Duration`, or `Interval` accept
+any of the compatible representations listed above. For brevity, the API documentation
+uses the temporal primitive as the parameter type rather than repeating the
+complete union type.
 
 ## Time representations
 
