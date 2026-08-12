@@ -71,7 +71,7 @@
     },
     "autoload-dev" : {
         "psr-4": {
-            "Tests\\": "tests"
+            "Bakame\\Tokei\\Tests\\": "tests"
         }
     },
     "scripts": {

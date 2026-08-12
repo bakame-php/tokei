@@ -7,7 +7,7 @@ title: TaskSet
 
 `Bakame\Tokei\TaskSet` extends `Bakame\Tokei\IntervalSet` by associating one or more identifiers while preserving all temporal behavior.
 
-## Relationship with Interval
+## Relationship with IntervalSet
 
 `TaskSet` preserves all temporal behavior from `IntervalSet` while adding identification metadata.
 

@@ -22,10 +22,10 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 
 ### Fixed
 
-- **BC Break:**  mathematical operation methods of `Duration` use full names in present tense to match `Time\Duration` API
+- **BC Break:**  mathematical operation methods of `Duration` are renamed to match `Time\Duration` API
 - **BC Break:** `Time::toDateTime` is renamed `Time::today`
-- **BC Break:** `Interval::fromLinearSpan*` is marked as internal and removed from Public APU.
-- **BC Break:** The `LocaleVerbosity` class is moved and renamed `TimeVerbosity`.
+- **BC Break:** `Interval::fromLinearSpan*` is marked as internal and removed from Public API.
+- **BC Break:** The `LocaleVerbosity` class is renamed `TimeVerbosity`.
 
 ### Deprecated
 
@@ -39,7 +39,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC Break:** Removed manual autoload script
 - **BC Break:** `Interval::add()` and `Interval::sub()` replaced by `Interval::shift()`
 - **BC Break:** `IntervalSet::unshift()` used `IntervalSet::append()` instead
-- **BC Break:** `IntervalSet::sub()` and `IntervalSet::sub()` used `IntervalSet::shift()` instead
+- **BC Break:** `IntervalSet::add()` and `IntervalSet::sub()` used `IntervalSet::shift()` instead
 - **BC Break:** `IntervalSet::roundDurationTo()` with no replacement
 - **BC Break:** `IntervalSet::push()` use `IntervalSet::append()` instead
 - **BC Break:** `IntervalSet::duration()` use `IntervalSet::totalDuration()` instead
@@ -52,7 +52,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - **BC Break:** `EventSet::add()` and `EventSet::sub()` used `EventSet::shift()` instead
 - **BC Break:** `EventSet::push()` use `EventSet::append()` instead
 - **BC Break:** removed the package `SortDirection` polyfill, the `symfony/polyfill-php86` package is use instead
-- **BC Break:** `Time::toLocaleString` use the `TimeFormatter` class directly instead.
+- **BC Break:** `Time::toLocaleString` use the `Localize` class directly instead.
 - **BC Break:** The `LocaleTimeFormatter` class is removed use `Localize` instead.
 
 ## [0.3.0 - chidorisō](https://github.com/bakame-php/tokei/compare/0.2.0...0.3.0) - 2026-07-21

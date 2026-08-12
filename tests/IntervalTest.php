@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests;
+namespace Bakame\Tokei\Tests;
 
 use Bakame\Tokei\Bound;
 use Bakame\Tokei\Duration;

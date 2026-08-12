@@ -9,12 +9,11 @@ use Bakame\Tokei\Event;
 use Bakame\Tokei\HasIdentifiers;
 use Bakame\Tokei\Identifiers;
 use Bakame\Tokei\Interval;
-use Bakame\Tokei\InvalidDuration;
-use Bakame\Tokei\InvalidTime;
 use Bakame\Tokei\Task;
 use Bakame\Tokei\TemporalException;
 use Bakame\Tokei\Time;
 use Bakame\Tokei\TimeException;
+use Bakame\Tokei\TokeiException;
 use DateInterval;
 use DateTimeInterface;
 use DateTimeZone;
@@ -31,7 +30,7 @@ final readonly class InputNormalizer
     }
 
     /**
-     * @throws InvalidTime
+     * @throws TokeiException
      */
     public static function time(Time|Event|DateTimeInterface $time): Time
     {
@@ -43,7 +42,7 @@ final readonly class InputNormalizer
     }
 
     /**
-     * @throws InvalidDuration
+     * @throws TokeiException
      */
     public static function duration(Duration|DateInterval|Interval|Task|Time|Event|TimeDuration $duration): Duration
     {
