@@ -10,6 +10,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - Support for PHP8.6 `Time\Duration`
 - `Tokei\Duration` and `Time\Duration` shares the same API (public properties and public methods)
 - `Duration::toNumberString`
+- `DurationFormat::SingleUnit`
 - `DisplaySign` enum
 - `Interval::shift` 
 - `IntervalSet::append`, `IntervalSet::totalDuration`

@@ -18,4 +18,8 @@ enum DurationFormat
      * Displays the duration using compact units: 1h30m15s.
      */
     case Compact;
+    /**
+     * Displays the duration using a single number and its associated units: 2 minutes.
+     */
+    case SingleUnit;
 }

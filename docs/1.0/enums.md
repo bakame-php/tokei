@@ -109,6 +109,7 @@ enum DurationFormat
     case Iso8601;
     case Timer;
     case Compact;
+    case SingleUnit
 }
 ```
 
@@ -117,6 +118,7 @@ Available formats:
 - `Iso8601`: formats a duration according to the ISO-8601 standard.
 - `Timer`: formats a duration using timer notation (`HH:MM:SS.FF`).
 - `Compact`: formats a duration using a compact representation which omits zero components (`1d3h25m3s250µs`).
+- `SingleUnit`: formats a duration using the largest suitable unit that preserves the duration's precision (`25.8d`).
 
 This enum is primarily used by formatting methods operating on `Duration` objects.
 

@@ -134,6 +134,16 @@ final readonly class Duration implements JsonSerializable
         return self::fromComponentsValue(intdiv($ticks, self::TICKS_PER_SECOND), $ticks % self::TICKS_PER_SECOND);
     }
 
+    public static function fromWeeks(int $weeks): self
+    {
+        return self::of(weeks: $weeks);
+    }
+
+    public static function fromDays(int $days): self
+    {
+        return self::of(days: $days);
+    }
+
     public static function fromHours(int $hours): self
     {
         return self::of(hours: $hours);

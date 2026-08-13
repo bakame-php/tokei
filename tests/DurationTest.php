@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei\Tests;
 
+use Bakame\Stackwatch\DurationUnit;
 use Bakame\Tokei\Duration;
 use Bakame\Tokei\DurationFormat;
 use Bakame\Tokei\Internal\DurationComponents;
@@ -14,6 +15,7 @@ use Bakame\Tokei\Internal\UnitTransformer;
 use Bakame\Tokei\InvalidDuration;
 use Bakame\Tokei\InvalidTime;
 use Bakame\Tokei\SnapMode;
+use Bakame\Tokei\TokeiException;
 use Bakame\Tokei\Unit;
 use DateInterval;
 use DateTime;
@@ -21,6 +23,7 @@ use DateTimeImmutable;
 use DivisionByZeroError;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 use Time\Duration as TimeDuration;
@@ -621,6 +624,26 @@ final class DurationTest extends TestCase
         $this->expectException(InvalidDuration::class);
 
         Duration::fromFormat('PW', DurationFormat::Iso8601);
+    }
+
+    #[Test]
+    public function it_can_parse_from_duration_format(): void
+    {
+        self::assertTrue(Duration::fromFormat('0 n', DurationFormat::SingleUnit)->equals(Duration::zero()));
+        self::assertTrue(Duration::fromFormat('0 n', DurationFormat::SingleUnit)->equals(Duration::zero()));
+        self::assertTrue(Duration::fromFormat('0 N', DurationFormat::SingleUnit)->equals(Duration::zero()));
+        self::assertTrue(Duration::fromFormat('1 us', DurationFormat::SingleUnit)->equals(Duration::fromMicroseconds(1)));
+        self::assertTrue(Duration::fromFormat('1.0 ms', DurationFormat::SingleUnit)->equals(Duration::fromMilliseconds(1)));
+        self::assertTrue(Duration::fromFormat('1.0 s', DurationFormat::SingleUnit)->equals(Duration::fromSeconds(1)));
+        self::assertTrue(Duration::fromFormat('1    Min', DurationFormat::SingleUnit)->equals(Duration::fromMinutes(1)));
+        self::assertTrue(Duration::fromFormat('1.00 min', DurationFormat::SingleUnit)->equals(Duration::fromMinutes(1)));
+        self::assertTrue(Duration::fromFormat('24.0 h', DurationFormat::SingleUnit)->equals(Duration::fromDays(1)));
+        self::assertTrue(Duration::fromFormat('2 WEEKS', DurationFormat::SingleUnit)->equals(Duration::fromWeeks(2)));
+        self::assertTrue(
+            Duration::fromFormat('21.58 days', DurationFormat::SingleUnit)->equals(
+                Duration::fromFormat('PT517H55M12S', DurationFormat::Iso8601)
+            )
+        );
     }
 
     public function test_predefined_instances(): void
@@ -1313,5 +1336,92 @@ final class DurationTest extends TestCase
 
         $this->expectException(ValueError::class);
         $duration->toNumberString(Unit::Minute, -5);
+    }
+
+    #[DataProvider('quantityProvider')]
+    public function test_format_quantity(Duration $duration, string $expected): void
+    {
+        self::assertSame($expected, $duration->format(DurationFormat::SingleUnit));
+    }
+
+    /**
+     * @return iterable<non-empty-string, array{0: Duration, 1: non-empty-string}>
+     */
+    public static function quantityProvider(): iterable
+    {
+        yield 'nanoseconds' => [
+            Duration::of(nanoseconds: 123),
+            '123ns',
+        ];
+
+        yield 'microseconds' => [
+            Duration::of(microseconds: 123),
+            '123µs',
+        ];
+
+        yield 'fractional microseconds' => [
+            Duration::of(microseconds: 123, nanoseconds: 456),
+            '123.456µs',
+        ];
+
+        yield 'milliseconds' => [
+            Duration::of(milliseconds: 123),
+            '123ms',
+        ];
+
+        yield 'fractional milliseconds' => [
+            Duration::of(milliseconds: 123, microseconds: 456),
+            '123.456ms',
+        ];
+
+        yield 'seconds' => [
+            Duration::of(seconds: 42),
+            '42s',
+        ];
+
+        yield 'fractional seconds' => [
+            Duration::of(seconds: 42, milliseconds: 123),
+            '42.123s',
+        ];
+
+        yield 'minutes' => [
+            Duration::of(minutes: 10),
+            '10m',
+        ];
+
+        yield 'fractional minutes' => [
+            Duration::of(minutes: 10, seconds: 30),
+            '10.5m',
+        ];
+
+        yield 'hours' => [
+            Duration::of(hours: 3),
+            '3h',
+        ];
+
+        yield 'fractional hours' => [
+            Duration::of(hours: 3, minutes: 30),
+            '3.5h',
+        ];
+
+        yield 'days' => [
+            Duration::of(days: 21),
+            '3w',
+        ];
+
+        yield 'fractional days' => [
+            Duration::of(days: 21, hours: 13, minutes: 55, seconds: 12)->negate(),
+            '-21.58d',
+        ];
+
+        yield 'weeks' => [
+            Duration::of(weeks: 2),
+            '2w',
+        ];
+
+        yield 'fractional weeks' => [
+            Duration::of(weeks: 2, days: 3),
+            '17d',
+        ];
     }
 }

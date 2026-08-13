@@ -94,7 +94,94 @@ final readonly class DurationParts
             DurationFormat::Iso8601 => $this->toIso8601DurationString(),
             DurationFormat::Timer => $this->toTimerString(),
             DurationFormat::Compact => $this->toCompactString($compactType),
+            DurationFormat::SingleUnit => $this->toQuantityString(),
         };
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private function toQuantityString(): string
+    {
+        $unit = Unit::Nanosecond;
+
+        foreach (Unit::cases() as $candidate) {
+            $unitTicks = UnitTransformer::ticks($candidate);
+            $secondTicks = UnitTransformer::ticks(Unit::Second);
+
+            // The duration must be at least one unit.
+            if ($unitTicks >= $secondTicks) {
+                $unitSeconds = intdiv($unitTicks, $secondTicks);
+                if ($this->seconds < $unitSeconds) {
+                    continue;
+                }
+
+                $remainder = ($this->seconds % $unitSeconds) * $secondTicks + $this->nanoseconds;
+            } else {
+                if ($this->nanoseconds < $unitTicks) {
+                    continue;
+                }
+
+                $remainder = $this->nanoseconds % $unitTicks;
+            }
+
+            // A fractional part is exactly representable if, after reducing
+            // the fraction, its denominator contains only factors 2 and 5.
+            if (0 !== $remainder) {
+                $numerator = $remainder;
+                $denominator = $unitTicks;
+
+                $a = $numerator;
+                $b = $denominator;
+
+                while (0 !== $b) {
+                    $remainder = $a % $b;
+                    $a = $b;
+                    $b = $remainder;
+                }
+
+                $denominator = intdiv($denominator, $a);
+
+                while (0 === $denominator % 2) {
+                    $denominator = intdiv($denominator, 2);
+                }
+
+                while (0 === $denominator % 5) {
+                    $denominator = intdiv($denominator, 5);
+                }
+
+                if (1 !== $denominator) {
+                    continue;
+                }
+            }
+
+            $unit = $candidate;
+            break;
+        }
+
+        $precision = match ($unit) {
+            Unit::Nanosecond => 0,
+            Unit::Microsecond => 3,
+            Unit::Millisecond => 6,
+            Unit::Second,
+            Unit::Minute,
+            Unit::Hour,
+            Unit::Day,
+            Unit::Week => 9,
+        };
+
+        $suffix = match ($unit) {
+            Unit::Nanosecond => 'ns',
+            Unit::Microsecond => 'µs',
+            Unit::Millisecond => 'ms',
+            Unit::Second => 's',
+            Unit::Minute => 'm',
+            Unit::Hour => 'h',
+            Unit::Day => 'd',
+            Unit::Week => 'w',
+        };
+
+        return rtrim(rtrim($this->toNumberString($unit, $precision), '0'), '.').$suffix;
     }
 
     /**

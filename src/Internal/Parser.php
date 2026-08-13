@@ -13,9 +13,16 @@ use Bakame\Tokei\Unit;
 use DateInterval;
 use Time\Duration as TimeDuration;
 
+use function explode;
+use function intdiv;
 use function preg_match;
 use function str_pad;
+use function strlen;
+use function strtolower;
+use function substr;
 use function trim;
+
+use const PHP_INT_MAX;
 
 /**
  * Parse Time and/or Duration.
@@ -23,7 +30,6 @@ use function trim;
  * @internal
  *
  * @phpstan-type InputDurationPart ''|numeric-string|int
- * @phpstan-type InputSign ''|'+'|'-'
  */
 final readonly class Parser
 {
@@ -46,7 +52,24 @@ final readonly class Parser
             (?<fractions>\d{1,9})\s*
             (?<unit>µs|us|ms|ns)\s*
         )?
-    $@x';
+    $@ix';
+
+    private const string REGEXP_DURATION_SINGLE_UNIT = '@^
+        \s*
+            (?<number>\d+(?:\.\d+)?)
+        \s*
+            (?<unit>
+                n|ns|nanosecond|nanoseconds|
+                us|µs|microsecond|microseconds|
+                ms|millisecond|milliseconds|
+                s|second|seconds|
+                min|minute|minutes|
+                h|hour|hours|
+                d|day|days|
+                w|week|weeks
+            )
+        \s*
+    $@ix';
 
     private const string REGEXP_DURATION_ISO8601 = '@^
         (?<sign>[+-])?
@@ -82,7 +105,7 @@ final readonly class Parser
             (?<fractions>\d{1,9})\s*
             (?<unit>µs|us|ms|ns)\s*
         )?
-    $@x';
+    $@ix';
 
     private function __construct()
     {
@@ -159,6 +182,7 @@ final readonly class Parser
             DurationFormat::Iso8601 => self::parseDurationIso8601($notation),
             DurationFormat::Timer => self::parseDurationTimer($notation),
             DurationFormat::Compact => self::parseDurationCompact($notation),
+            DurationFormat::SingleUnit => self::parseDurationQuantity($notation),
         };
     }
 
@@ -173,6 +197,7 @@ final readonly class Parser
      *
      * - milliseconds
      * - microseconds
+     * - nanoseconds
      *
      * @param non-empty-string $notation
      *
@@ -185,6 +210,64 @@ final readonly class Parser
         $parts['nanoseconds'] = self::resolveNanoseconds($parts);
 
         return self::toDurationComponents($parts);
+    }
+
+    /**
+     *  Creates a new instance from a unit and a single number.
+     *
+     * Fractional number are allowed but with the correct precision down to
+     * the nanoseconds
+     *
+     * 3.003us is allowed
+     * 3.0003us is disallowed
+     *
+     * @param non-empty-string $notation
+     *
+     * @throws TokeiException
+     */
+    public static function parseDurationQuantity(string $notation): DurationComponents
+    {
+        1 === preg_match(self::REGEXP_DURATION_SINGLE_UNIT, $notation, $parts) || throw new InvalidDuration('Unknown or bad format `'.$notation.'`.');
+
+        $unit = match (strtolower($parts['unit'])) {
+            'n', 'ns', 'nanosecond', 'nanoseconds' => Unit::Nanosecond,
+            'us', 'µs', 'microsecond', 'microseconds' => Unit::Microsecond,
+            'ms', 'millisecond', 'milliseconds' => Unit::Millisecond,
+            's', 'second', 'seconds' => Unit::Second,
+            'min', 'minute', 'minutes' => Unit::Minute,
+            'h', 'hour', 'hours' => Unit::Hour,
+            'd', 'day', 'days' => Unit::Day,
+            'w', 'week', 'weeks' => Unit::Week,
+            default => throw new TokeiException('Invalid or unsupported duration unit.'),
+        };
+
+        $precision = match ($unit) {
+            Unit::Nanosecond => 0,
+            Unit::Microsecond => 3,
+            Unit::Millisecond => 6,
+            Unit::Second,
+            Unit::Minute,
+            Unit::Hour,
+            Unit::Day,
+            Unit::Week => 9,
+        };
+
+        [$integer, $fraction] = explode('.', $parts['number'], 2) + [1 => ''];
+        if (strlen($fraction) > $precision || '' !== trim(substr($fraction, $precision), '0')) {
+            throw new InvalidDuration('duration `'.$notation.'` cannot be represented with nanosecond precision.');
+        }
+
+        $fraction = substr($fraction, 0, $precision);
+        $unitTicks = UnitTransformer::ticks($unit);
+        $fractionMultiplier = intdiv($unitTicks, 10 ** $precision);
+        $fractionTicks = '' === $fraction ? 0 : (int) str_pad($fraction, $precision, '0');
+
+        $integerValue = (int) $integer;
+        $integerValue <= intdiv(PHP_INT_MAX - $fractionTicks * $fractionMultiplier, $unitTicks) || throw new InvalidDuration('duration `'.$notation.'` is too large.');
+
+        $ticks = $integerValue * $unitTicks + $fractionTicks * $fractionMultiplier;
+
+        return new DurationComponents(intdiv($ticks, 1_000_000_000), $ticks % 1_000_000_000);
     }
 
     /**
@@ -278,7 +361,7 @@ final readonly class Parser
      *     minutes? : InputDurationPart,
      *     seconds? : InputDurationPart,
      *     nanoseconds? : InputDurationPart,
-     *     sign? : InputSign,
+     *     sign? : string,
      * } $parts
      *
      * @throws TokeiException
