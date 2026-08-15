@@ -535,6 +535,11 @@ $duration->format(DurationFormat::SingleUnit);
 
 ## Modifying duration
 
+The `Duration` class is immutable. All operations described here return a new instance instead
+of modifying the original object.
+
+### Arithmetic
+
 ```php
 Duration::absolute(): Duration
 Duration::negate(): Duration
@@ -542,38 +547,44 @@ Duration::add(Duration ...$duration): Duration
 Duration::sub(Duration ...$duration): Duration
 Duration::multiplyBy(int $factor): Duration
 Duration::divideBy(int $factor): Duration
-Duration::divideInto(Duration $factor): DivisionResult
-Duration::modulo(Duration $factor): DUration
-Duration::roundTo(Unit $precision, SnapMode $mode): Duration
-Duration::clamp(Duration $min, Duration $max): Duration
 ```
-
 You can:
 
-- make it unsigned using the `Duration::absolute` method
-- invert its signing using the `Duration::negate` method
-- update the duration using multiple instances with `Duration::add` and `Duration::sub` methods
-- round its value to one of the unit declare on the `Bakame\Tokei\Unit` enum
-- clamp its value against two other `Duration` instances
-- multiply or divide a `Duration` instance using the `Duration::multiplyBy`, `Duration::divideBy` and  `Duration::divideInto` methods
+- make it unsigned using the `Duration::absolute()` method
+- invert its sign using the `Duration::negate()` method
+- combine multiple duration instances using the `Duration::add()` and `Duration::sub()` methods
+- multiply or divide a `Duration` instance using the `Duration::multiplyBy()` and `Duration::divideBy()` methods
 
 ```php
+use Bakame\Tokei\Duration;
+use Bakame\Tokei\DurationFormat;
+
 $microseconds = 3_661_500_000;
 $a = Duration::of(microseconds: $microseconds);
-$b = $a->roundTo(Unit::Minute, RoundingStrategy::Ceil);
-$c = $b->negate();
-$d = $c->sub(Duration::of(minutes: 10));
+$b = $a->negate();
+$c = $b->sub(Duration::of(minutes: 10));
 
 echo $a->format(DurationFormat::Timer);
 // returns "1:01:01.500000"
 echo $b->format(DurationFormat::Timer);
-// returns "1:01:00"
+// returns "-01:01:01.500"
 echo $c->format(DurationFormat::Timer);
-// returns "-1:01:00"
+// returns "-01:11:01.500"
 echo $c->absolute()->format(DurationFormat::Timer);
-// returns "1:01:00"
-echo $a->add($b, $c, $d)->format(DurationFormat::Timer);
-// returns "-0:09:58.500000"
+// returns "01:11:01.500"
+echo $a->add($b, $c)->format(DurationFormat::Timer);
+// returns "-01:11:01.500"
+```
+
+### Rounding and clamping
+
+```php
+Duration::roundTo(Unit $precision, SnapMode $mode): Duration
+Duration::clamp(Duration $min, Duration $max): Duration
+```
+
+```php
+Use Bakame\Tokei\Duration;
 
 $microseconds = 3_761_500_000;
 $a = Duration::of(microseconds: $microseconds);
@@ -583,30 +594,22 @@ $a->roundTo(Unit::Minute, SnapMode::Floor)->format(DurationFormat::Timer);
 // returns "1:02:00"
 $a->roundTo(Unit::Minute, SnapMode::Ceil)->format(DurationFormat::Timer);
 // returns "1:03:00"
-
-$duration = Duration::fromFormat('-PT5H30M', DurationFormat::Iso8601);
-$oneHour = Duration::of(hours: 1);
-$result = $duration->divideInto($oneHour);
-
-$duration->format(DurationFormat::Iso8601);
-// returns '-PT5H30M'
-$result->quotient;
-// returns '-5'
-$result->remainder->format(DurationFormat::Iso8601);
-// returns '-PT30M'
-$oneHour
-    ->multiplyBy($result->quotient)
-    ->add($result->remainder)
-    ->equals($duration);
-// returns true
+$a->clamp(
+    Duration::of(hours: 1), 
+    Duration::of(days: 1)
+)->format(DurationFormat::Timer);
+// returns "1:00:00"
 ```
 
-<p class="message-info">Use <code>Duration::add</code> or <code>Duration::sub</code> to aggregate signed duration objects.</p>
+### Dividing durations
 
-Support for dividing one duration by another is enabled using  the `divideInto()` or `modulo()` method.
-The `divideInto()` method returns a DTO, `DivisionResult`, exposing the quotient and remainder,
-giving developers the flexibility to access the result either through its properties
-or by using array destructuring on `DivisionResult`. 
+```php
+Duration::divideInto(Duration $factor): DivisionResult
+```
+
+`Duration` provides two ways to divide durations. `divideBy()` divides a duration by an integer
+factor and returns a `Duration`, while `divideInto()` divides one duration by another and returns
+a `DivisionResult` containing the quotient and remainder. 
 
 ```php
 $duration = Duration::fromFormat('-PT5H30M', DurationFormat::Iso8601);
@@ -623,9 +626,19 @@ $quotient;
 $remainder->format(DurationFormat::Iso8601);
 // returns '-PT30M'
 ```
-The `modulo()` method complements `divideInto()` by providing an easy way to retrieve
-the remainder of a duration division. This is especially useful when dealing with
-circular ranges, as the result of `modulo()` is always a non-negative `Duration` instance
+
+### Remainder
+
+```php
+Duration::modulo(Duration $factor): Duration
+```
+
+The `modulo()` method provides direct access to the remainder. This is especially useful
+when dealing with circular ranges, as the result of `modulo()` is always a non-negative 
+`Duration` instance.
+
+Unlike the remainder returned by `divideInto()`, which preserves the sign of the dividend,
+`modulo()` always returns a non-negative duration.
 
 ```php
 $duration = Duration::of(hours: 3, seconds: 35);
@@ -643,13 +656,13 @@ echo $duration
 //returns 35s;
 
 echo $duration
-    ->negated()
+    ->negeate()
     ->modulo($factor)
     ->format(DurationFormat::Compact), PHP_EOL;
 //returns 59m25s;
 
 echo $duration
-    ->negated()
+    ->negeate()
     ->divideInto($factor)
     ->remainder
     ->format(DurationFormat::Compact), PHP_EOL;
@@ -661,15 +674,15 @@ echo $duration
 It is possible to compare duration using common methods terminology
 
 ```php
-Duration::compare(Duration $that, Duration $other): int;
+Duration::compare(Duration $a, Duration $b): int;
 ```
 <p class="message-notice">The method is static to allow broader usage with other PHP sorting functions.</p>
 
 Returns:
 
-- `-1` if shorter
-- `0` if equal
-- `1` if longer
+- `-1` if `$a` is shorter than `$b`
+- `0` if `$a` is equal to `$b`
+- `1` if `$a` is longer than `$b`
 
 Convenient methods based on <code>Duration::compare</code> are also available:
 

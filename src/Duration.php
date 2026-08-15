@@ -299,24 +299,24 @@ final readonly class Duration implements JsonSerializable
      * @return int<-1, 1> If this duration is shorter, equal, or longer than the given duration.
      */
     public static function compare(
-        Duration|DateInterval|Interval|Task|Time|Event|TimeDuration $that,
-        Duration|DateInterval|Interval|Task|Time|Event|TimeDuration $other
+        Duration|DateInterval|Interval|Task|Time|Event|TimeDuration $a,
+        Duration|DateInterval|Interval|Task|Time|Event|TimeDuration $b
     ): int {
-        $that = InputNormalizer::duration($that);
-        $other = InputNormalizer::duration($other);
-        if ($that->sign !== $other->sign) {
-            return $that->sign <=> $other->sign;
+        $a = InputNormalizer::duration($a);
+        $b = InputNormalizer::duration($b);
+        if ($a->sign !== $b->sign) {
+            return $a->sign <=> $b->sign;
         }
 
-        if (0 === $that->sign) {
+        if (0 === $a->sign) {
             return 0;
         }
 
-        $comparison = $that->seconds !== $other->seconds
-            ? $that->seconds <=> $other->seconds
-            : $that->nanoseconds <=> $other->nanoseconds;
+        $comparison = $a->seconds !== $b->seconds
+            ? $a->seconds <=> $b->seconds
+            : $a->nanoseconds <=> $b->nanoseconds;
 
-        return $that->sign < 0 ? -$comparison : $comparison;
+        return $a->sign < 0 ? -$comparison : $comparison;
     }
 
     /**

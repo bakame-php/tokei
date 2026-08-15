@@ -277,7 +277,7 @@ final class Time implements JsonSerializable
     {
         $offset = Duration::zero()->add(...array_map(InputNormalizer::duration(...), $duration));
 
-        return $offset->isZero() ? $this : self::sinceMidnight($this->offset()->add($offset));
+        return $offset->isZero() ? $this : self::sinceMidnight($this->offset->add($offset));
     }
 
     /**
@@ -291,7 +291,7 @@ final class Time implements JsonSerializable
     {
         $offset = Duration::zero()->add(...array_map(InputNormalizer::duration(...), $duration));
 
-        return $offset->isZero() ? $this : self::sinceMidnight($this->offset()->sub($offset));
+        return $offset->isZero() ? $this : self::sinceMidnight($this->offset->sub($offset));
     }
 
     /**
@@ -322,10 +322,9 @@ final class Time implements JsonSerializable
      */
     public function roundTo(Unit $unit, SnapMode $mode = SnapMode::Nearest): self
     {
-        $offset = $this->offset;
-        $duration = $offset->roundTo($unit, $mode);
+        $duration = $this->offset->roundTo($unit, $mode);
 
-        return $duration->equals($offset) ? $this : self::sinceMidnight($duration);
+        return $duration->equals($this->offset) ? $this : self::sinceMidnight($duration);
     }
 
     /**
@@ -347,7 +346,7 @@ final class Time implements JsonSerializable
      */
     public function diff(Time|Event|DateTimeInterface $other): Duration
     {
-        return InputNormalizer::time($other)->offset()->sub($this->offset());
+        return InputNormalizer::time($other)->offset->sub($this->offset);
     }
 
     /**
