@@ -55,15 +55,14 @@ final readonly class Parser
     $@ix';
 
     private const string REGEXP_DURATION_SINGLE_UNIT = '@^
-        \s*
-            (?<number>\d+(?:\.\d+)?)
-        \s*
+            (?<sign>[+-])?\s*
+            (?<number>\d+(?:\.\d+)?)\s*
             (?<unit>
                 n|ns|nanosecond|nanoseconds|
                 us|µs|microsecond|microseconds|
                 ms|millisecond|milliseconds|
                 s|second|seconds|
-                min|minute|minutes|
+                m|min|minute|minutes|
                 h|hour|hours|
                 d|day|days|
                 w|week|weeks
@@ -182,7 +181,10 @@ final readonly class Parser
             DurationFormat::Iso8601 => self::parseDurationIso8601($notation),
             DurationFormat::Timer => self::parseDurationTimer($notation),
             DurationFormat::Compact => self::parseDurationCompact($notation),
-            DurationFormat::SingleUnit => self::parseDurationQuantity($notation),
+            default => self::parseDurationQuantity($notation, match ($format) {
+                DurationFormat::TotalUnit => 'integer_only',
+                default => 'allowed_fractions',
+            }),
         };
     }
 
@@ -225,7 +227,7 @@ final readonly class Parser
      *
      * @throws TokeiException
      */
-    public static function parseDurationQuantity(string $notation): DurationComponents
+    public static function parseDurationQuantity(string $notation, string $constraint): DurationComponents
     {
         1 === preg_match(self::REGEXP_DURATION_SINGLE_UNIT, $notation, $parts) || throw new InvalidDuration('Unknown or bad format `'.$notation.'`.');
 
@@ -234,7 +236,7 @@ final readonly class Parser
             'us', 'µs', 'microsecond', 'microseconds' => Unit::Microsecond,
             'ms', 'millisecond', 'milliseconds' => Unit::Millisecond,
             's', 'second', 'seconds' => Unit::Second,
-            'min', 'minute', 'minutes' => Unit::Minute,
+            'm', 'min', 'minute', 'minutes' => Unit::Minute,
             'h', 'hour', 'hours' => Unit::Hour,
             'd', 'day', 'days' => Unit::Day,
             'w', 'week', 'weeks' => Unit::Week,
@@ -253,9 +255,15 @@ final readonly class Parser
         };
 
         [$integer, $fraction] = explode('.', $parts['number'], 2) + [1 => ''];
+        if ('integer_only' === $constraint && '' !== $fraction) {
+            throw new InvalidDuration('Unknown or bad format `'.$notation.'`; the notation cannot contain fractions.');
+        }
+
         if (strlen($fraction) > $precision || '' !== trim(substr($fraction, $precision), '0')) {
             throw new InvalidDuration('duration `'.$notation.'` cannot be represented with nanosecond precision.');
         }
+
+        $sign = '-' === $parts['sign'] ? -1 : 1;
 
         $fraction = substr($fraction, 0, $precision);
         $unitTicks = UnitTransformer::ticks($unit);
@@ -266,6 +274,7 @@ final readonly class Parser
         $integerValue <= intdiv(PHP_INT_MAX - $fractionTicks * $fractionMultiplier, $unitTicks) || throw new InvalidDuration('duration `'.$notation.'` is too large.');
 
         $ticks = $integerValue * $unitTicks + $fractionTicks * $fractionMultiplier;
+        $ticks *= $sign;
 
         return new DurationComponents(intdiv($ticks, 1_000_000_000), $ticks % 1_000_000_000);
     }

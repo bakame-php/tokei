@@ -109,7 +109,8 @@ enum DurationFormat
     case Iso8601;
     case Timer;
     case Compact;
-    case SingleUnit
+    case LargestUnit;
+    case TotalUnit
 }
 ```
 
@@ -118,7 +119,8 @@ Available formats:
 - `Iso8601`: formats a duration according to the ISO-8601 standard.
 - `Timer`: formats a duration using timer notation (`HH:MM:SS.FF`).
 - `Compact`: formats a duration using a compact representation which omits zero components (`1d3h25m3s250µs`).
-- `SingleUnit`: formats a duration using the largest suitable unit that preserves the duration's precision (`25.8d`).
+- `LargestUnit`: formats a duration using the largest suitable unit that preserves the duration's precision (`25.8d`).
+- `TotalUnit`: formats a duration using the largest unit that preserves the original precision (`37152m`).
 
 This enum is primarily used by formatting methods operating on `Duration` objects.
 
@@ -189,6 +191,19 @@ enum TimeVerbosity
     case Medium;
     case Long;
     case Full;
+}
+```
+
+### Duration Style
+
+The `DurationStyle` enum specifies the style used when generating localized Duration string representations with the `Localize`.
+
+```php
+enum DurationStyle
+{
+    case Decomposed; // Decompose the duration into conventional units.
+    case LargestUnit; // Express the duration using the largest suitable unit, allowing fractional values.
+    case TotalUnit;  // Express the entire duration using a single unit, choosing the largest unit that preserves the original precision.
 }
 ```
 

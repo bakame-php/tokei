@@ -629,18 +629,18 @@ final class DurationTest extends TestCase
     #[Test]
     public function it_can_parse_from_duration_format(): void
     {
-        self::assertTrue(Duration::fromFormat('0 n', DurationFormat::SingleUnit)->equals(Duration::zero()));
-        self::assertTrue(Duration::fromFormat('0 n', DurationFormat::SingleUnit)->equals(Duration::zero()));
-        self::assertTrue(Duration::fromFormat('0 N', DurationFormat::SingleUnit)->equals(Duration::zero()));
-        self::assertTrue(Duration::fromFormat('1 us', DurationFormat::SingleUnit)->equals(Duration::fromMicroseconds(1)));
-        self::assertTrue(Duration::fromFormat('1.0 ms', DurationFormat::SingleUnit)->equals(Duration::fromMilliseconds(1)));
-        self::assertTrue(Duration::fromFormat('1.0 s', DurationFormat::SingleUnit)->equals(Duration::fromSeconds(1)));
-        self::assertTrue(Duration::fromFormat('1    Min', DurationFormat::SingleUnit)->equals(Duration::fromMinutes(1)));
-        self::assertTrue(Duration::fromFormat('1.00 min', DurationFormat::SingleUnit)->equals(Duration::fromMinutes(1)));
-        self::assertTrue(Duration::fromFormat('24.0 h', DurationFormat::SingleUnit)->equals(Duration::fromDays(1)));
-        self::assertTrue(Duration::fromFormat('2 WEEKS', DurationFormat::SingleUnit)->equals(Duration::fromWeeks(2)));
+        self::assertTrue(Duration::fromFormat('0 n', DurationFormat::LargestUnit)->equals(Duration::zero()));
+        self::assertTrue(Duration::fromFormat('0 n', DurationFormat::LargestUnit)->equals(Duration::zero()));
+        self::assertTrue(Duration::fromFormat('0 N', DurationFormat::LargestUnit)->equals(Duration::zero()));
+        self::assertTrue(Duration::fromFormat('1 us', DurationFormat::LargestUnit)->equals(Duration::fromMicroseconds(1)));
+        self::assertTrue(Duration::fromFormat('1.0 ms', DurationFormat::LargestUnit)->equals(Duration::fromMilliseconds(1)));
+        self::assertTrue(Duration::fromFormat('1.0 s', DurationFormat::LargestUnit)->equals(Duration::fromSeconds(1)));
+        self::assertTrue(Duration::fromFormat('1    Min', DurationFormat::LargestUnit)->equals(Duration::fromMinutes(1)));
+        self::assertTrue(Duration::fromFormat('1.00 min', DurationFormat::LargestUnit)->equals(Duration::fromMinutes(1)));
+        self::assertTrue(Duration::fromFormat('24.0 h', DurationFormat::LargestUnit)->equals(Duration::fromDays(1)));
+        self::assertTrue(Duration::fromFormat('2 WEEKS', DurationFormat::LargestUnit)->equals(Duration::fromWeeks(2)));
         self::assertTrue(
-            Duration::fromFormat('21.58 days', DurationFormat::SingleUnit)->equals(
+            Duration::fromFormat('21.58 days', DurationFormat::LargestUnit)->equals(
                 Duration::fromFormat('PT517H55M12S', DurationFormat::Iso8601)
             )
         );
@@ -1341,7 +1341,7 @@ final class DurationTest extends TestCase
     #[DataProvider('quantityProvider')]
     public function test_format_quantity(Duration $duration, string $expected): void
     {
-        self::assertSame($expected, $duration->format(DurationFormat::SingleUnit));
+        self::assertSame($expected, $duration->format(DurationFormat::LargestUnit));
     }
 
     /**
@@ -1422,6 +1422,181 @@ final class DurationTest extends TestCase
         yield 'fractional weeks' => [
             Duration::of(weeks: 2, days: 3),
             '17d',
+        ];
+    }
+
+    #[DataProvider('singleUnitProvider')]
+    public function testSingleUnitFormat(
+        Duration $duration,
+        string $expected,
+    ): void {
+        self::assertSame(
+            $expected,
+            $duration->format(DurationFormat::LargestUnit),
+        );
+    }
+
+    public static function singleUnitProvider(): iterable
+    {
+        yield 'exact hours' => [
+            Duration::of(hours: 2),
+            '2h',
+        ];
+
+        yield 'fractional hours' => [
+            Duration::of(minutes: 90),
+            '1.5h',
+        ];
+
+        yield 'fractional seconds' => [
+            Duration::of(seconds: 1, milliseconds: 250),
+            '1.25s',
+        ];
+
+        yield 'fractional milliseconds' => [
+            Duration::of(milliseconds: 1, microseconds: 250),
+            '1.25ms',
+        ];
+
+        yield 'negative fractional hours' => [
+            Duration::of(minutes: 90)->negate(),
+            '-1.5h',
+        ];
+
+        yield 'negative fractional seconds' => [
+            Duration::of(seconds: 1, milliseconds: 250)->negate(),
+            '-1.25s',
+        ];
+    }
+
+    #[DataProvider('totalUnitProvider')]
+    public function testTotalUnitFormat(
+        Duration $duration,
+        string $expected,
+    ): void {
+        self::assertSame(
+            $expected,
+            $duration->format(DurationFormat::TotalUnit),
+        );
+    }
+
+    /**
+     * @return iterable<non-empty-string, array{0: Duration, 1: non-empty-string}>
+     */
+    public static function totalUnitProvider(): iterable
+    {
+        yield 'exact hours' => [
+            Duration::of(hours: 2),
+            '2h',
+        ];
+
+        yield 'total minutes' => [
+            Duration::of(minutes: 90),
+            '90m',
+        ];
+
+        yield 'total seconds' => [
+            Duration::of(seconds: 90),
+            '90s',
+        ];
+
+        yield 'total milliseconds' => [
+            Duration::of(seconds: 1, milliseconds: 250),
+            '1250ms',
+        ];
+
+        yield 'total microseconds' => [
+            Duration::of(milliseconds: 1, microseconds: 250),
+            '1250µs',
+        ];
+
+        yield 'negative total minutes' => [
+            Duration::of(minutes: 90)->negate(),
+            '-90m',
+        ];
+
+        yield 'negative total milliseconds' => [
+            Duration::of(seconds: 1, milliseconds: 250)->negate(),
+            '-1250ms',
+        ];
+    }
+
+    #[DataProvider('singleUnitParsingProvider')]
+    public function testSingleUnitParsing(
+        string $value,
+        Duration $expected,
+    ): void {
+        self::assertTrue(Duration::fromFormat($value, DurationFormat::LargestUnit)->equals($expected));
+
+    }
+
+    /**
+     * @return iterable<non-empty-string, array{0: non-empty-string, 1: Duration}>
+     */
+    public static function singleUnitParsingProvider(): iterable
+    {
+        yield 'integer' => [
+            '2h',
+            Duration::of(hours: 2),
+        ];
+
+        yield 'fractional hours' => [
+            '1.5h',
+            Duration::of(minutes: 90),
+        ];
+
+        yield 'fractional seconds' => [
+            '1.25s',
+            Duration::of(seconds: 1, milliseconds: 250),
+        ];
+
+        yield 'negative fractional hours' => [
+            '-1.5h',
+            Duration::of(minutes: 90)->negate(),
+        ];
+
+        yield 'negative fractional seconds' => [
+            '-1.25s',
+            Duration::of(seconds: 1, milliseconds: 250)->negate(),
+        ];
+    }
+
+    #[DataProvider('totalUnitParsingProvider')]
+    public function testTotalUnitParsing(
+        string $value,
+        Duration $expected,
+    ): void {
+        self::assertTrue(Duration::fromFormat($value, DurationFormat::TotalUnit)->equals($expected));
+    }
+
+    /**
+     * @return iterable<non-empty-string, array{0: non-empty-string, 1: Duration}>
+     */
+    public static function totalUnitParsingProvider(): iterable
+    {
+        yield 'hours' => [
+            '2h',
+            Duration::of(hours: 2),
+        ];
+
+        yield 'total minutes' => [
+            '90m',
+            Duration::of(minutes: 90),
+        ];
+
+        yield 'total milliseconds' => [
+            '1250ms',
+            Duration::of(seconds: 1, milliseconds: 250),
+        ];
+
+        yield 'negative total minutes' => [
+            '-90m',
+            Duration::of(minutes: 90)->negate(),
+        ];
+
+        yield 'negative total milliseconds' => [
+            '-1250ms',
+            Duration::of(seconds: 1, milliseconds: 250)->negate(),
         ];
     }
 }

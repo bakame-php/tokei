@@ -33,6 +33,7 @@ Attempting to use it will throw a `TokeiException`.
 ## Duration
 
 ```php
+use Bakame\Tokei\DurationStyle;
 use Bakame\Tokei\Localize;
 use Bakame\Tokei\ListWidth;
 use Bakame\Tokei\UnitWidth;
@@ -40,6 +41,7 @@ use Bakame\Tokei\UnitWidth;
 Localize::duration(
     Duration $duration,
     string $locale,
+    DurationStyle $style = DurationStyle::Decomposed,
     UnitWidth $unitWidth = UnitWidth::Wide,
     ListWidth $listWidth = ListWidth::Wide,
 ): string
@@ -47,18 +49,62 @@ Localize::duration(
 
 Use `Localize::duration()` to obtain a localized string representation of a duration.
 
-The duration is always formatted as an **absolute value**. The sign of the duration is therefore ignored.
-For example, a negative duration is not formatted using relative expressions such as `in ...` or `... ago`.
+
+### Style
+
+The `style` parameter controls how the duration is expressed:
+
+`DurationStyle::Decomposed` decomposes the duration into conventional units.
+`DurationStyle::LargestUnit` expresses the duration using the largest suitable unit, allowing fractional values.
+`DurationStyle::TotalUnit` expresses the entire duration using a single unit, automatically choosing the largest unit that preserves precision.
+
+For example:
 
 ```php
 use Bakame\Tokei\Duration;
+use Bakame\Tokei\DurationStyle;
 use Bakame\Tokei\Localize;
-use Bakame\Tokei\ListWidth;
-use Bakame\Tokei\UnitWidth;
 
-$duration = Duration::of(hours: 3, seconds: 25, microseconds: 134);
+$duration = Duration::of(minutes: 192);
 
-echo Localize::duration(duration: $duration, locale: 'tr');
+echo Localize::duration(
+    duration: $duration,
+    locale: 'fr',
+    style: DurationStyle::Decomposed,
+);
+// 3 heures et 12 minutes
+
+echo Localize::duration(
+    duration: $duration,
+    locale: 'fr',
+    style: DurationStyle::LargestUnit,
+);
+// 3,2 heures
+
+echo Localize::duration(
+    duration: $duration,
+    locale: 'fr',
+    style: DurationStyle::TotalUnit,
+);
+// 192 minutes
+```
+
+### Unit and list width
+
+The `unitWidth` parameter controls how individual units are displayed, while `listWidth` controls how multiple
+duration components are combined.
+
+```php
+$duration = Duration::of(
+    hours: 3,
+    seconds: 25,
+    microseconds: 134,
+);
+
+echo Localize::duration(
+    duration: $duration,
+    locale: 'tr',
+);
 // 3 saat, 25 saniye ve 134 mikrosaniye
 
 echo Localize::duration(
@@ -70,6 +116,28 @@ echo Localize::duration(
 // 3s, 25sn, 134 μsn
 ```
 
+`unitWidth` and `listWidth` affect the localized representation independently of the selected `DurationStyle`.
+
+
+### Negative durations
+
+The duration is always formatted as an **absolute value**. The sign is intentionnaly omitted.
+
+For example
+
+```php
+$duration = Duration::of(minutes: 192)->negate();
+
+echo Localize::duration(
+    duration: $duration,
+    locale: 'en',
+);
+// 3 hours and 12 minutes
+```
+
+A negative duration is **not** interpreted as a relative expression such as in 3 hours or 3 hours ago.
+If temporal direction is required, use a relative-duration API instead.
+
 ## Time
 
 ```php
@@ -77,7 +145,7 @@ use Bakame\Tokei\Localize;
 use Bakame\Tokei\TimeVerbosity;
 
 Localize::time(
-    Time|Even|DateTimeInterface $time,
+    Time|Event|DateTimeInterface $time,
     string $locale,
     DateTimeZone|string $timezone = 'UTC',
     TimeVerbosity $verbosity = TimeVerbosity::Medium
@@ -85,8 +153,8 @@ Localize::time(
 ```
 Use `Localize::time()` to obtain a localized string representation of a `Time` or `DateTimeInterface`.
 
-The `$timezone` argument is used when formatting a `Time`.
-When a `DateTimeInterface` is provided, its own timezone information is used.
+The `timezone` parameter is used when formatting a `Time`.
+When a `DateTimeInterface` is provided, its own timezone information is used instead.
 
 The verbosity controls the amount of information included in the formatted time.
 

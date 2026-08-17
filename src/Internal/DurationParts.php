@@ -94,14 +94,14 @@ final readonly class DurationParts
             DurationFormat::Iso8601 => $this->toIso8601DurationString(),
             DurationFormat::Timer => $this->toTimerString(),
             DurationFormat::Compact => $this->toCompactString($compactType),
-            DurationFormat::SingleUnit => $this->toQuantityString(),
+            default => $this->toQuantityString(match ($format) {
+                DurationFormat::LargestUnit => 'single_unit',
+                DurationFormat::TotalUnit => 'total_unit',
+            }),
         };
     }
 
-    /**
-     * @return non-empty-string
-     */
-    private function toQuantityString(): string
+    public function toLargestSuitableUnit(): DurationDecimal
     {
         $unit = Unit::Nanosecond;
 
@@ -159,18 +159,53 @@ final readonly class DurationParts
             break;
         }
 
-        $precision = match ($unit) {
-            Unit::Nanosecond => 0,
-            Unit::Microsecond => 3,
-            Unit::Millisecond => 6,
-            Unit::Second,
-            Unit::Minute,
-            Unit::Hour,
-            Unit::Day,
-            Unit::Week => 9,
-        };
+        return new DurationDecimal($this->toNumber($unit), $unit);
+    }
 
-        $suffix = match ($unit) {
+    public function toLargestIntegralUnit(): DurationDecimal
+    {
+        foreach (Unit::cases() as $unit) {
+            if ($this->isMultipleOf($unit)) {
+                return new DurationDecimal($this->toNumber($unit), $unit);
+            }
+        }
+
+        //this should never be reached!
+        throw new ValueError('No suitable duration unit found.');
+    }
+
+    private function isMultipleOf(Unit $unit): bool
+    {
+        /** @var int $secondTicks */
+        static $secondTicks = 1_000_000_000;
+        $unitTicks = UnitTransformer::ticks($unit);
+        if ($unitTicks >= $secondTicks) {
+            $unitSeconds = intdiv($unitTicks, $secondTicks);
+
+            return 0 === $this->nanoseconds
+                && 0 === $this->seconds % $unitSeconds;
+        }
+
+        $unitNanoseconds = $unitTicks;
+
+        return 0 === (
+            ($this->seconds * $secondTicks + $this->nanoseconds)
+                % $unitNanoseconds
+        );
+    }
+
+    /**
+     * @param non-empty-string $style
+     *
+     * @return non-empty-string
+     */
+    private function toQuantityString(string $style): string
+    {
+        $decimal = 'single_unit' === $style
+            ? $this->toLargestSuitableUnit()
+            : $this->toLargestIntegralUnit();
+
+        $suffix = match ($decimal->unit) {
             Unit::Nanosecond => 'ns',
             Unit::Microsecond => 'µs',
             Unit::Millisecond => 'ms',
@@ -181,7 +216,20 @@ final readonly class DurationParts
             Unit::Week => 'w',
         };
 
-        return rtrim(rtrim($this->toNumberString($unit, $precision), '0'), '.').$suffix;
+        $precision = match ($decimal->unit) {
+            Unit::Nanosecond => 0,
+            Unit::Microsecond => 3,
+            Unit::Millisecond => 6,
+            Unit::Second,
+            Unit::Minute,
+            Unit::Hour,
+            Unit::Day,
+            Unit::Week => 9,
+        };
+
+        $value = number_format(num: $decimal->value, decimals: $precision, thousands_separator: '');
+
+        return rtrim(rtrim($value, '0'), '.').$suffix;
     }
 
     /**

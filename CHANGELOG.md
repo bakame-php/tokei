@@ -10,7 +10,8 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - Support for PHP8.6 `Time\Duration`
 - `Tokei\Duration` and `Time\Duration` shares the same API (public properties and public methods)
 - `Duration::toNumberString`
-- `DurationFormat::SingleUnit`
+- `DurationFormat::LargestUnit`
+- `DurationFormat::TotalUnit`
 - `DisplaySign` enum
 - `Interval::shift` 
 - `IntervalSet::append`, `IntervalSet::totalDuration`
@@ -19,6 +20,7 @@ All Notable changes to `bakame/tokei` will be documented in this file.
 - `Localize`
 - `ListWidth` enum
 - `UnitWidth` enum
+- `DurationStyle` enum
 - the package now requires `symfony/polyfill-php86` to use PHP8.6 `SortDirection` Enum
 
 ### Fixed

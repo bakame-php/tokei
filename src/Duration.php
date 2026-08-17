@@ -109,6 +109,10 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
+     * Parses a duration from the given string representation.
+     *
+     * @see DurationFormat
+     *
      * @throws TokeiException
      */
     public static function fromFormat(string $notation, DurationFormat $format): self
@@ -320,7 +324,9 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
-     * Encodes a Duration into a specified string notation representation.
+     * Formats the duration according to the given representation.
+     *
+     * @see DurationFormat
      *
      * @throws TokeiException
      *

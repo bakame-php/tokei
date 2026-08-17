@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bakame\Tokei;
 
+use Bakame\Tokei\Internal\DurationDecimal;
 use Bakame\Tokei\Internal\DurationParts;
 use Bakame\Tokei\Internal\InputNormalizer;
 use DateInterval;
@@ -97,6 +98,7 @@ final readonly class Localize
     public static function duration(
         Duration|DateInterval|Interval|Task|TimeDuration $duration,
         string $locale,
+        DurationStyle $style = DurationStyle::Decomposed,
         UnitWidth $unitWidth = UnitWidth::Wide,
         ListWidth $listWidth = ListWidth::Wide,
     ): string {
@@ -105,24 +107,45 @@ final readonly class Localize
         $isSupported ??= class_exists(IntlListFormatter::class);
         $isSupported || throw new TimeException('Support for duration locale formatting requires the `intl` extension or `symfony/polyfill-intl-icu` version 1.34 or above.');
 
-        $parts = [];
-        foreach (new DurationParts($duration)->decompose() as $unit => $value) {
+        $parts = match ($style) {
+            DurationStyle::LargestUnit => new DurationParts($duration)->toLargestSuitableUnit(),
+            DurationStyle::TotalUnit => new DurationParts($duration)->toLargestIntegralUnit(),
+            DurationStyle::Decomposed => new DurationParts($duration)->decompose(),
+        };
+
+        if ($parts instanceof DurationDecimal) {
+            $suffix = match ($parts->unit) {
+                Unit::Nanosecond => 'nanoseconds',
+                Unit::Microsecond => 'microseconds',
+                Unit::Millisecond => 'milliseconds',
+                Unit::Second => 'seconds',
+                Unit::Minute => 'minutes',
+                Unit::Hour => 'hours',
+                Unit::Day => 'days',
+                Unit::Week => 'weeks',
+            };
+
+            return self::formatUnit(abs($parts->value), $suffix, $locale, $unitWidth);
+        }
+
+        $components = [];
+        foreach ($parts as $unit => $value) {
             if (0 !== $value) {
-                $parts[] = self::formatUnit($value, $unit, $locale, $unitWidth);
+                $components[] = self::formatUnit($value, $unit, $locale, $unitWidth);
             }
         }
 
-        $nbParts = count($parts);
+        $nbParts = count($components);
         if (0 === $nbParts) {
             return self::formatUnit(0, 'seconds', $locale, $unitWidth);
         }
 
         if (1 === $nbParts) {
-            return $parts[0];
+            return $components[0];
         }
 
         $listFormatter = self::getIntlListFormatter($locale, $listWidth);
-        $result = $listFormatter->format($parts);
+        $result = $listFormatter->format($components);
 
         return '' !== $result ? $result : throw new TokeiException('Unable to format the duration; '.$listFormatter->getErrorMessage());
     }
@@ -135,7 +158,7 @@ final readonly class Localize
      *
      * @return non-empty-string
      */
-    private static function formatUnit(int $value, string $unit, string $locale, UnitWidth $unitWidth): string
+    private static function formatUnit(int|float $value, string $unit, string $locale, UnitWidth $unitWidth): string
     {
         $formatter = self::getMessageFormatter($unit, $locale, $unitWidth);
         $result = $formatter->format(['value' => $value]);

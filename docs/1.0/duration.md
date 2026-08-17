@@ -120,7 +120,7 @@ $end = $start->add($dateInterval);
 
 echo $start->format('Y-m-d'), ' → ', $end->format('Y-m-d'), ': ',
     Duration::fromDateInterval($start->diff($end))
-        ->format(DurationFormat::SingleUnit), PHP_EOL;
+        ->format(DurationFormat::LargestUnit), PHP_EOL;
 // "2024-02-01 → 2024-04-01: 60d"
 
 $start = new DateTimeImmutable('2025-02-01');
@@ -128,7 +128,7 @@ $end = $start->add($dateInterval);
 
 echo $start->format('Y-m-d'), ' → ', $end->format('Y-m-d'), ': ', 
     Duration::fromDateInterval($start->diff($end))
-        ->format(DurationFormat::SingleUnit), PHP_EOL;
+        ->format(DurationFormat::LargestUnit), PHP_EOL;
 // "2025-02-01 → 2025-04-01: 59d"
 ```
 
@@ -234,12 +234,13 @@ The supported unit abbreviations are:
 
 **The abbreviation are case-insensitive.**
 
-#### Single unit
+#### Largest and Total Unit
 
-When using the `DurationFormat::SingleUnit` Enum case, the `Duration::fromFormat()` expects a duration 
- expressed as a numeric quantity followed by exactly one unit.
+When using the `DurationFormat::LargestUnit` or the `DurationFormat::TotalUnit` Enum case,
+the `Duration::fromFormat()` expects a duration expressed as a numeric quantity followed by exactly one unit.
 
-The numeric value may contain a fractional part:
+- For `DurationFormat::LargestUnit`, the numeric value **may** contain a fractional part:
+- For `DurationFormat::TotalUnit`, the numeric value **cannot** contain a fractional part:
 
 ```php
 use Bakame\Tokei\Duration;
@@ -247,50 +248,57 @@ use Bakame\Tokei\DurationFormat;
 
 $duration = Duration::fromFormat(
     notation: '1.5h',
-    format: DurationFormat::SingleUnit,
+    format: DurationFormat::LargestUnit,
 );
-// returns the equivalent to
+
+$duration = Duration::fromFormat(
+    notation: '90min',
+    format: DurationFormat::TotalUnit,
+);
+
+// both returns the equivalent to
 Duration::of(hours: 1, minutes: 30);
 ```
-Unit names are case-insensitive and may be surrounded by whitespace. The following
+Unit names are case-insensitive and may be surrounded by whitespace. Value
+may be prefixed with the `-` to denote a negative duration. The following
 notations therefore all represent the same duration:
 
 ```php
-Duration::fromFormat('1 Min',     DurationFormat::SingleUnit);
-Duration::fromFormat('1 MINUTE',  DurationFormat::SingleUnit);
-Duration::fromFormat('1 MiNutes', DurationFormat::SingleUnit);
+Duration::fromFormat('-1Min', DurationFormat::TotalUnit);
+Duration::fromFormat(' -1MINUTE ', DurationFormat::TotalUnit);
+Duration::fromFormat('-1MiNutes   ', DurationFormat::TotalUnit);
 ```
 Whitespace between the numeric value and the unit is also permitted:
 
 ```php
-Duration::fromFormat('1    minute', DurationFormat::SingleUnit);
-Duration::fromFormat('1.5   HOURS', DurationFormat::SingleUnit);
+Duration::fromFormat('1    minute', DurationFormat::TotalUnit);
+Duration::fromFormat('1.5   HourS', DurationFormat::LargestUnit);
 ```
 
 The supported units and their accepted names are:
 
 | Unit        | Accepted names                            |
-| ----------- | ----------------------------------------- |
+|-------------|-------------------------------------------|
 | nanosecond  | `n`, `ns`, `nanosecond`, `nanoseconds`    |
 | microsecond | `us`, `µs`, `microsecond`, `microseconds` |
 | millisecond | `ms`, `millisecond`, `milliseconds`       |
 | second      | `s`, `second`, `seconds`                  |
-| minute      | `min`, `minute`, `minutes`                |
+| minute      | `m`, `min`, `minute`, `minutes`           |
 | hour        | `h`, `hour`, `hours`                      |
 | day         | `d`, `day`, `days`                        |
 | week        | `w`, `week`, `weeks`                      |
 
 **The accepted names are case-insensitive.**
 
-Fractional quantities must be exactly representable at nanosecond precision. A
-quantity requiring a fraction of a nanosecond is rejected.
+When using `DurationFormat::LargestUnit`, fractional quantities must be exactly representable at nanosecond
+precision. A quantity requiring a fraction of a nanosecond is rejected.
 
 For example:
 
 ```php
 Duration::fromFormat(
     notation: '1.000004 microseconds',
-    format: DurationFormat::SingleUnit,
+    format: DurationFormat::LargestUnit,
 );
 // throws InvalidDuration
 ```
@@ -302,7 +310,7 @@ In contrast:
 ```php
 Duration::fromFormat(
     notation: '1.000004 milliseconds',
-    format: DurationFormat::SingleUnit,
+    format: DurationFormat::LargestUnit,
 );
 ```
 
@@ -417,22 +425,26 @@ $duration->format(DurationFormat::Compact);
 
 The compact format expresses weeks as 7 days and days as 24 hours.
 
-### Single unit
+### Largest and Total unit
 
-`DurationFormat::SingleUnit` formats a duration using the largest suitable unit
-that preserves its exact value at nanosecond precision.
+`DurationFormat::LargestUnit` formats a duration using the largest suitable unit, allowing fractional values when necessary.
+
+`DurationFormat::TotalUnit` formats a duration as a total quantity using a single unit, automatically selecting the largest unit that preserves the duration's canonical precision.
 
 For example:
 
 ```php
 $duration = Duration::of(days: 21, hours: 13, minutes: 55, seconds: 12);
 
-$duration->format(DurationFormat::SingleUnit);
+$duration->format(DurationFormat::LargestUnit);
 // returns '21.58d'
+
+$duration->format(DurationFormat::TotalUnit);
+// returns '1864512s'
 ```
 
-Unlike `Compact`, which can contain multiple units, `SingleUnit` always uses exactly
-one unit.
+Unlike `Compact`, which can contain multiple units, `DurationFormat::LargestUnit` and `DurationFormat::TotalUnit`
+always uses exactly one unit.
 
 ```php
 $duration = Duration::of( hours: 3, minutes: 13, seconds: 17 * 60)->negate();
@@ -446,8 +458,11 @@ $duration->format(DurationFormat::Timer);
 $duration->format(DurationFormat::Compact);
 // returns '-3h30m'
 
-$duration->format(DurationFormat::SingleUnit);
+$duration->format(DurationFormat::LargestUnit);
 // returns '-3.5h'
+
+$duration->format(DurationFormat::LargestUnit);
+// returns '-210m'
 ```
 
 ### Numeric representation
@@ -489,23 +504,25 @@ Both methods use `DurationFormat` consistently to identify the format being pars
 produced:
 
 ```php
-$duration = Duration::fromFormat('3.5h',DurationFormat::SingleUnit);
+$duration = Duration::fromFormat('3.5h',DurationFormat::LargestUnit);
 
-$duration->format(DurationFormat::SingleUnit);
+$duration->format(DurationFormat::LargestUnit);
 // returns '3.5h'
 ```
 
 However, parsing and formatting do not necessarily preserve the original representation.
 
-For `DurationFormat::SingleUnit` formatting automatically selects a suitable unit,
-whereas parsing accepts any supported single-unit representation explicitly provided
-by the caller:
+For `DurationFormat::LargestUnit` and `DurationFormat::TotalUnit` formatting automatically
+selects a suitable unit, whereas parsing accepts any supported single-unit representation
+explicitly provided by the caller:
 
 ```php
-$duration = Duration::fromFormat('210 minutes',DurationFormat::SingleUnit);
+$duration = Duration::fromFormat('210 minutes',DurationFormat::LargestUnit);
 
-$duration->format(DurationFormat::SingleUnit);
+$duration->format(DurationFormat::LargestUnit);
 // returns '3.5h'
+$duration->format(DurationFormat::TotalUnit);
+// returns '210m'
 ```
 
 The same principle applies to `DurationFormat::Iso8601`. Parsing accepts different
@@ -518,13 +535,13 @@ $duration->format(DurationFormat::Iso8601);
 // returns '-PT336H'
 ```
 
-For `DurationFormat::SingleUnit` multiple representations of a unit name are accepted
+For `DurationFormat::LargestUnit` multiple representations of a unit name are accepted
 when parsing. Formatting always uses the abbreviated unit name without whitespace
 between the numeric value and the unit:
 
 ```php
-$duration = Duration::fromFormat('1.5 hours', DurationFormat::SingleUnit);
-$duration->format(DurationFormat::SingleUnit);
+$duration = Duration::fromFormat('1.5 hours', DurationFormat::LargestUnit);
+$duration->format(DurationFormat::LargestUnit);
 // returns '1.5h'
 ```
 
