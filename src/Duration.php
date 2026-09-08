@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bakame\Tokei;
 
 use ArgumentCountError;
+use ArithmeticError;
 use Bakame\Tokei\Internal\DurationComponents;
 use Bakame\Tokei\Internal\DurationParts;
 use Bakame\Tokei\Internal\InputNormalizer;
@@ -21,11 +22,14 @@ use function array_key_first;
 use function array_key_last;
 use function array_map;
 use function intdiv;
+use function str_pad;
+use function str_split;
 use function usort;
 
 use const PHP_INT_MAX;
 use const PHP_INT_MIN;
 use const PHP_INT_SIZE;
+use const STR_PAD_LEFT;
 
 /**
  * @phpstan-type SerializedDuration array{0: array{seconds: int, nanoseconds: int, sign: int}, 1: array{}}
@@ -120,24 +124,6 @@ final readonly class Duration implements JsonSerializable
         return self::fromComponents(Parser::parseDurationNotation($notation, $format));
     }
 
-    /**
-     * @throws InvalidDuration
-     */
-    private static function fromComponents(DurationComponents $components): self
-    {
-        return self::fromComponentsValue($components->seconds, $components->nanoseconds);
-    }
-
-    /**
-     * @throws InvalidDuration
-     */
-    private static function fromTicks(int $ticks): self
-    {
-        PHP_INT_MIN !== $ticks || throw InvalidDuration::dueToOverflow();
-
-        return self::fromComponentsValue(intdiv($ticks, self::TICKS_PER_SECOND), $ticks % self::TICKS_PER_SECOND);
-    }
-
     public static function fromWeeks(int $weeks): self
     {
         return self::of(weeks: $weeks);
@@ -205,13 +191,29 @@ final readonly class Duration implements JsonSerializable
         $sec = UnitTransformer::add($sec, (int) UnitTransformer::convert($minutes, Unit::Minute, Unit::Second));
         $sec = UnitTransformer::add($sec, $seconds);
 
-        return self::fromComponentsValue($sec, $nano);
+        return self::create($sec, $nano);
     }
 
     /**
      * @throws InvalidDuration
      */
-    private static function fromComponentsValue(int $seconds, int $nanoseconds): self
+    private static function fromTicks(int $ticks): self
+    {
+        return self::create(intdiv($ticks, self::TICKS_PER_SECOND), $ticks % self::TICKS_PER_SECOND);
+    }
+
+    /**
+     * @throws InvalidDuration
+     */
+    private static function fromComponents(DurationComponents $components): self
+    {
+        return self::create($components->seconds, $components->nanoseconds);
+    }
+
+    /**
+     * @throws InvalidDuration
+     */
+    private static function create(int $seconds, int $nanoseconds): self
     {
         if ($nanoseconds >= self::TICKS_PER_SECOND || $nanoseconds <= -self::TICKS_PER_SECOND) {
             $seconds += intdiv($nanoseconds, self::TICKS_PER_SECOND);
@@ -439,27 +441,55 @@ final readonly class Duration implements JsonSerializable
      */
     public function add(Duration|DateInterval|Interval|Task|TimeDuration ...$other): self
     {
-        $seconds = $this->signedSeconds();
-        $nanoseconds = $this->signedNanoseconds();
+        $result = $this;
         foreach ($other as $item) {
-            $item = InputNormalizer::duration($item);
-            $seconds = UnitTransformer::add($seconds, $item->signedSeconds());
-            $nanoseconds = UnitTransformer::add($nanoseconds, $item->signedNanoseconds());
+            $result = $result->addDuration($item);
         }
 
-        $new = self::fromComponentsValue($seconds, $nanoseconds);
-
-        return $new->equals($this) ? $this : $new;
+        return $result->equals($this) ? $this : $result;
     }
 
-    private function signedSeconds(): int
+    /**
+     * Add the given duration to the duration.
+     *
+     * @throws TokeiException
+     */
+    private function addDuration(Duration|DateInterval|Interval|Task|TimeDuration $duration): self
     {
-        return $this->sign * $this->seconds;
-    }
+        $duration = InputNormalizer::duration($duration);
+        $seconds = $this->negative ? -$this->seconds : $this->seconds;
+        $nanoseconds = $this->negative ? -$this->nanoseconds : $this->nanoseconds;
+        $addSeconds = $duration->negative ? -$duration->seconds : $duration->seconds;
+        $addNanoseconds = $duration->negative ? -$duration->nanoseconds : $duration->nanoseconds;
 
-    private function signedNanoseconds(): int
-    {
-        return $this->sign * $this->nanoseconds;
+        if ($this->negative === $duration->negative && $this->seconds > self::MAX_SECOND - $duration->seconds) {
+            throw InvalidDuration::dueToOverflow();
+        }
+
+        $seconds += $addSeconds;
+        $nanoseconds += $addNanoseconds;
+
+        if ($nanoseconds >= self::TICKS_PER_SECOND || $nanoseconds <= -self::TICKS_PER_SECOND) {
+            $carry = intdiv($nanoseconds, self::TICKS_PER_SECOND);
+            $nanoseconds %= self::TICKS_PER_SECOND;
+            if (($carry > 0 && $seconds > self::MAX_SECOND - $carry) || ($carry < 0 && $seconds < -self::MAX_SECOND - $carry)) {
+                throw InvalidDuration::dueToOverflow();
+            }
+
+            $seconds += $carry;
+        }
+
+        if (0 < $seconds && 0 > $nanoseconds) {
+            --$seconds;
+            $nanoseconds += self::TICKS_PER_SECOND;
+        }
+
+        if (0 > $seconds && 0 < $nanoseconds) {
+            ++$seconds;
+            $nanoseconds -= self::TICKS_PER_SECOND;
+        }
+
+        return self::create($seconds, $nanoseconds);
     }
 
     public function isLongerThan(Duration|DateInterval|Interval|Task|TimeDuration $other): bool
@@ -514,27 +544,73 @@ final readonly class Duration implements JsonSerializable
     }
 
     /**
+     * Multiplies the duration by the given factor.
+     *
      * @throws TokeiException
      */
     public function multiplyBy(int $factor): self
     {
-        $mul = static function (int $value, int $factor): int {
-            if (0 === $value || 0 === $factor) {
-                return 0;
+        if (0 === $factor || 0 === $this->sign) {
+            return self::zero();
+        }
+
+        if (1 === $factor) {
+            return $this;
+        }
+
+        if (-1 === $factor) {
+            return $this->negate();
+        }
+
+        PHP_INT_MIN !== $factor || throw InvalidDuration::dueToOverflow();
+
+        $sign = $this->sign * ($factor < 0 ? -1 : 1);
+        $factor = abs($factor);
+
+        $seconds = 0;
+        $nanoseconds = 0;
+        $addSeconds = $this->seconds;
+        $addNanoseconds = $this->nanoseconds;
+
+        while (true) {
+            if (1 === ($factor & 1)) {
+                [$seconds, $nanoseconds] = self::addMagnitudes($seconds, $nanoseconds, $addSeconds, $addNanoseconds);
             }
 
-            abs($factor) <= intdiv(self::MAX_SECOND, abs($value)) || throw InvalidDuration::dueToOverflow();
+            $factor >>= 1;
 
-            return $value * $factor;
-        };
+            if (0 === $factor) {
+                break;
+            }
 
-        return match (true) {
-            -1 === $factor => $this->negate(),
-            0 === $factor => self::zero(),
-            1 === $factor,
-            0 === $this->sign => $this,
-            default => self::fromComponentsValue($mul($this->signedSeconds(), $factor), $mul($this->signedNanoseconds(), $factor)),
-        };
+            [$addSeconds, $addNanoseconds] = self::addMagnitudes($addSeconds, $addNanoseconds, $addSeconds, $addNanoseconds);
+        }
+
+        return self::create($sign * $seconds, $sign * $nanoseconds);
+    }
+
+    /**
+     * Adds two non-negative (seconds, nanoseconds) pairs.
+     *
+     * @throws TimeException when the sum is out of the representable range
+     *
+     * @return array{0: int, 1: int}
+     */
+    private static function addMagnitudes(int $seconds, int $nanoseconds, int $addSeconds, int $addNanoseconds): array
+    {
+        ($seconds <= self::MAX_SECOND - $addSeconds) || throw InvalidDuration::dueToOverflow();
+
+        $seconds += $addSeconds;
+        $nanoseconds += $addNanoseconds;
+
+        if ($nanoseconds >= self::TICKS_PER_SECOND) {
+            self::MAX_SECOND !== $seconds || throw InvalidDuration::dueToOverflow();
+
+            ++$seconds;
+            $nanoseconds -= self::TICKS_PER_SECOND;
+        }
+
+        return [$seconds, $nanoseconds];
     }
 
     /**
@@ -546,45 +622,79 @@ final readonly class Duration implements JsonSerializable
      */
     public function divideBy(int $divisor): self
     {
-        $div = static function (Duration $duration, int $divisor): self {
-            $seconds = $duration->signedSeconds();
+        0 !== $divisor || throw new DivisionByZeroError('Cannot divide by zero.');
+        if (1 === $divisor || 0 === $this->sign) {
+            return $this;
+        }
 
-            return self::fromComponentsValue(
-                intdiv($seconds, $divisor),
-                intdiv($duration->signedNanoseconds() + (($seconds % $divisor) * self::TICKS_PER_SECOND), $divisor)
-            );
-        };
+        PHP_INT_MIN !== $divisor || throw new ArithmeticError('Cannot divide by PHP_INT_MIN.');
 
-        return match (true) {
-            -1 === $divisor => $this->negate(),
-            0 === $divisor => throw new DivisionByZeroError('Cannot divide by zero duration.'),
-            1 === $divisor,
-            0 === $this->sign => $this,
-            default => $div($this, $divisor),
-        };
+        $sign = $this->sign;
+        if ($divisor < 0) {
+            $sign = -$sign;
+            $divisor = -$divisor;
+        }
+
+        $remainder = $this->seconds % $divisor;
+        $nanoseconds = $remainder > intdiv(PHP_INT_MAX - $this->nanoseconds, self::TICKS_PER_SECOND)
+            ? self::divideNanoseconds($remainder, $this->nanoseconds, $divisor)
+            : intdiv($this->nanoseconds + $remainder * self::TICKS_PER_SECOND, $divisor);
+
+        return new self(intdiv($this->seconds, $divisor), $nanoseconds, $sign);
     }
 
     /**
-     * Returns the number of Duration that can fit into the instance and the optional Duration remainder.
+     * Returns intdiv($remainder * 1_000_000_000 + $nanoseconds, $divisor) for
+     * a $remainder that is lower than $divisor.
+     *
+     * The dividend does not fit in an integer on 32 bit platforms, so the
+     * division is done one decimal digit at a time. Every intermediate value
+     * stays below 2**53, where floats represent integers exactly.
+     */
+    private static function divideNanoseconds(int $remainder, int $nanoseconds, int $divisor): int
+    {
+        $quotient = 0;
+        $rest = (float) $remainder;
+
+        foreach (str_split(str_pad((string) $nanoseconds, 9, '0', STR_PAD_LEFT)) as $digit) {
+            $rest = $rest * 10 + (int) $digit;
+            $digit = (int) ($rest / $divisor);
+            $rest -= $digit * $divisor;
+
+            // the float division may be off by one in either direction
+            while (0 > $rest) {
+                --$digit;
+                $rest += $divisor;
+            }
+            while ($rest >= $divisor) {
+                ++$digit;
+                $rest -= $divisor;
+            }
+
+            $quotient = $quotient * 10 + $digit;
+        }
+
+        return $quotient;
+    }
+
+    /**
+     * Returns the number of times the given duration fits into this instance, together with the remainder.
      *
      * @throws TokeiException
      */
     public function divideInto(Duration|DateInterval|Interval|Task|TimeDuration $duration): DivisionResult
     {
-        $div = static function (Duration $duration, Duration $divisor): DivisionResult {
-            $thisTicks = $duration->ticks();
-            $otherTicks = $divisor->ticks();
-
-            return new DivisionResult(intdiv($thisTicks, $otherTicks), self::fromTicks($thisTicks % $otherTicks));
-        };
-
         $duration = InputNormalizer::duration($duration);
+        !$duration->isZero() || throw new DivisionByZeroError('Cannot divide by zero duration.');
 
-        return match (true) {
-            $duration->isZero() => throw new DivisionByZeroError('Cannot divide by zero duration.'),
-            $this->isZero() => new DivisionResult(0, self::zero()),
-            default => $div($this, $duration),
-        };
+        if ($this->isZero()) {
+            return new DivisionResult(0, self::zero());
+        }
+
+        $thisTicks = $this->ticks();
+        $otherTicks = $duration->ticks();
+
+        return new DivisionResult(intdiv($thisTicks, $otherTicks), self::fromTicks($thisTicks % $otherTicks));
     }
 
     /**
@@ -597,6 +707,8 @@ final readonly class Duration implements JsonSerializable
     public function modulo(Duration|DateInterval|Interval|Task|TimeDuration $cycle): self
     {
         $cycleTicks = InputNormalizer::duration($cycle)->ticks();
+
+        0 !== $cycleTicks || throw new DivisionByZeroError('Cannot calculate modulo by zero duration.');
 
         return self::fromTicks(($this->ticks() % $cycleTicks + $cycleTicks) % $cycleTicks);
     }

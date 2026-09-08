@@ -8,8 +8,7 @@ use Bakame\Tokei\InvalidDuration;
 use Bakame\Tokei\SnapMode;
 use Bakame\Tokei\Unit;
 
-use function ceil;
-use function floor;
+use function abs;
 use function intdiv;
 use function round;
 
@@ -53,9 +52,16 @@ final readonly class UnitTransformer
 
         ($value <= intdiv(PHP_INT_MAX, $ticks) && $value >= intdiv(PHP_INT_MIN, $ticks)) || throw InvalidDuration::dueToOverflow();
 
-        return (int) round($ticks * $value);
+        $result = $ticks * $value;
+
+        is_finite($result) && $result >= PHP_INT_MIN && $result <= PHP_INT_MAX || throw InvalidDuration::dueToOverflow();
+
+        return (int) round($result);
     }
 
+    /**
+     * @throws InvalidDuration
+     */
     public static function convert(int|float $value, Unit $from, Unit $to): int|float
     {
         return self::fromTicks(self::toTicks($value, $from), $to);
@@ -83,15 +89,17 @@ final readonly class UnitTransformer
         return [intdiv($valueInMicro, $ticks), $valueInMicro % $ticks];
     }
 
-    public static function round(int $valueInMicro, Unit $unit, SnapMode $mode = SnapMode::Nearest): int
+    public static function round(int $valueInNano, Unit $unit, SnapMode $mode = SnapMode::Nearest): int
     {
         $ticks = self::ticks($unit);
+        $quotient = intdiv($valueInNano, $ticks);
+        $remainder = $valueInNano % $ticks;
 
-        return (int) ($ticks * match ($mode) {
-            SnapMode::Floor => floor($valueInMicro / $ticks),
-            SnapMode::Ceil => ceil($valueInMicro / $ticks),
-            SnapMode::Nearest => round($valueInMicro / $ticks),
-        });
+        return match ($mode) {
+            SnapMode::Floor => $remainder < 0 ? ($quotient - 1) * $ticks : $quotient * $ticks,
+            SnapMode::Ceil => $remainder > 0 ? ($quotient + 1) * $ticks : $quotient * $ticks,
+            SnapMode::Nearest => abs($remainder) * 2 >= $ticks ? ($quotient + ($remainder < 0 ? -1 : 1)) * $ticks : $quotient * $ticks,
+        };
     }
 
     /**

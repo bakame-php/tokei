@@ -427,9 +427,11 @@ The compact format expresses weeks as 7 days and days as 24 hours.
 
 ### Largest and Total unit
 
+Largest and Total unit
+
 `DurationFormat::LargestUnit` formats a duration using the largest suitable unit, allowing fractional values when necessary.
 
-`DurationFormat::TotalUnit` formats a duration as a total quantity using a single unit, automatically selecting the largest unit that preserves the duration's canonical precision.
+`DurationFormat::TotalUnit` formats a duration as a total quantity using a single unit, automatically selecting the largest unit that preserves the duration's precision.
 
 For example:
 
