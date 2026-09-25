@@ -12,6 +12,7 @@ use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
+use Deprecated;
 use JsonSerializable;
 use Time\Duration as TimeDuration;
 
@@ -200,7 +201,7 @@ final class Time implements JsonSerializable
      */
     public function today(DateTimeInterface|DateTimeZone|string $timezone): DateTimeImmutable
     {
-        return $this->applyTo(new DateTimeImmutable(timezone: InputNormalizer::timezone($timezone)));
+        return $this->on(new DateTimeImmutable(timezone: InputNormalizer::timezone($timezone)));
     }
 
     /**
@@ -330,13 +331,27 @@ final class Time implements JsonSerializable
     /**
      * Returns a new DateTimeImmutable instance on which the current time is applied.
      */
-    public function applyTo(DateTimeInterface $datetime): DateTimeImmutable
+    public function on(DateTimeInterface $datetime): DateTimeImmutable
     {
         if (!$datetime instanceof DateTimeImmutable) {
             $datetime = DateTimeImmutable::createFromInterface($datetime);
         }
 
         return $datetime->setTime($this->hour, $this->minute, $this->second, intdiv($this->nanosecond, 1_000));
+    }
+
+    /**
+     * DEPRECATION WARNING! This method will be removed in the next major point release.
+     *
+     * @deprecated
+     * @codeCoverageIgnore
+     *
+     * Returns a new DateTimeImmutable instance on which the current time is applied.
+     */
+    #[Deprecated(message:'use Bakame\Tokei\Time::on() instead', since:'bakame/tokei:1.1.0')]
+    public function applyTo(DateTimeInterface $datetime): DateTimeImmutable
+    {
+        return $this->on($datetime);
     }
 
     /**

@@ -2,7 +2,25 @@
 
 All Notable changes to `bakame/tokei` will be documented in this file.
 
-## [1.0.0 - Daria](https://github.com/bakame-php/tokei/compare/0.3.0...main) - 2026-09-15
+## [Next](https://github.com/bakame-php/tokei/compare/1.0.0...main) - TBD
+
+### Added
+
+- `Time::on`
+
+### Fixed
+
+- None
+
+### Deprecated
+
+- `Time::applyTo` use `Time::on` instead
+
+### Removed
+
+- None
+
+## [1.0.0 - Daria](https://github.com/bakame-php/tokei/compare/0.3.0...1.0.0) - 2026-09-15
 
 ### Added
 

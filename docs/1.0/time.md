@@ -204,7 +204,7 @@ $a->distance($b)->format(DurationFormat::Iso8601); // returns "PT2H"
 Time::fromDateTime(DateTimeInterface $datetime): Time
 // Extract the time component from a DateTimeInterface instance
 
-Time::applyTo(DateTimeInterface $datetime): DateTimeImmutable
+Time::on(DateTimeInterface $datetime): DateTimeImmutable
 // Apply this time component to a DateTimeInterface instance
 
 Time::now(DateTimeZone|string $timezone): Time
@@ -248,7 +248,7 @@ $time = Time::fromDateTime(new DateTime('2025-12-27 23:00', new DateTimeZone('Af
 $time->format(TimeFormat::Clock);
 // '23:00:00'
 
-$newDate = $time->applyTo(CarbonImmutable::parse('2025-02-23'));
+$newDate = $time->on(CarbonImmutable::parse('2025-02-23'));
 $newDate->format('Y-m-d H:i');
 // '2025-02-23 23:00'
 $newDate->toDateTimeString();
@@ -256,7 +256,7 @@ $newDate->toDateTimeString();
 $newDate::class;
 // Carbon\CarbonImmutable
 
-$altDate = $time->applyTo(Carbon::parse('2025-02-23'));
+$altDate = $time->on(Carbon::parse('2025-02-23'));
 $altDate->format('Y-m-d H:i');
 // '2025-02-23 23:00'
 $altDate::class;

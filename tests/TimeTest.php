@@ -286,7 +286,7 @@ final class TimeTest extends TestCase
     {
         $date = new DateTimeImmutable('2026-05-11 08:15:30', new DateTimeZone('Africa/Luanda'));
         $time = Time::at(14, 45, 12, 123_456_789);
-        $result = $time->applyTo($date);
+        $result = $time->on($date);
 
         self::assertSame('2026-05-11 14:45:12.123456', $result->format('Y-m-d H:i:s.u'));
         self::assertSame('Africa/Luanda', $result->getTimezone()->getName());
@@ -300,7 +300,7 @@ final class TimeTest extends TestCase
         $date = new DateTime('2026-05-11 08:15:30', new DateTimeZone('UTC'));
         $time = Time::at(22, 1, 2, 999_999_000);
 
-        self::assertSame('2026-05-11 22:01:02.999999', $time->applyTo($date)->format('Y-m-d H:i:s.u'));
+        self::assertSame('2026-05-11 22:01:02.999999', $time->on($date)->format('Y-m-d H:i:s.u'));
 
         // Original mutable DateTime is NOT modified
         self::assertSame('2026-05-11 08:15:30.000000', $date->format('Y-m-d H:i:s.u'));
@@ -311,7 +311,7 @@ final class TimeTest extends TestCase
         $date = new DateTimeImmutable('2030-12-25 00:00:00');
         $time = Time::at(9, 30);
 
-        self::assertSame('2030-12-25 09:30:00', $time->applyTo($date)->format('Y-m-d H:i:s'));
+        self::assertSame('2030-12-25 09:30:00', $time->on($date)->format('Y-m-d H:i:s'));
     }
 
     public function test_apply_to_preserves_timezone(): void
@@ -319,7 +319,7 @@ final class TimeTest extends TestCase
         $timezone = new DateTimeZone('Asia/Tokyo');
         $date = new DateTimeImmutable('2026-01-01 00:00:00', $timezone);
 
-        self::assertSame('Asia/Tokyo', Time::at(12)->applyTo($date)->getTimezone()->getName());
+        self::assertSame('Asia/Tokyo', Time::at(12)->on($date)->getTimezone()->getName());
     }
 
     /**
