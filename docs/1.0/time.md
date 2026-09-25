@@ -84,15 +84,7 @@ $time->offset()->in(Unit::Second);
 
 ```php
 Time::format(TimeFormat $format = TimeFormat::Clock): string
-Time::toLocaleString(
-    string $locale,
-    DateTimeZone|string|null $timezone = null,
-    LocaleVerbosity $verbosity = LocaleVerbosity::Medium
-): string
 ```
-
-<p class="message-notice">To work as expected the <code>Time::toLocaleString</code> requires the presence
-of the Intl extension or of its polyfill otherwise a <code>TimeException</code> will be thrown.</p>
 
 Example:
 
@@ -104,10 +96,6 @@ echo $time->format(TimeFormat::Compact);
 // 10h30m15s123456µs
 echo $time->offset()->in(Unit::Second);
 // 37815.123456
-echo $time->toLocaleString('en-US');
-// 10:30:15 AM
-echo $time->toLocaleString('de-DE', 'Africa/Nairobi', LocaleVerbosity::Full);
-// 10:30:15 Ostafrikanische Zeit
 ```
 
 ## Modifying time
